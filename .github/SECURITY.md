@@ -1,9 +1,10 @@
-# Security Policy for CocoIndex
+# Security Policy
 
 ## Reporting a Vulnerability
-If you discover a security vulnerability in CocoIndex, please report it responsibly to our security team:
 
-**Email:** [support@cocoindex.io](mailto:support@cocoindex.io)
+If you discover a security vulnerability in Recoco, please report it to our security team:
+
+**Email:** [adam@knit.li](mailto:adam@knit.li)
 
 ⚠️ Please do not file GitHub issues for security vulnerabilities as they are public! ⚠️
 
@@ -15,12 +16,14 @@ Please provide:
 We will acknowledge your report promptly and work with you to resolve the issue.
 
 ## Scope
-This policy covers security issues related to CocoIndex open-source software.
+
+This policy covers security issues related to Recoco open-source software.
 
 ## Response & Disclosure
+
 - We aim to respond as soon as we can.
 - Security fixes will be released as soon as practical after verification.
 
 ---
 
-Thank you for helping us keep CocoIndex secure!
+Thank you for helping us keep Recoco secure!
