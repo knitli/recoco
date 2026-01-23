@@ -262,7 +262,6 @@ pub async fn update(
     let live_updater = execution::FlowLiveUpdater::start(
         flow_ctx.clone(),
         lib_context.require_builtin_db_pool()?,
-        &lib_context.multi_progress_bar,
         execution::FlowLiveUpdaterOptions {
             live_mode: false,
             ..Default::default()

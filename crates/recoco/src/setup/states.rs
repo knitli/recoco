@@ -15,7 +15,6 @@ use crate::ops::interface::AttachmentSetupChange;
 use crate::prelude::*;
 
 use indenter::indented;
-use owo_colors::{AnsiColors, OwoColorize};
 use std::any::Any;
 use std::fmt::Debug;
 use std::fmt::{Display, Write};
@@ -352,7 +351,7 @@ impl<K, S, C: ResourceSetupChange> std::fmt::Display for ResourceSetupInfo<K, S,
             None => "USER MANAGED",
         };
         let status_str = format!("[ {status_code:^9} ]");
-        let status_full = status_str.color(AnsiColors::Cyan);
+        let status_full = status_str;
         let desc_colored = &self.description;
         writeln!(f, "{status_full} {desc_colored}")?;
         if let Some(setup_change) = &self.setup_change {
@@ -366,16 +365,16 @@ impl<K, S, C: ResourceSetupChange> std::fmt::Display for ResourceSetupInfo<K, S,
                             writeln!(
                                 f,
                                 "{} {}",
-                                "TODO:".color(AnsiColors::BrightBlack).bold(),
-                                action.color(AnsiColors::BrightBlack)
+                                "TODO:",
+                                action
                             )?;
                         }
                         ChangeDescription::Note(note) => {
                             writeln!(
                                 f,
                                 "{} {}",
-                                "NOTE:".color(AnsiColors::Yellow).bold(),
-                                note.color(AnsiColors::Yellow)
+                                "NOTE:",
+                                note
                             )?;
                         }
                     }
@@ -572,8 +571,7 @@ impl std::fmt::Display for FormattedFlowSetupChange<'_> {
             f,
             "{} Flow: {}",
             ObjectSetupChangeCode(flow_setup_change)
-                .to_string()
-                .color(AnsiColors::Cyan),
+                .to_string(),
             self.0
         )?;
 

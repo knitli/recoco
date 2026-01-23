@@ -5,7 +5,6 @@ use crate::{
 
 use super::stats;
 use futures::future::try_join_all;
-use indicatif::{MultiProgress, ProgressBar, ProgressFinish};
 use sqlx::PgPool;
 use std::fmt::Write;
 use tokio::{sync::watch, task::JoinSet, time::MissedTickBehavior};
@@ -98,7 +97,6 @@ struct SourceUpdateTask {
 
     status_tx: watch::Sender<FlowLiveUpdaterStatus>,
     num_remaining_tasks_tx: watch::Sender<usize>,
-    multi_progress_bar: MultiProgress,
 }
 
 impl Drop for SourceUpdateTask {
@@ -113,15 +111,8 @@ impl Drop for SourceUpdateTask {
 }
 
 impl SourceUpdateTask {
-    fn maybe_new_progress_bar(&self) -> Result<Option<ProgressBar>> {
-        if !self.options.print_stats || self.multi_progress_bar.is_hidden() {
-            return Ok(None);
-        }
-        let style =
-            indicatif::ProgressStyle::default_spinner().template("{spinner}{spinner} {msg}")?;
-        let pb = ProgressBar::new_spinner().with_finish(ProgressFinish::AndClear);
-        pb.set_style(style);
-        Ok(Some(pb))
+    fn maybe_new_progress_bar(&self) -> Result<()> {
+        Ok(())
     }
 
     #[instrument(name = "source_update_task.run", skip_all, fields(flow_name = %self.flow.flow_instance.name, source_name = %self.import_op().name))]
@@ -141,16 +132,12 @@ impl SourceUpdateTask {
             },
         };
 
-        let interval_progress_bar = self
-            .maybe_new_progress_bar()?
-            .map(|pb| self.multi_progress_bar.add(pb));
         if !self.options.live_mode {
             return self
                 .update_one_pass(
                     source_indexing_context,
                     "batch update",
                     initial_update_options,
-                    interval_progress_bar.as_ref(),
                 )
                 .await;
         }
@@ -167,13 +154,6 @@ impl SourceUpdateTask {
 
             let status_tx = self.status_tx.clone();
             let operation_in_process_stats = self.operation_in_process_stats.clone();
-            let progress_bar = self
-                .maybe_new_progress_bar()?
-                .zip(interval_progress_bar.as_ref())
-                .map(|(pb, interval_progress_bar)| {
-                    self.multi_progress_bar
-                        .insert_after(interval_progress_bar, pb)
-                });
             let process_change_stream = async move {
                 let mut change_stream = change_stream;
                 let retry_options = retryable::RetryOptions {
@@ -267,7 +247,6 @@ impl SourceUpdateTask {
                         &stats_to_report,
                         "change stream",
                         None,
-                        progress_bar.as_ref(),
                     )
                     .await
                 }
@@ -288,7 +267,6 @@ impl SourceUpdateTask {
                         "batch update"
                     },
                     initial_update_options,
-                    interval_progress_bar.as_ref(),
                 )
                 .await;
 
@@ -303,15 +281,6 @@ impl SourceUpdateTask {
                 interval.tick().await;
 
                 loop {
-                    if let Some(progress_bar) = interval_progress_bar.as_ref() {
-                        progress_bar.set_message(format!(
-                            "{}.{}: Waiting for next interval update...",
-                            task.flow.flow_instance.name,
-                            task.import_op().name
-                        ));
-                        progress_bar.tick();
-                    }
-
                     // Wait for the next scheduled update tick
                     interval.tick().await;
 
@@ -322,7 +291,6 @@ impl SourceUpdateTask {
                             expect_little_diff: true,
                             mode: super::source_indexer::UpdateMode::Normal,
                         },
-                        interval_progress_bar.as_ref(),
                     ));
 
                     tokio::select! {
@@ -408,11 +376,8 @@ impl SourceUpdateTask {
         stats: &stats::UpdateStats,
         update_title: &str,
         start_time: Option<std::time::Instant>,
-        progress_bar: Option<&ProgressBar>,
     ) -> Result<()> {
-        let interval = if progress_bar.is_some() {
-            PROGRESS_BAR_REPORT_INTERVAL
-        } else if self.stats_report_enabled() {
+        let interval = if self.stats_report_enabled() {
             TRACE_REPORT_INTERVAL
         } else {
             return fut.await;
@@ -428,11 +393,7 @@ impl SourceUpdateTask {
                     return res;
                 }
                 _ = interval.tick() => {
-                    if let Some(progress_bar) = progress_bar {
-                        progress_bar.set_message(
-                            self.stats_message(stats, update_title, start_time));
-                        progress_bar.tick();
-                    } else if report_ready {
+                    if report_ready {
                         self.report_stats(stats, update_title, start_time, "⏳ ");
                     } else {
                         report_ready = true;
@@ -447,7 +408,6 @@ impl SourceUpdateTask {
         source_indexing_context: &Arc<SourceIndexingContext>,
         update_title: &str,
         update_options: super::source_indexer::UpdateOptions,
-        progress_bar: Option<&ProgressBar>,
     ) -> Result<()> {
         let start_time = std::time::Instant::now();
         let update_stats = Arc::new(stats::UpdateStats::default());
@@ -459,7 +419,6 @@ impl SourceUpdateTask {
             &update_stats,
             update_title,
             Some(start_time),
-            progress_bar,
         )
         .await
         .with_context(|| {
@@ -477,11 +436,7 @@ impl SourceUpdateTask {
         }
 
         // Report final stats
-        if let Some(progress_bar) = progress_bar {
-            progress_bar.set_message("");
-        }
-        self.multi_progress_bar
-            .suspend(|| self.report_stats(&update_stats, update_title, Some(start_time), "✅ "));
+        self.report_stats(&update_stats, update_title, Some(start_time), "✅ ");
         self.source_update_stats.merge(&update_stats);
         Ok(())
     }
@@ -491,14 +446,12 @@ impl SourceUpdateTask {
         source_indexing_context: &Arc<SourceIndexingContext>,
         update_title: &str,
         update_options: super::source_indexer::UpdateOptions,
-        progress_bar: Option<&ProgressBar>,
     ) {
         let result = self
             .update_one_pass(
                 source_indexing_context,
                 update_title,
                 update_options,
-                progress_bar,
             )
             .await;
 
@@ -517,7 +470,6 @@ impl FlowLiveUpdater {
     pub async fn start(
         flow_ctx: Arc<FlowContext>,
         pool: &PgPool,
-        multi_progress_bar: &LazyLock<MultiProgress>,
         options: FlowLiveUpdaterOptions,
     ) -> Result<Self> {
         let plan = flow_ctx.flow.get_execution_plan().await?;
@@ -548,7 +500,6 @@ impl FlowLiveUpdater {
                 options: options.clone(),
                 status_tx: status_tx.clone(),
                 num_remaining_tasks_tx: num_remaining_tasks_tx.clone(),
-                multi_progress_bar: (*multi_progress_bar).clone(),
             };
             join_set.spawn(source_update_task.run());
             stats_per_task.push(source_update_stats);

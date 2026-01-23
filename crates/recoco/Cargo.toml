@@ -74,7 +74,6 @@ blake2 = { workspace = true }
 pgvector = { workspace = true, optional = true }
 phf = { workspace = true }
 indenter = { workspace = true }
-indicatif = { workspace = true }
 itertools = { workspace = true }
 derivative = { workspace = true }
 hex = { workspace = true }
@@ -100,7 +99,6 @@ neo4rs = { workspace = true, optional = true }
 bytes = { workspace = true, features = ["serde"] }
 rand = { workspace = true }
 indoc = { workspace = true }
-owo-colors = { workspace = true }
 json5 = { workspace = true, optional = true }
 aws-config = { workspace = true, optional = true }
 aws-sdk-s3 = { workspace = true, optional = true }

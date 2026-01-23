@@ -9,7 +9,6 @@ use crate::settings;
 use crate::setup::ObjectSetupChange;
 use axum::http::StatusCode;
 use recoco_utils::error::ApiError;
-use indicatif::MultiProgress;
 use sqlx::PgPool;
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use tokio::runtime::Runtime;
@@ -248,7 +247,6 @@ pub struct LibContext {
     // When true, failures while dropping target backends are logged and ignored.
     pub ignore_target_drop_failures: bool,
     pub global_concurrency_controller: Arc<concur_control::ConcurrencyController>,
-    pub multi_progress_bar: LazyLock<MultiProgress>,
 }
 
 impl LibContext {
@@ -328,7 +326,6 @@ pub async fn create_lib_context(settings: settings::Settings) -> Result<LibConte
                 max_inflight_bytes: settings.global_execution_options.source_max_inflight_bytes,
             },
         )),
-        multi_progress_bar: LazyLock::new(|| MultiProgress::new()),
     })
 }
 
