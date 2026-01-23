@@ -1,237 +1,126 @@
-<p align="center">
-    <img src="https://cocoindex.io/images/github.svg" alt="CocoIndex">
-</p>
+# ReCoco
 
-<h1 align="center">Data transformation for AI</h1>
+**ReCoco** (short for *Re-CocoIndex*) is a pure Rust fork of [CocoIndex](https://github.com/cocoindex/cocoindex), a high-performance, incremental ETL and data processing framework.
 
-<div align="center">
+Unlike the original CocoIndex which is designed as a Python library with a private Rust core, ReCoco is a **Rust-first library** designed for building robust data pipelines in Rust. It features an "a-la-carte" dependency model, allowing you to only pull in the connectors you need, keeping compile times and binary sizes minimal.
 
-[![GitHub](https://img.shields.io/github/stars/cocoindex-io/cocoindex?color=5B5BD6)](https://github.com/cocoindex-io/cocoindex)
-[![Documentation](https://img.shields.io/badge/Documentation-394e79?logo=readthedocs&logoColor=00B9FF)](https://cocoindex.io/docs/getting_started/quickstart)
-[![License](https://img.shields.io/badge/license-Apache%202.0-5B5BD6?logoColor=white)](https://opensource.org/licenses/Apache-2.0)
-[![PyPI version](https://img.shields.io/pypi/v/cocoindex?color=5B5BD6)](https://pypi.org/project/cocoindex/)
-<!--[![PyPI - Downloads](https://img.shields.io/pypi/dm/cocoindex)](https://pypistats.org/packages/cocoindex) -->
-[![PyPI Downloads](https://static.pepy.tech/badge/cocoindex/month)](https://pepy.tech/projects/cocoindex)
-[![CI](https://github.com/cocoindex-io/cocoindex/actions/workflows/CI.yml/badge.svg?event=push&color=5B5BD6)](https://github.com/cocoindex-io/cocoindex/actions/workflows/CI.yml)
-[![release](https://github.com/cocoindex-io/cocoindex/actions/workflows/release.yml/badge.svg?event=push&color=5B5BD6)](https://github.com/cocoindex-io/cocoindex/actions/workflows/release.yml)
-[![Link Check](https://github.com/cocoindex-io/cocoindex/actions/workflows/links.yml/badge.svg)](https://github.com/cocoindex-io/cocoindex/actions/workflows/links.yml)
-[![Discord](https://img.shields.io/discord/1314801574169673738?logo=discord&color=5B5BD6&logoColor=white)](https://discord.com/invite/zpA9S2DR7s)
+## Features
 
-</div>
+- **Pure Rust**: No Python dependencies, interpreters, or build tools required.
+- **Incremental Processing**: Built on a dataflow engine that processes only changed data.
+- **Modular Architecture**: Feature-gated sources, sinks, and functions.
+- **Rich Connector Ecosystem**:
+  - **Sources**: Local Files, PostgreSQL, S3, Azure Blob, Google Drive
+  - **Targets**: PostgreSQL, Qdrant, Neo4j, Kùzu
+  - **Functions**: Text splitting, LLM embedding (OpenAI/Google), JSON parsing, language detection
+- **Async API**: Fully async/await compatible API based on Tokio.
 
-<div align="center">
-    <a href="https://trendshift.io/repositories/13939" target="_blank"><img src="https://trendshift.io/api/badge/repositories/13939" alt="cocoindex-io%2Fcocoindex | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-</div>
+## Installation
 
-Ultra performant data transformation framework for AI, with core engine written in Rust. Support incremental processing and data lineage out-of-box.  Exceptional developer velocity. Production-ready at day 0.
+Add `recoco` to your `Cargo.toml`. Since ReCoco uses a modular feature system, you should enable only the features you need.
 
-⭐ Drop a star to help us grow!
-
-<div align="center">
-
-<!-- Keep these links. Translations will automatically update with the README. -->
-[Deutsch](https://readme-i18n.com/cocoindex-io/cocoindex?lang=de) |
-[English](https://readme-i18n.com/cocoindex-io/cocoindex?lang=en) |
-[Español](https://readme-i18n.com/cocoindex-io/cocoindex?lang=es) |
-[français](https://readme-i18n.com/cocoindex-io/cocoindex?lang=fr) |
-[日本語](https://readme-i18n.com/cocoindex-io/cocoindex?lang=ja) |
-[한국어](https://readme-i18n.com/cocoindex-io/cocoindex?lang=ko) |
-[Português](https://readme-i18n.com/cocoindex-io/cocoindex?lang=pt) |
-[Русский](https://readme-i18n.com/cocoindex-io/cocoindex?lang=ru) |
-[中文](https://readme-i18n.com/cocoindex-io/cocoindex?lang=zh)
-
-</div>
-
-</br>
-
-<p align="center">
-    <img src="https://cocoindex.io/images/transformation.svg" alt="CocoIndex Transformation">
-</p>
-
-</br>
-
-CocoIndex makes it effortless to transform data with AI, and keep source data and target in sync. Whether you’re building a vector index, creating knowledge graphs for context engineering or performing any custom data transformations — goes beyond SQL.
-
-</br>
-
-<p align="center">
-<img alt="CocoIndex Features" src="https://cocoindex.io/images/venn2.svg" />
-</p>
-
-</br>
-
-## Exceptional velocity
-
-Just declare transformation in dataflow with ~100 lines of python
-
-```python
-# import
-data['content'] = flow_builder.add_source(...)
-
-# transform
-data['out'] = data['content']
-    .transform(...)
-    .transform(...)
-
-# collect data
-collector.collect(...)
-
-# export to db, vector db, graph db ...
-collector.export(...)
+```toml
+[dependencies]
+recoco = { version = "0.1.0", default-features = false, features = ["source-local-file", "function-split"] }
 ```
 
-CocoIndex follows the idea of [Dataflow](https://en.wikipedia.org/wiki/Dataflow_programming) programming model. Each transformation creates a new field solely based on input fields, without hidden states and value mutation. All data before/after each transformation is observable, with lineage out of the box.
+### Available Features
 
-**Particularly**, developers don't explicitly mutate data by creating, updating and deleting. They just need to define transformation/formula for a set of source data.
-
-## Plug-and-Play Building Blocks
-
-Native builtins for different source, targets and transformations. Standardize interface, make it 1-line code switch between different components - as easy as assembling building blocks.
-
-<p align="center">
-    <img src="https://cocoindex.io/images/components.svg" alt="CocoIndex Features">
-</p>
-
-## Data Freshness
-
-CocoIndex keep source data and target in sync effortlessly.
-
-<p align="center">
-    <img src="https://github.com/user-attachments/assets/f4eb29b3-84ee-4fa0-a1e2-80eedeeabde6" alt="Incremental Processing" width="700">
-</p>
-
-It has out-of-box support for incremental indexing:
-
-- minimal recomputation on source or logic change.
-- (re-)processing necessary portions; reuse cache when possible
+| Feature | Description |
+|---------|-------------|
+| `source-local-file` | Read files from local filesystem (Default) |
+| `source-postgres` | Read from PostgreSQL (Change Data Capture) |
+| `source-s3` | Read from Amazon S3 |
+| `source-azure` | Read from Azure Blob Storage |
+| `source-gdrive` | Read from Google Drive |
+| `target-postgres` | Write to PostgreSQL |
+| `target-qdrant` | Write to Qdrant Vector DB |
+| `target-neo4j` | Write to Neo4j Graph DB |
+| `target-kuzu` | Write to Kùzu embedded Graph DB |
+| `function-split` | Text splitting utilities |
+| `function-embed` | Text embedding (OpenAI, Vertex AI) |
+| `function-extract-llm` | Information extraction via LLM |
+| `function-detect-lang` | Programming language detection |
+| `function-json` | JSON parsing (JSON5 support) |
 
 ## Quick Start
 
-If you're new to CocoIndex, we recommend checking out
+Here is a simple example that processes a string using a transient flow (in-memory, no persistence):
 
-- 📖 [Documentation](https://cocoindex.io/docs)
-- ⚡  [Quick Start Guide](https://cocoindex.io/docs/getting_started/quickstart)
-- 🎬 [Quick Start Video Tutorial](https://youtu.be/gv5R8nOXsWU?si=9ioeKYkMEnYevTXT)
+```rust
+use recoco::prelude::*;
+use recoco::builder::FlowBuilder;
+use recoco::execution::evaluator::evaluate_transient_flow;
+use serde_json::json;
 
-### Setup
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    // 1. Initialize library context
+    recoco::lib_context::init_lib_context(None).await?;
 
-1. Install CocoIndex Python library
+    // 2. Create Builder
+    let mut builder = FlowBuilder::new("hello_world").await?;
 
-```sh
-pip install -U cocoindex
+    // 3. Define Input
+    let input = builder.add_direct_input(
+        "text".to_string(),
+        schema::make_output_type(schema::BasicValueType::Str),
+    )?;
+
+    // 4. Transform (Split text)
+    let output = builder.transform(
+        "SplitBySeparators".to_string(),
+        json!({ "separators_regex": [" "] }).as_object().unwrap().clone(),
+        vec![(input, Some("text".to_string()))],
+        None,
+        "splitter".to_string(),
+    ).await?;
+
+    builder.set_direct_output(output)?;
+
+    // 5. Build & Run
+    let flow = builder.build_transient_flow().await?;
+    let result = evaluate_transient_flow(
+        &flow.0, 
+        &vec![value::Value::Basic("Hello ReCoco".into())]
+    ).await?;
+    
+    println!("Result: {:?}", result);
+    Ok(())
+}
 ```
 
-2. [Install Postgres](https://cocoindex.io/docs/getting_started/installation#-install-postgres) if you don't have one. CocoIndex uses it for incremental processing.
+## Examples
 
-3. (Optional) Install Claude Code skill for enhanced development experience. Run these commands in [Claude Code](https://claude.com/claude-code):
+Check out the `examples/` directory for more usage patterns:
 
-```
-/plugin marketplace add cocoindex-io/cocoindex-claude
-/plugin install cocoindex-skills@cocoindex
-```
+- `transient.rs`: Basic Hello World
+- `file_processing.rs`: Line-by-line file processing
+- `custom_op.rs`: Defining and registering custom Rust operations
+- `detect_lang.rs`: Using built-in functions
 
-## Define data flow
-
-Follow [Quick Start Guide](https://cocoindex.io/docs/getting_started/quickstart) to define your first indexing flow. An example flow looks like:
-
-```python
-@cocoindex.flow_def(name="TextEmbedding")
-def text_embedding_flow(flow_builder: cocoindex.FlowBuilder, data_scope: cocoindex.DataScope):
-    # Add a data source to read files from a directory
-    data_scope["documents"] = flow_builder.add_source(cocoindex.sources.LocalFile(path="markdown_files"))
-
-    # Add a collector for data to be exported to the vector index
-    doc_embeddings = data_scope.add_collector()
-
-    # Transform data of each document
-    with data_scope["documents"].row() as doc:
-        # Split the document into chunks, put into `chunks` field
-        doc["chunks"] = doc["content"].transform(
-            cocoindex.functions.SplitRecursively(),
-            language="markdown", chunk_size=2000, chunk_overlap=500)
-
-        # Transform data of each chunk
-        with doc["chunks"].row() as chunk:
-            # Embed the chunk, put into `embedding` field
-            chunk["embedding"] = chunk["text"].transform(
-                cocoindex.functions.SentenceTransformerEmbed(
-                    model="sentence-transformers/all-MiniLM-L6-v2"))
-
-            # Collect the chunk into the collector.
-            doc_embeddings.collect(filename=doc["filename"], location=chunk["location"],
-                                   text=chunk["text"], embedding=chunk["embedding"])
-
-    # Export collected data to a vector index.
-    doc_embeddings.export(
-        "doc_embeddings",
-        cocoindex.targets.Postgres(),
-        primary_key_fields=["filename", "location"],
-        vector_indexes=[
-            cocoindex.VectorIndexDef(
-                field_name="embedding",
-                metric=cocoindex.VectorSimilarityMetric.COSINE_SIMILARITY)])
+Run an example:
+```bash
+cargo run -p recoco --example file_processing --features function-split
 ```
 
-It defines an index flow like this:
+## Architecture
 
-<p align="center">
-    <img width="400" alt="Data Flow" src="https://github.com/user-attachments/assets/2ea7be6d-3d94-42b1-b2bd-22515577e463" />
-</p>
+ReCoco processes data through **Flows**. A Flow consists of:
+- **Sources**: Ingest data (e.g., files, DB rows)
+- **Transforms**: Process data (e.g., split, embed, map)
+- **Targets**: Store results (e.g., Vector DB, Graph DB)
 
-## 🚀 Examples and demo
+Data flows through these nodes. ReCoco tracks data lineage, ensuring that when source data changes, only the affected downstream data is recomputed.
 
-| Example | Description |
-|---------|-------------|
-| [Text Embedding](examples/text_embedding) | Index text documents with embeddings for semantic search |
-| [Code Embedding](examples/code_embedding) | Index code embeddings for semantic search |
-| [PDF Embedding](examples/pdf_embedding) | Parse PDF and index text embeddings for semantic search |
-| [PDF Elements Embedding](examples/pdf_elements_embedding) | Extract text and images from PDFs; embed text with SentenceTransformers and images with CLIP; store in Qdrant for multimodal search |
-| [Manuals LLM Extraction](examples/manuals_llm_extraction) | Extract structured information from a manual using LLM |
-| [Amazon S3 Embedding](examples/amazon_s3_embedding) | Index text documents from Amazon S3 |
-| [Azure Blob Storage Embedding](examples/azure_blob_embedding) | Index text documents from Azure Blob Storage |
-| [Google Drive Text Embedding](examples/gdrive_text_embedding) | Index text documents from Google Drive |
-| [Meeting Notes to Knowledge Graph](examples/meeting_notes_graph) | Extract structured meeting info from Google Drive and build a knowledge graph |
-| [Docs to Knowledge Graph](examples/docs_to_knowledge_graph) | Extract relationships from Markdown documents and build a knowledge graph |
-| [Embeddings to Qdrant](examples/text_embedding_qdrant) | Index documents in a Qdrant collection for semantic search |
-| [Embeddings to LanceDB](examples/text_embedding_lancedb) | Index documents in a LanceDB collection for semantic search |
-| [FastAPI Server with Docker](examples/fastapi_server_docker) | Run the semantic search server in a Dockerized FastAPI setup |
-| [Product Recommendation](examples/product_recommendation) | Build real-time product recommendations with LLM and graph database|
-| [Image Search with Vision API](examples/image_search) | Generates detailed captions for images using a vision model, embeds them, enables live-updating semantic search via FastAPI and served on a React frontend|
-| [Face Recognition](examples/face_recognition) | Recognize faces in images and build embedding index |
-| [Paper Metadata](examples/paper_metadata) | Index papers in PDF files, and build metadata tables for each paper |
-| [Multi Format Indexing](examples/multi_format_indexing) | Build visual document index from PDFs and images with ColPali for semantic search |
-| [Custom Source HackerNews](examples/custom_source_hn) | Index HackerNews threads and comments, using *CocoIndex Custom Source* |
-| [Custom Output Files](examples/custom_output_files) | Convert markdown files to HTML files and save them to a local directory, using *CocoIndex Custom Targets* |
-| [Patient intake form extraction](examples/patient_intake_extraction) | Use LLM to extract structured data from patient intake forms with different formats |
-| [HackerNews Trending Topics](examples/hn_trending_topics) | Extract trending topics from HackerNews threads and comments, using *CocoIndex Custom Source* and LLM |
-| [Patient Intake Form Extraction with BAML](examples/patient_intake_extraction_baml) | Extract structured data from patient intake forms using BAML |
-| [Patient Intake Form Extraction with DSPy](examples/patient_intake_extraction_dspy) | Extract structured data from patient intake forms using DSPy |
+## Relationship to CocoIndex
 
-More coming and stay tuned 👀!
+ReCoco is a fork of [CocoIndex](https://github.com/cocoindex/cocoindex).
+- **Upstream**: CocoIndex (Python-focused, private Rust core)
+- **Downstream**: ReCoco (Rust-focused, public Rust API)
 
-## 📖 Documentation
-
-For detailed documentation, visit [CocoIndex Documentation](https://cocoindex.io/docs), including a [Quickstart guide](https://cocoindex.io/docs/getting_started/quickstart).
-
-## 🤝 Contributing
-
-We love contributions from our community ❤️. For details on contributing or running the project for development, check out our [contributing guide](https://cocoindex.io/docs/about/contributing).
-
-## 👥 Community
-
-Welcome with a huge coconut hug 🥥⋆｡˚🤗. We are super excited for community contributions of all kinds - whether it's code improvements, documentation updates, issue reports, feature requests, and discussions in our Discord.
-
-Join our community here:
-
-- 🌟 [Star us on GitHub](https://github.com/cocoindex-io/cocoindex)
-- 👋 [Join our Discord community](https://discord.com/invite/zpA9S2DR7s)
-- ▶️ [Subscribe to our YouTube channel](https://www.youtube.com/@cocoindex-io)
-- 📜 [Read our blog posts](https://cocoindex.io/blogs/)
-
-## Support us
-
-We are constantly improving, and more features and examples are coming soon. If you love this project, please drop us a star ⭐ at GitHub repo [![GitHub](https://img.shields.io/github/stars/cocoindex-io/cocoindex?color=5B5BD6)](https://github.com/cocoindex-io/cocoindex) to stay tuned and help us grow.
+We aim to maintain compatibility with CocoIndex's core dataflow engine to allow porting upstream improvements, while diverging significantly in the API surface and dependency management to serve Rust users better.
 
 ## License
 
-CocoIndex is Apache 2.0 licensed.
+Apache License 2.0

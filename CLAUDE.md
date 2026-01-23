@@ -4,70 +4,48 @@ This file provides guidance to Claude Code (claude.ai/claude-code) when working 
 
 ## Build and Test Commands
 
-This project uses [uv](https://docs.astral.sh/uv/) for Python project management.
+This project is a pure Rust workspace.
 
 ### Building
 
 ```bash
-uv run maturin develop   # Build Rust code and install Python package (required after Rust changes)
+cargo build              # Build all crates
+cargo build --release    # Build in release mode
 ```
 
 ### Testing
 
 ```bash
-cargo test               # Run Rust tests
-uv run dmypy run         # Type check Python code (uses mypy daemon)
-uv run pytest python/    # Run Python tests (use after both Rust and Python changes)
+cargo test               # Run unit tests
+cargo test --all-features # Run tests with all features enabled
+cargo clippy             # Run linter
+cargo fmt                # Run formatter
 ```
-
-### Workflow Summary
-
-| Change Type | Commands to Run |
-|-------------|-----------------|
-| Rust code only | `uv run maturin develop && cargo test` |
-| Python code only | `uv run dmypy run && uv run pytest python/` |
-| Both Rust and Python | Run all commands from both categories above |
 
 ## Code Structure
 
 ```
-cocoindex/
-├── rust/                       # Rust crates (workspace)
-│   ├── cocoindex/              # Main crate - core indexing engine
+recoco/
+├── crates/
+│   ├── recoco/             # Main crate - core indexing engine
 │   │   └── src/
-│   │       ├── base/           # Core types: schema, value, spec, json_schema
-│   │       ├── builder/        # Flow/pipeline builder logic
-│   │       ├── execution/      # Runtime execution: evaluator, indexer, live_updater
-│   │       ├── llm/            # LLM integration
-│   │       ├── ops/            # Operations: sources, targets, functions
-│   │       ├── py/             # Python bindings (PyO3)
-│   │       ├── service/        # Service layer
-│   │       └── setup/          # Setup and configuration
-│   ├── py_utils/               # Python-Rust utility helpers
-│   └── utils/                  # General utilities: error handling, batching, etc.
-│
-├── python/
-│   └── cocoindex/              # Python package
-│       ├── __init__.py         # Package entry point
-│       ├── _engine.abi3.so     # Compiled Rust extension (generated)
-│       ├── cli.py              # CLI commands (cocoindex CLI)
-│       ├── flow.py             # Flow definition API
-│       ├── op.py               # Operation definitions
-│       ├── engine_*.py         # Engine types, values, objects
-│       ├── functions/          # Built-in functions
-│       ├── sources/            # Data source connectors
-│       ├── targets/            # Output target connectors
-│       └── tests/              # Python tests
-│
-├── examples/                   # Example applications
-├── docs/                       # Documentation
-└── dev/                        # Development utilities
+│   │       ├── base/       # Core types: schema, value, spec, json_schema
+│   │       ├── builder/    # Flow/pipeline builder logic
+│   │       ├── execution/  # Runtime execution: evaluator, indexer
+│   │       ├── llm/        # LLM integration
+│   │       ├── ops/        # Operations: sources, targets, functions
+│   │       ├── service/    # Service layer
+│   │       └── setup/      # Setup and configuration
+│   ├── recoco_utils/       # General utilities
+│   └── recoco_extra_text/  # Text processing utilities
+├── examples/               # Rust examples
+├── Cargo.toml              # Workspace manifest
+└── README.md
 ```
 
 ## Key Concepts
 
-- **CocoIndex** is an data processing framework that maintains derived data from source data incrementally
-- The core engine is written in Rust for performance, with Python bindings via PyO3
+- **ReCoco** is a pure Rust fork of CocoIndex
 - **Flows** define data transformation pipelines from sources to targets
 - **Operations** (ops) include sources, functions, and targets
-- The system supports incremental updates - only reprocessing changed data
+- **Features** are used to gate heavy dependencies (s3, postgres, etc.)

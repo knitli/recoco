@@ -1,30 +1,29 @@
 [workspace]
-members = ["rust/*"]
+members = ["crates/*"]
 resolver = "2"
 
 [workspace.package]
-version = "999.0.0"
+version = "0.1.0"
 edition = "2024"
 rust-version = "1.89"
 license = "Apache-2.0"
+authors = ["CocoIndex Contributors"]
+description = "A modular, high-performance ETL and data transformation library."
+repository = "https://github.com/cocoindex-io/recoco"
+keywords = ["etl", "data-processing", "pipeline", "ai", "rust"]
+categories = ["data-structures", "database", "science"]
+exclude = ["examples/*", "tests/*"]
 
 [workspace.dependencies]
-pyo3 = { version = "0.27.1", features = [
-    "abi3-py311",
-    "auto-initialize",
-    "chrono",
-    "uuid",
-] }
-pythonize = "0.27.0"
-pyo3-async-runtimes = { version = "0.27.0", features = ["tokio-runtime"] }
-numpy = "0.27.0"
+recoco_utils = { path = "crates/recoco_utils" }
+recoco_extra_text = { path = "crates/recoco_extra_text" }
 
 anyhow = { version = "1.0.100", features = ["std"] }
 async-trait = "0.1.89"
 axum = "0.8.7"
 axum-extra = { version = "0.10.3", features = ["query"] }
 base64 = "0.22.1"
-chrono = "0.4.42"
+chrono = { version = "0.4.42", features = ["serde"] }
 config = "0.15.19"
 const_format = "0.2.35"
 futures = "0.3.31"
@@ -73,6 +72,7 @@ unicase = "2.8.1"
 google-drive3 = "6.0.0"
 hyper-util = "0.1.18"
 hyper-rustls = { version = "0.27.7" }
+http = "1.2"
 yup-oauth2 = "12.1.0"
 rustls = { version = "0.23.35" }
 http-body-util = "0.1.3"

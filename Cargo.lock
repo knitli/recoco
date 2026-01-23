@@ -1173,166 +1173,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cocoindex"
-version = "999.0.0"
-dependencies = [
- "anyhow",
- "async-openai",
- "async-stream",
- "async-trait",
- "aws-config",
- "aws-sdk-s3",
- "aws-sdk-sqs",
- "axum 0.8.7",
- "axum-extra",
- "azure_core",
- "azure_identity",
- "azure_storage",
- "azure_storage_blobs",
- "base64 0.22.1",
- "blake2",
- "bytes",
- "chrono",
- "cocoindex_extra_text",
- "cocoindex_py_utils",
- "cocoindex_utils",
- "config",
- "const_format",
- "derivative",
- "encoding_rs",
- "expect-test",
- "futures",
- "globset",
- "google-cloud-aiplatform-v1",
- "google-cloud-gax",
- "google-drive3",
- "hex",
- "http-body-util",
- "hyper-rustls 0.27.7",
- "hyper-util",
- "indenter",
- "indexmap 2.12.1",
- "indicatif",
- "indoc",
- "infer 0.19.0",
- "itertools 0.14.0",
- "json5",
- "log",
- "neo4rs",
- "numpy",
- "owo-colors",
- "pgvector",
- "phf 0.12.1",
- "pyo3",
- "pyo3-async-runtimes",
- "pythonize",
- "qdrant-client",
- "rand 0.9.2",
- "redis",
- "regex",
- "reqwest",
- "rustls 0.23.35",
- "schemars 0.8.22",
- "serde",
- "serde_json",
- "serde_path_to_error",
- "serde_with",
- "sqlx",
- "time",
- "tokio",
- "tokio-stream",
- "tokio-util",
- "tower 0.5.2",
- "tower-http",
- "tracing",
- "tracing-subscriber",
- "unicase",
- "urlencoding",
- "uuid",
- "yaml-rust2",
- "yup-oauth2 12.1.0",
-]
-
-[[package]]
-name = "cocoindex_extra_text"
-version = "999.0.0"
-dependencies = [
- "regex",
- "tree-sitter",
- "tree-sitter-c",
- "tree-sitter-c-sharp",
- "tree-sitter-cpp",
- "tree-sitter-css",
- "tree-sitter-fortran",
- "tree-sitter-go",
- "tree-sitter-html",
- "tree-sitter-java",
- "tree-sitter-javascript",
- "tree-sitter-json",
- "tree-sitter-kotlin-ng",
- "tree-sitter-language",
- "tree-sitter-md",
- "tree-sitter-pascal",
- "tree-sitter-php",
- "tree-sitter-python",
- "tree-sitter-r",
- "tree-sitter-ruby",
- "tree-sitter-rust",
- "tree-sitter-scala",
- "tree-sitter-sequel",
- "tree-sitter-solidity",
- "tree-sitter-swift",
- "tree-sitter-toml-ng",
- "tree-sitter-typescript",
- "tree-sitter-xml",
- "tree-sitter-yaml",
- "unicase",
-]
-
-[[package]]
-name = "cocoindex_py_utils"
-version = "999.0.0"
-dependencies = [
- "anyhow",
- "cocoindex_utils",
- "futures",
- "pyo3",
- "pyo3-async-runtimes",
- "pythonize",
- "serde",
- "tracing",
-]
-
-[[package]]
-name = "cocoindex_utils"
-version = "999.0.0"
-dependencies = [
- "anyhow",
- "async-openai",
- "async-trait",
- "axum 0.8.7",
- "base64 0.22.1",
- "blake2",
- "encoding_rs",
- "futures",
- "hex",
- "indenter",
- "indexmap 2.12.1",
- "itertools 0.14.0",
- "neo4rs",
- "rand 0.9.2",
- "reqwest",
- "serde",
- "serde_json",
- "serde_path_to_error",
- "sqlx",
- "tokio",
- "tokio-util",
- "tracing",
- "yaml-rust2",
-]
-
-[[package]]
 name = "combine"
 version = "4.6.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3210,16 +3050,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47e1ffaa40ddd1f3ed91f717a33c8c0ee23fff369e3aa8772b9605cc1d22f4c3"
 
 [[package]]
-name = "matrixmultiply"
-version = "0.3.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a06de3016e9fae57a36fd14dba131fccf49f74b40b7fbdb472f96e361ec71a08"
-dependencies = [
- "autocfg",
- "rawpointer",
-]
-
-[[package]]
 name = "md-5"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3234,15 +3064,6 @@ name = "memchr"
 version = "2.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
-
-[[package]]
-name = "memoffset"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
-dependencies = [
- "autocfg",
-]
 
 [[package]]
 name = "mime"
@@ -3284,21 +3105,6 @@ dependencies = [
  "libc",
  "wasi 0.11.1+wasi-snapshot-preview1",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "ndarray"
-version = "0.16.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "882ed72dce9365842bf196bdeedf5055305f11fc8c03dee7bb0194a6cad34841"
-dependencies = [
- "matrixmultiply",
- "num-complex",
- "num-integer",
- "num-traits",
- "portable-atomic",
- "portable-atomic-util",
- "rawpointer",
 ]
 
 [[package]]
@@ -3386,15 +3192,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num-complex"
-version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73f88a1307638156682bada9d7604135552957b7818057dcef22705b4d509495"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
 name = "num-conv"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3454,22 +3251,6 @@ name = "number_prefix"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
-
-[[package]]
-name = "numpy"
-version = "0.27.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fa24ffc88cf9d43f7269d6b6a0d0a00010924a8cc90604a21ef9c433b66998d"
-dependencies = [
- "libc",
- "ndarray",
- "num-complex",
- "num-integer",
- "num-traits",
- "pyo3",
- "pyo3-build-config",
- "rustc-hash",
-]
 
 [[package]]
 name = "oauth2"
@@ -3836,15 +3617,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f84267b20a16ea918e43c6a88433c2d54fa145c92a811b5b047ccbe153674483"
 
 [[package]]
-name = "portable-atomic-util"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8a2f0d8d040d7848a709caf78912debcc3f33ee4b3cac47d73d1e1069e83507"
-dependencies = [
- "portable-atomic",
-]
-
-[[package]]
 name = "potential_utf"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3917,92 +3689,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52c2c1bf36ddb1a1c396b3601a3cec27c2462e45f07c386894ec3ccf5332bd16"
 dependencies = [
  "prost",
-]
-
-[[package]]
-name = "pyo3"
-version = "0.27.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37a6df7eab65fc7bee654a421404947e10a0f7085b6951bf2ea395f4659fb0cf"
-dependencies = [
- "chrono",
- "indoc",
- "libc",
- "memoffset",
- "once_cell",
- "portable-atomic",
- "pyo3-build-config",
- "pyo3-ffi",
- "pyo3-macros",
- "unindent",
- "uuid",
-]
-
-[[package]]
-name = "pyo3-async-runtimes"
-version = "0.27.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57ddb5b570751e93cc6777e81fee8087e59cd53b5043292f2a6d59d5bd80fdfd"
-dependencies = [
- "futures",
- "once_cell",
- "pin-project-lite",
- "pyo3",
- "tokio",
-]
-
-[[package]]
-name = "pyo3-build-config"
-version = "0.27.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f77d387774f6f6eec64a004eac0ed525aab7fa1966d94b42f743797b3e395afb"
-dependencies = [
- "target-lexicon",
-]
-
-[[package]]
-name = "pyo3-ffi"
-version = "0.27.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2dd13844a4242793e02df3e2ec093f540d948299a6a77ea9ce7afd8623f542be"
-dependencies = [
- "libc",
- "pyo3-build-config",
-]
-
-[[package]]
-name = "pyo3-macros"
-version = "0.27.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eaf8f9f1108270b90d3676b8679586385430e5c0bb78bb5f043f95499c821a71"
-dependencies = [
- "proc-macro2",
- "pyo3-macros-backend",
- "quote",
- "syn 2.0.110",
-]
-
-[[package]]
-name = "pyo3-macros-backend"
-version = "0.27.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70a3b2274450ba5288bc9b8c1b69ff569d1d61189d4bff38f8d22e03d17f932b"
-dependencies = [
- "heck",
- "proc-macro2",
- "pyo3-build-config",
- "quote",
- "syn 2.0.110",
-]
-
-[[package]]
-name = "pythonize"
-version = "0.27.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3a8f29db331e28c332c63496cfcbb822aca3d7320bc08b655d7fd0c29c50ede"
-dependencies = [
- "pyo3",
- "serde",
 ]
 
 [[package]]
@@ -4208,10 +3894,151 @@ dependencies = [
 ]
 
 [[package]]
-name = "rawpointer"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60a357793950651c4ed0f3f52338f53b2f809f32d83a07f72909fa13e4c6c1e3"
+name = "recoco"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-openai",
+ "async-stream",
+ "async-trait",
+ "aws-config",
+ "aws-sdk-s3",
+ "aws-sdk-sqs",
+ "axum 0.8.7",
+ "axum-extra",
+ "azure_core",
+ "azure_identity",
+ "azure_storage",
+ "azure_storage_blobs",
+ "base64 0.22.1",
+ "blake2",
+ "bytes",
+ "chrono",
+ "config",
+ "const_format",
+ "derivative",
+ "encoding_rs",
+ "expect-test",
+ "futures",
+ "globset",
+ "google-cloud-aiplatform-v1",
+ "google-cloud-gax",
+ "google-drive3",
+ "hex",
+ "http-body-util",
+ "hyper-rustls 0.27.7",
+ "hyper-util",
+ "indenter",
+ "indexmap 2.12.1",
+ "indicatif",
+ "indoc",
+ "infer 0.19.0",
+ "itertools 0.14.0",
+ "json5",
+ "log",
+ "neo4rs",
+ "owo-colors",
+ "pgvector",
+ "phf 0.12.1",
+ "qdrant-client",
+ "rand 0.9.2",
+ "recoco_extra_text",
+ "recoco_utils",
+ "redis",
+ "regex",
+ "reqwest",
+ "rustls 0.23.35",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "serde_with",
+ "sqlx",
+ "time",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "tower 0.5.2",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
+ "unicase",
+ "urlencoding",
+ "uuid",
+ "yaml-rust2",
+ "yup-oauth2 12.1.0",
+]
+
+[[package]]
+name = "recoco_extra_text"
+version = "0.1.0"
+dependencies = [
+ "regex",
+ "tree-sitter",
+ "tree-sitter-c",
+ "tree-sitter-c-sharp",
+ "tree-sitter-cpp",
+ "tree-sitter-css",
+ "tree-sitter-fortran",
+ "tree-sitter-go",
+ "tree-sitter-html",
+ "tree-sitter-java",
+ "tree-sitter-javascript",
+ "tree-sitter-json",
+ "tree-sitter-kotlin-ng",
+ "tree-sitter-language",
+ "tree-sitter-md",
+ "tree-sitter-pascal",
+ "tree-sitter-php",
+ "tree-sitter-python",
+ "tree-sitter-r",
+ "tree-sitter-ruby",
+ "tree-sitter-rust",
+ "tree-sitter-scala",
+ "tree-sitter-sequel",
+ "tree-sitter-solidity",
+ "tree-sitter-swift",
+ "tree-sitter-toml-ng",
+ "tree-sitter-typescript",
+ "tree-sitter-xml",
+ "tree-sitter-yaml",
+ "unicase",
+]
+
+[[package]]
+name = "recoco_utils"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-openai",
+ "async-trait",
+ "axum 0.8.7",
+ "base64 0.22.1",
+ "blake2",
+ "chrono",
+ "encoding_rs",
+ "futures",
+ "globset",
+ "hex",
+ "http 1.3.1",
+ "indenter",
+ "indexmap 2.12.1",
+ "indicatif",
+ "itertools 0.14.0",
+ "neo4rs",
+ "rand 0.9.2",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "sqlx",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "uuid",
+ "yaml-rust2",
+]
 
 [[package]]
 name = "redis"
@@ -5309,12 +5136,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "target-lexicon"
-version = "0.13.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e502f78cdbb8ba4718f566c418c52bc729126ffd16baee5baa718cf25dd5a69a"
-
-[[package]]
 name = "thiserror"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6053,12 +5874,6 @@ name = "unicode-xid"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
-
-[[package]]
-name = "unindent"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7264e107f553ccae879d21fbea1d6724ac785e8c3bfc762137959b5802826ef3"
 
 [[package]]
 name = "untrusted"

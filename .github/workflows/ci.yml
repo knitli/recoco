@@ -1,0 +1,59 @@
+name: ReCoco CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        features: 
+          - ""  # Default
+          - "full"
+          - "all-sources"
+          - "all-targets"
+          - "all-functions"
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
+      
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2
+      
+    - name: Build
+      run: cargo build --verbose --features "${{ matrix.features }}"
+      
+    - name: Run tests
+      run: cargo test --verbose --features "${{ matrix.features }}"
+
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        components: clippy, rustfmt
+        
+    - name: Rust Cache
+      uses: Swatinem/rust-cache@v2
+
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+      
+    - name: Clippy
+      run: cargo clippy --all-features -- -D warnings

@@ -1,0 +1,50 @@
+[package]
+name = "recoco_utils"
+version = { workspace = true }
+edition = { workspace = true }
+rust-version = { workspace = true }
+license = { workspace = true }
+authors = { workspace = true }
+description = "Common utilities for ReCoco."
+repository = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+tracing = { workspace = true }
+axum = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+base64 = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+futures = { workspace = true }
+blake2 = { workspace = true }
+itertools = { workspace = true }
+indexmap = { workspace = true }
+hex = { workspace = true }
+serde_path_to_error = { workspace = true }
+rand = { workspace = true }
+indenter = { workspace = true }
+globset = { workspace = true }
+indicatif = { workspace = true }
+regex = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+http = { workspace = true }
+
+encoding_rs = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
+async-openai = { workspace = true, optional = true }
+neo4rs = { workspace = true, optional = true }
+sqlx = { workspace = true, optional = true }
+yaml-rust2 = { workspace = true, optional = true }
+
+[features]
+default = []
+reqwest = ["dep:reqwest"]
+openai = ["dep:async-openai", "reqwest"]
+neo4rs = ["dep:neo4rs"]
+sqlx = ["dep:sqlx"]
+yaml = ["dep:yaml-rust2"]
+bytes_decode = ["dep:encoding_rs"]
