@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+# SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import os
 import subprocess
 import sys
@@ -21,7 +26,8 @@ REPLACEMENTS = [
     # Add more specific replacements here if needed
 ]
 
-def run_cmd(cmd, cwd=None, check=True):
+def run_cmd(cmd: str, cwd: Path | None = None, check: bool = True) -> None:
+    """Run a shell command in the specified directory."""
     try:
         subprocess.run(cmd, cwd=cwd, check=check, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     except subprocess.CalledProcessError as e:
@@ -29,7 +35,8 @@ def run_cmd(cmd, cwd=None, check=True):
         print(f"Stderr: {e.stderr.decode()}")
         raise
 
-def setup_upstream():
+def setup_upstream() -> None:
+    """Set up the upstream repository in the cache directory."""
     if not CACHE_DIR.exists():
         print(f"Cloning upstream from {UPSTREAM_URL}...")
         try:
@@ -42,26 +49,27 @@ def setup_upstream():
         run_cmd("git fetch origin", cwd=CACHE_DIR)
         run_cmd("git reset --hard origin/main", cwd=CACHE_DIR)
 
-def apply_replacements(content):
+def apply_replacements(content: str) -> str:
+    """Apply upstream-to-local replacements to the given content."""
     for pattern, replacement in REPLACEMENTS:
         content = re.sub(pattern, replacement, content)
     return content
 
-def get_file_status(upstream_file, local_file):
+def get_file_status(upstream_file: Path, local_file: Path) -> str:
+    """Determine the status of a local file compared to the upstream file."""
     if not local_file.exists():
         return "NEW"
-    
+
     # Read and transform upstream content for comparison
     upstream_content = upstream_file.read_text()
     transformed_upstream = apply_replacements(upstream_content)
-    
-    local_content = local_file.read_text()
-    
-    if transformed_upstream == local_content:
-        return "IDENTICAL"
-    return "MODIFIED"
 
-def scan_ops():
+    local_content = local_file.read_text()
+
+    return "IDENTICAL" if transformed_upstream == local_content else "MODIFIED"
+
+def scan_ops() -> list[dict]:
+    """Scan the upstream ops directory and compare with local ops directory."""
     upstream_root = CACHE_DIR / UPSTREAM_SUBPATH
     changes = []
     
@@ -89,7 +97,8 @@ def scan_ops():
                 })
     return changes
 
-def apply_change(change):
+def apply_change(change: dict) -> None:
+    """Apply a single change from the upstream to the local ops directory."""
     upstream_path = change["upstream_path"]
     local_path = change["local_path"]
     
@@ -101,7 +110,8 @@ def apply_change(change):
     local_path.parent.mkdir(parents=True, exist_ok=True)
     local_path.write_text(transformed_content)
 
-def main():
+def main() -> None:
+    """Main entry point for syncing upstream ops with local ops."""
     if len(sys.argv) > 1 and sys.argv[1] == "clean":
         if CACHE_DIR.exists():
             shutil.rmtree(CACHE_DIR)

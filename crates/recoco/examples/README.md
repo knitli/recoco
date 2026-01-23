@@ -1,3 +1,12 @@
+<!--
+SPDX-FileCopyrightText: 2025-2026 CocoIndex.io (upstream)
+SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+SPDX-FileContributor: CocoIndex Contributors
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # ReCoco Examples
 
 This directory contains examples demonstrating how to use ReCoco as a Rust library.

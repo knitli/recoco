@@ -1,3 +1,10 @@
+# SPDX-FileCopyrightText: 2025-2026 CocoIndex.io (upstream)
+# SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+# SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+# SPDX-FileContributor: CocoIndex Contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
 name: Release
 
 on:
@@ -20,7 +27,7 @@ jobs:
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
-        
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
 
@@ -38,14 +45,14 @@ jobs:
         with:
           config: cliff.toml
           args: --verbose --latest --strip header
-          
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           body: ${{ steps.changelog.outputs.content }}
           files: |
             CHANGELOG.md
-      
+
       - name: Publish recoco_utils
         run: cargo publish -p recoco_utils
         env:

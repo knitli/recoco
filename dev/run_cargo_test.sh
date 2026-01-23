@@ -1,4 +1,12 @@
 #!/usr/bin/env bash
+
+# SPDX-FileCopyrightText: 2025-2026 CocoIndex.io (upstream)
+# SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+# SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+# SPDX-FileContributor: CocoIndex Contributors
+#
+# SPDX-License-Identifier: Apache-2.0
+
 set -euo pipefail
 
 # Always run from repo root (important for cargo workspace + relative paths)

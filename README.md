@@ -1,6 +1,23 @@
+<!--
+SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # ReCoco
 
-**ReCoco** (short for *Re-CocoIndex*) is a pure Rust fork of [CocoIndex](https://github.com/cocoindex/cocoindex), a high-performance, incremental ETL and data processing framework.
+**ReCoco** is a pure Rust fork of the excellent [CocoIndex](https://github.com/cocoindex-io/cocoindex), a high-performance, incremental ETL and data processing framework.
+
+## Why Fork?
+
+I decided to create a Rust-only fork of CocoIndex for a couple reasons:
+
+1. **CocoIndex is not a Rust library.**  CocoIndex is written in Rust, but it does not expose a Rust API and its packaging, documentation, and examples are only focused on *Python*. It exposes a more limited API through its Rust extensions. It's not even released on crates.io.
+
+2. **CocoIndex is heavy.** CocoIndex has several very heavy dependencies that very few deployments would need to use all of, including Google/AWS/Azure components, Qdrant/Postgres/Neo4j, and more. 
+
+CocoIndex itself is written in Rust, but does not expose a Rust API and is not distributed on crates.io. It's designed as a performant *python tool* through its Python language extensions. 
 
 Unlike the original CocoIndex which is designed as a Python library with a private Rust core, ReCoco is a **Rust-first library** designed for building robust data pipelines in Rust. It features an "a-la-carte" dependency model, allowing you to only pull in the connectors you need, keeping compile times and binary sizes minimal.
 
@@ -123,4 +140,4 @@ We aim to maintain compatibility with CocoIndex's core dataflow engine to allow 
 
 ## License
 
-Apache License 2.0
+[Apache License 2.0](LICENSE); see [NOTICE](NOTICE)

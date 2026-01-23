@@ -1,23 +1,28 @@
+# SPDX-FileCopyrightText: 2025-2026 CocoIndex.io (upstream)
+# SPDX-FileContributor: CocoIndex Contributors
+#
+# SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+# SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+#
+# SPDX-License-Identifier: Apache-2.0
+#
 [package]
 name = "recoco_extra_text"
 version = { workspace = true }
+authors = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
-license = { workspace = true }
-authors = { workspace = true }
 description = "Text processing utilities for ReCoco."
 repository = { workspace = true }
+license = { workspace = true }
 
 [dependencies]
 regex = { workspace = true }
-unicase = { workspace = true }
-
 tree-sitter = "0.25.10"
-tree-sitter-language = "0.1.5"
 # Per language tree-sitter parsers
 tree-sitter-c = "0.24.1"
-tree-sitter-cpp = "0.23.4"
 tree-sitter-c-sharp = "0.23.1"
+tree-sitter-cpp = "0.23.4"
 tree-sitter-css = "0.23.2"
 tree-sitter-fortran = "0.5.1"
 tree-sitter-go = "0.23.4"
@@ -27,6 +32,7 @@ tree-sitter-javascript = "0.23.1"
 tree-sitter-json = "0.24.8"
 # The other more popular crate tree-sitter-kotlin requires tree-sitter < 0.23 for now
 tree-sitter-kotlin-ng = "1.1.0"
+tree-sitter-language = "0.1.5"
 tree-sitter-md = "0.5.1"
 tree-sitter-pascal = "0.10.0"
 tree-sitter-php = "0.23.11"
@@ -36,11 +42,12 @@ tree-sitter-ruby = "0.23.1"
 tree-sitter-rust = "0.24.0"
 tree-sitter-scala = "0.24.0"
 tree-sitter-sequel = "0.3.11"
+tree-sitter-solidity = "1.2.13"
 tree-sitter-swift = "0.7.1"
 tree-sitter-toml-ng = "0.7.0"
 tree-sitter-typescript = "0.23.2"
 tree-sitter-xml = "0.7.0"
 tree-sitter-yaml = "0.7.2"
-tree-sitter-solidity = "1.2.13"
+unicase = { workspace = true }
 
 [dev-dependencies]

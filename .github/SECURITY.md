@@ -1,8 +1,15 @@
+<!--
+SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Security Policy
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Recoco, please report it to our security team:
+If you discover a security vulnerability in ReCoco, please report it to our security team:
 
 **Email:** [adam@knit.li](mailto:adam@knit.li)
 
@@ -17,7 +24,7 @@ We will acknowledge your report promptly and work with you to resolve the issue.
 
 ## Scope
 
-This policy covers security issues related to Recoco open-source software.
+This policy covers security issues related to ReCoco open-source software.
 
 ## Response & Disclosure
 
@@ -26,4 +33,4 @@ This policy covers security issues related to Recoco open-source software.
 
 ---
 
-Thank you for helping us keep Recoco secure!
+Thank you for helping us keep ReCoco secure!

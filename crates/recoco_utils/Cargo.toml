@@ -1,50 +1,56 @@
+# SPDX-FileCopyrightText: 2025-2026 CocoIndex.io (upstream)
+# SPDX-FileContributor: CocoIndex Contributors
+#
+# SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+# SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+#
+# SPDX-License-Identifier: Apache-2.0
 [package]
 name = "recoco_utils"
 version = { workspace = true }
+authors = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
-license = { workspace = true }
-authors = { workspace = true }
 description = "Common utilities for ReCoco."
 repository = { workspace = true }
+license = { workspace = true }
 
 [dependencies]
 anyhow = { workspace = true }
+async-openai = { workspace = true, optional = true }
 async-trait = { workspace = true }
-tracing = { workspace = true }
 axum = { workspace = true }
+base64 = { workspace = true }
+blake2 = { workspace = true }
+chrono = { workspace = true }
+encoding_rs = { workspace = true, optional = true }
+futures = { workspace = true }
+globset = { workspace = true }
+hex = { workspace = true }
+http = { workspace = true }
+indenter = { workspace = true }
+indexmap = { workspace = true }
+indicatif = { workspace = true }
+itertools = { workspace = true }
+neo4rs = { workspace = true, optional = true }
+rand = { workspace = true }
+regex = { workspace = true }
+reqwest = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-base64 = { workspace = true }
+serde_path_to_error = { workspace = true }
+sqlx = { workspace = true, optional = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
-futures = { workspace = true }
-blake2 = { workspace = true }
-itertools = { workspace = true }
-indexmap = { workspace = true }
-hex = { workspace = true }
-serde_path_to_error = { workspace = true }
-rand = { workspace = true }
-indenter = { workspace = true }
-globset = { workspace = true }
-indicatif = { workspace = true }
-regex = { workspace = true }
-chrono = { workspace = true }
+tracing = { workspace = true }
 uuid = { workspace = true }
-http = { workspace = true }
-
-encoding_rs = { workspace = true, optional = true }
-reqwest = { workspace = true, optional = true }
-async-openai = { workspace = true, optional = true }
-neo4rs = { workspace = true, optional = true }
-sqlx = { workspace = true, optional = true }
 yaml-rust2 = { workspace = true, optional = true }
 
 [features]
 default = []
-reqwest = ["dep:reqwest"]
-openai = ["dep:async-openai", "reqwest"]
+bytes_decode = ["dep:encoding_rs"]
 neo4rs = ["dep:neo4rs"]
+openai = ["dep:async-openai", "reqwest"]
+reqwest = ["dep:reqwest"]
 sqlx = ["dep:sqlx"]
 yaml = ["dep:yaml-rust2"]
-bytes_decode = ["dep:encoding_rs"]

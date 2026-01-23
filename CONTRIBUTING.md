@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Contributing
 
 We love contributions! Here is how to get started.
@@ -35,4 +42,4 @@ cargo fmt
 - **Keep it small**: Focus on one logical change per pull request.
 - **Test your changes**: Run the tests above before submitting.
 
-Thank you for helping improve Recoco!
+Thank you for helping improve ReCoco!
