@@ -55,7 +55,6 @@ pub struct FlowLiveUpdaterOptions {
     pub print_stats: bool,
 }
 
-const PROGRESS_BAR_REPORT_INTERVAL: std::time::Duration = std::time::Duration::from_secs(1);
 const TRACE_REPORT_INTERVAL: std::time::Duration = std::time::Duration::from_secs(5);
 
 struct SharedAckFn<AckAsyncFn: AsyncFnOnce() -> Result<()>> {
@@ -111,10 +110,6 @@ impl Drop for SourceUpdateTask {
 }
 
 impl SourceUpdateTask {
-    fn maybe_new_progress_bar(&self) -> Result<()> {
-        Ok(())
-    }
-
     #[instrument(name = "source_update_task.run", skip_all, fields(flow_name = %self.flow.flow_instance.name, source_name = %self.import_op().name))]
     async fn run(self) -> Result<()> {
         let source_indexing_context = self
