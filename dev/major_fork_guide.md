@@ -3,8 +3,8 @@
 ## Clone and Clean
 - Clone the upstream repository
 - move ./rust/core/ to ./crates/recoco
-- move ./rust/extra_text/ to ./crates/recoco_splitters
-- move ./rust/utils/ to ./crates/recoco_utils
+- move ./rust/extra_text/ to ./crates/recoco0splitters
+- move ./rust/utils/ to ./crates/recoco-utils
 - in ReCoco repo:
   - delete ./crates, but preserve any sources/functions/targets not in the CocoIndex pull
   - Retain the `builder` module and files, moving them to a temporary location
@@ -20,10 +20,11 @@
 - Updates:
   - Copy over any sources/functions/targets from ReCoco that aren't in the current repository
   - Add feature gates to all crates aligned with the Cargo.tomls you just copied over
-  - Replace use of `blake2` with `blake3`, replace use of `derivative` with `derive_where`
+  - Replace use of `blake2` with `blake3`, replace use of `derivative` with `derive_where`, migrate `schemars` < 1.0 to `schemars` 1.2+
      - Blake3 has a simpler API and is **much** faster than Blake2; you can usually just replace the construction, the update logic is the same but make sure to use references if not already that way; currently the only use is in `recoco_utils::fingerprint`
      - If Fingerprint's functions aren't marked with `#[inline(always)]`, add the attribute to improve performance -- it's a hotpath
      - derive_where is actively maintained, unlike derivative, and is essentially a drop-in replacement; replace `Derivative` with `derive_where` or remove the import and use `derive_where::derive_where`
+     - Schemars adjustments are more involved; the API changed significantly. Research each change. (See below for a recap of what we changed on the original fork)
   - Remove use of `indicatif` and `owo_colors` from crates (CLI dependencies)
   - Update references in the crates to reflect the new structure and dependencies
   - Identify any new dependencies not already in the current repository and add them to the appropriate Cargo.toml files; be sure to evaluate their necessity and impact on the project and feature-gate if appropriate
@@ -40,3 +41,31 @@
   - Ensure git cliff increments a major version.
   - Verify that the changelog has been updated correctly and reflects the major version change.
   - merge and release.
+
+
+  ---
+  
+  ### Schemars Changes from 0.8 to 1.2+
+
+`json_schema.rs`
+
+- Changed imports from `schemars::schema::{...}` to `schemars::Schema`
+- Rewrote `JsonSchemaBuilder` methods to construct JSON directly using `serde_json`
+- Updated `BuildJsonSchemaOutput.schema` from `SchemaObject` to `Schema`
+- Updated test helper `schema_to_json` signature
+- Updated `test_description_concatenation` to use JSON access methods
+
+`llm/mod.rs`
+
+- Changed import to `schemars::Schema`
+- Updated `OutputFormat::JsonSchema.schema` from `Cow<'a, SchemaObject>` to `Cow<'a, Schema>`
+
+`llm/ollama.rs`
+
+- Changed import to `schemars::Schema`
+- Updated `OllamaFormat::JsonSchema` from `&'a SchemaObject` to `&'a Schema`
+
+`ops/functions/extract_by_llm.rs`
+
+- Changed import to `schemars::Schema`
+- Updated `Executor.output_json_schema` from `SchemaObject` to `Schema`

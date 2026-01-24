@@ -13,7 +13,7 @@
 use crate::prelude::*;
 
 use super::{LlmEmbeddingClient, LlmGenerationClient};
-use schemars::schema::SchemaObject;
+use schemars::Schema;
 use serde_with::{base64::Base64, serde_as};
 
 fn get_embedding_dimension(model: &str) -> Option<u32> {
@@ -48,7 +48,7 @@ pub struct Client {
 #[derive(Debug, Serialize)]
 enum OllamaFormat<'a> {
     #[serde(untagged)]
-    JsonSchema(&'a SchemaObject),
+    JsonSchema(&'a Schema),
 }
 
 #[serde_as]

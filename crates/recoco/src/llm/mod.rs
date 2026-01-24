@@ -14,7 +14,7 @@ use crate::prelude::*;
 
 use crate::base::json_schema::ToJsonSchemaOptions;
 use infer::Infer;
-use schemars::schema::SchemaObject;
+use schemars::Schema;
 use std::borrow::Cow;
 
 static INFER: LazyLock<Infer> = LazyLock::new(Infer::new);
@@ -73,7 +73,7 @@ pub struct LlmSpec {
 pub enum OutputFormat<'a> {
     JsonSchema {
         name: Cow<'a, str>,
-        schema: Cow<'a, SchemaObject>,
+        schema: Cow<'a, Schema>,
     },
 }
 

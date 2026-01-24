@@ -17,7 +17,7 @@ use crate::llm::{
 use crate::ops::sdk::*;
 use crate::prelude::*;
 use base::json_schema::build_json_schema;
-use schemars::schema::SchemaObject;
+use schemars::Schema;
 use std::borrow::Cow;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,7 +36,7 @@ struct Executor {
     args: Args,
     client: Box<dyn LlmGenerationClient>,
     model: String,
-    output_json_schema: SchemaObject,
+    output_json_schema: Schema,
     system_prompt: String,
     value_extractor: base::json_schema::ValueExtractor,
 }
