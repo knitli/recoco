@@ -76,15 +76,14 @@ impl SourceExecutor for Executor {
 
                     // For symlinks, if the target doesn't exist, log and skip.
                     let file_type = entry.file_type().await?;
-                    if file_type.is_symlink() {
-                        if let Err(e) = ensure_metadata(&path, &mut metadata).await {
+                    if file_type.is_symlink()
+                        && let Err(e) = ensure_metadata(&path, &mut metadata).await {
                             if e.kind() == std::io::ErrorKind::NotFound {
                                 warn!("Skipped broken symlink: {}", path.display());
                                 continue;
                             }
                             Err(e)?;
                         }
-                    }
                     let is_dir = if file_type.is_dir() {
                         true
                     } else if file_type.is_symlink() {
@@ -145,16 +144,15 @@ impl SourceExecutor for Executor {
         let path = self.root_path.join(path);
         let mut metadata: Option<Metadata> = None;
         // Check file size limit
-        if let Some(max_size) = self.max_file_size {
-            if let Ok(metadata) = ensure_metadata(&path, &mut metadata).await {
-                if metadata.len() > max_size as u64 {
-                    return Ok(PartialSourceRowData {
-                        value: Some(SourceValue::NonExistence),
-                        ordinal: Some(Ordinal::unavailable()),
-                        content_version_fp: None,
-                    });
-                }
-            }
+        if let Some(max_size) = self.max_file_size
+            && let Ok(metadata) = ensure_metadata(&path, &mut metadata).await
+            && metadata.len() > max_size as u64
+        {
+            return Ok(PartialSourceRowData {
+                value: Some(SourceValue::NonExistence),
+                ordinal: Some(Ordinal::unavailable()),
+                content_version_fp: None,
+            });
         }
         let ordinal = if options.include_ordinal {
             let metadata = ensure_metadata(&path, &mut metadata).await?;

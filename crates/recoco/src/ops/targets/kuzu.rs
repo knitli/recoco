@@ -94,7 +94,6 @@ impl KuzuThinClient {
         });
         http::request(|| self.reqwest_client.post(&self.query_url).json(&query))
             .await
-            .map_err(Error::from)
             .with_context(|| "Kuzu API error")?;
         Ok(())
     }

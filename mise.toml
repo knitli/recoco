@@ -241,8 +241,12 @@ run = "cargo test -p recoco-splitters"
 # =============================================================================
 
 [tasks.dev]
-description = "Development build with common features"
-run = "cargo build --features function-split,function-json"
+tools.rust = "nightly"
+description = "Development build with common features. Uses cranelift backend for faster compilation."
+run = '''
+rustup component add rustc-codegen-cranelift-preview --toolchain nightly 2>/dev/null || true
+RUSTFLAGS="-Zcodegen-backend=cranelift" cargo +nightly build --workspace
+'''
 
 [tasks.watch]
 description = "Watch and rebuild on changes"

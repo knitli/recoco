@@ -249,11 +249,11 @@ pub async fn stage_changes_for_flow(
             None => StateChange::Delete,
         };
         let mut new_staging_changes = vec![];
-        if let Some(legacy_key) = &update_info.legacy_key {
-            if let Some(legacy_record) = existing_records.remove(legacy_key) {
-                new_staging_changes.extend(legacy_record.staging_changes.0);
-                delete_state(flow_name, legacy_key, &mut *txn).await?;
-            }
+        if let Some(legacy_key) = &update_info.legacy_key
+            && let Some(legacy_record) = existing_records.remove(legacy_key)
+        {
+            new_staging_changes.extend(legacy_record.staging_changes.0);
+            delete_state(flow_name, legacy_key, &mut *txn).await?;
         }
         let (action, existing_staging_changes) = match existing {
             Some(existing) => {

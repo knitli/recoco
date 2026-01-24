@@ -149,7 +149,7 @@ fn parse_iso8601_duration(s: &str, original_input: &str) -> Result<Duration> {
 /// Parses a human-readable duration string into a `chrono::Duration`.
 fn parse_human_readable_duration(s: &str, original_input: &str) -> Result<Duration> {
     let parts: Vec<&str> = s.split_whitespace().collect();
-    if parts.is_empty() || parts.len() % 2 != 0 {
+    if parts.is_empty() || !parts.len().is_multiple_of(2) {
         client_bail!(
             "Invalid human-readable duration format in: {}",
             original_input

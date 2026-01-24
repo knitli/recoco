@@ -90,7 +90,7 @@ Sources → Transforms → Targets
 ```
 
 **Sources** ingest data (files, database rows, cloud storage)
-**Transforms** process data (split, embed, map, filter)
+**Transforms** ('functions') process data (split, embed, map, filter)
 **Targets** persist results (vector DBs, graph DBs, databases)
 
 The engine tracks **data lineage** - when source data changes, only affected downstream computations are re-executed.
@@ -112,7 +112,7 @@ The engine tracks **data lineage** - when source data changes, only affected dow
 - **`base/`** - Core data types (schema, value, spec, json_schema)
 - **`builder/`** - Flow construction API (`FlowBuilder`, analysis, planning)
 - **`execution/`** - Runtime engine (evaluator, memoization, indexing, tracking)
-- **`ops/`** - Operation implementations
+- **`ops/`** - Operation implementationsgit 
   - `sources/` - Data ingestion (local-file, postgres, s3, azure, gdrive)
   - `functions/` - Transforms (split, embed, json, detect-lang, extract-llm)
   - `targets/` - Data persistence (postgres, qdrant, neo4j, kuzu)

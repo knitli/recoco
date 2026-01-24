@@ -343,9 +343,9 @@ fn values_to_payload(
                 }
                 let vector: QdrantVector = match value {
                     Value::Basic(basic_value) => match vector_shape {
-                        VectorShape::Vector(_) => encode_dense_vector(&basic_value)?.into(),
+                        VectorShape::Vector(_) => encode_dense_vector(basic_value)?.into(),
                         VectorShape::MultiVector(_) => {
-                            encode_multi_dense_vector(&basic_value)?.into()
+                            encode_multi_dense_vector(basic_value)?.into()
                         }
                     },
                     _ => {

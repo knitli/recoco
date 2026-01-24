@@ -12,7 +12,6 @@
 
 use crate::fields_value;
 use async_stream::try_stream;
-use azure_core::prelude::NextMarker;
 use azure_identity::{DefaultAzureCredential, TokenCredentialOptions};
 use azure_storage::StorageCredentials;
 use azure_storage_blobs::prelude::*;
@@ -22,6 +21,7 @@ use std::sync::Arc;
 use super::shared::pattern_matcher::PatternMatcher;
 use crate::base::field_attrs;
 use crate::ops::sdk::*;
+use crate::prelude::*;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Spec {
@@ -59,7 +59,7 @@ impl SourceExecutor for Executor {
         _options: &SourceExecutorReadOptions,
     ) -> Result<BoxStream<'async_trait, Result<Vec<PartialSourceRow>>>> {
         let stream = try_stream! {
-            let mut continuation_token: Option<NextMarker> = None;
+            let mut continuation_token = None;
             loop {
                 let mut list_builder = self.client
                     .container_client(&self.container_name)
@@ -142,7 +142,10 @@ impl SourceExecutor for Executor {
                 .client
                 .container_client(&self.container_name)
                 .blob_client(key_str.as_ref());
-            let properties = blob_client.get_properties().await?;
+            let properties = blob_client
+                .get_properties()
+                .await
+                .map_err(Error::internal)?;
             if properties.blob.properties.content_length > max_size as u64 {
                 return Ok(PartialSourceRowData {
                     value: Some(SourceValue::NonExistence),
@@ -161,7 +164,7 @@ impl SourceExecutor for Executor {
         let result = stream.next().await;
 
         let blob_response = match result {
-            Some(response) => response?,
+            Some(response) => response.map_err(Error::internal)?,
             None => {
                 return Ok(PartialSourceRowData {
                     value: Some(SourceValue::NonExistence),
@@ -180,7 +183,11 @@ impl SourceExecutor for Executor {
         };
 
         let value = if options.include_value {
-            let bytes = blob_response.data.collect().await?;
+            let bytes = blob_response
+                .data
+                .collect()
+                .await
+                .map_err(Error::internal)?;
             Some(SourceValue::Existence(if self.binary {
                 fields_value!(bytes)
             } else {
@@ -257,14 +264,15 @@ impl SourceFactoryBase for Factory {
     ) -> Result<Box<dyn SourceExecutor>> {
         let credential = if let Some(sas_token) = spec.sas_token {
             let sas_token = context.auth_registry.get(&sas_token)?;
-            StorageCredentials::sas_token(sas_token)?
+            StorageCredentials::sas_token(sas_token).map_err(Error::internal)?
         } else if let Some(account_access_key) = spec.account_access_key {
             let account_access_key = context.auth_registry.get(&account_access_key)?;
             StorageCredentials::access_key(spec.account_name.clone(), account_access_key)
         } else {
-            let default_credential = Arc::new(DefaultAzureCredential::create(
-                TokenCredentialOptions::default(),
-            )?);
+            let default_credential = Arc::new(
+                DefaultAzureCredential::create(TokenCredentialOptions::default())
+                    .map_err(Error::internal)?,
+            );
             StorageCredentials::token_credential(default_credential)
         };
 

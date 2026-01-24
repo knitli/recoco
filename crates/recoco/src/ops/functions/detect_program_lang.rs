@@ -25,7 +25,7 @@ struct Executor {
 impl SimpleFunctionExecutor for Executor {
     async fn evaluate(&self, input: Vec<value::Value>) -> Result<value::Value> {
         let filename = self.args.filename.value(&input)?.as_str()?;
-        let lang_name = prog_langs::detect_language(&filename)
+        let lang_name = prog_langs::detect_language(filename)
             .map(|name| value::Value::Basic(value::BasicValue::Str(name.into())));
         Ok(lang_name.unwrap_or(value::Value::Null))
     }

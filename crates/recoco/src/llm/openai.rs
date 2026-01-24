@@ -174,7 +174,7 @@ pub(super) fn create_llm_generation_request(
                     json_schema: ResponseFormatJsonSchema {
                         name: name.to_string(),
                         description: None,
-                        schema: Some(serde_json::to_value(&schema)?),
+                        schema: Some(serde_json::to_value(schema)?),
                         strict: Some(true),
                     },
                 })
@@ -262,8 +262,7 @@ where
             },
             &retryable::RetryOptions::default(),
         )
-        .await
-        .map_err(Error::from)?;
+        .await?;
         Ok(super::LlmEmbeddingResponse {
             embeddings: response.data.into_iter().map(|e| e.embedding).collect(),
         })

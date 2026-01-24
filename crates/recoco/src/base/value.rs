@@ -46,6 +46,10 @@ impl RangeValue {
         self.end - self.start
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.start == self.end
+    }
+
     pub fn extract_str<'s>(&self, s: &'s (impl AsRef<str> + ?Sized)) -> &'s str {
         let s = s.as_ref();
         &s[self.start..self.end]
@@ -1319,7 +1323,7 @@ where
                             .into_iter()
                             .map(|v| {
                                 Ok(FieldValues::from_json(v, &s.row.fields)
-                                    .with_context(|| format!("while deserializing UTable row"))?
+                                    .with_context(|| "while deserializing UTable row".to_string())?
                                     .into())
                             })
                             .collect::<Result<Vec<_>>>()?;

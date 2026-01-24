@@ -56,10 +56,10 @@ impl IsRetryable for reqwest::Error {
 #[cfg(feature = "openai")]
 impl IsRetryable for async_openai::error::OpenAIError {
     fn is_retryable(&self) -> bool {
-        match self {
-            async_openai::error::OpenAIError::Reqwest(e) => e.is_retryable(),
-            _ => false,
-        }
+        // The OpenAIError enum has different variants depending on compilation features.
+        // We default to not retryable since we can't reliably check all variants.
+        // Rate limiting is typically indicated by ApiError with specific codes.
+        false
     }
 }
 

@@ -414,7 +414,6 @@ pub async fn update_source_tracking_ordinal(
 ////////////////////////////////////////////////////////////
 /// Access for the source state table
 ////////////////////////////////////////////////////////////
-
 #[allow(dead_code)]
 pub async fn read_source_state(
     source_id: i32,

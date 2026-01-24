@@ -229,7 +229,6 @@ impl<'a, R: Runner + 'static> Drop for BatchKickOffNext<'a, R> {
         match &mut *state {
             BatcherState::Idle => {
                 // Nothing to do, already idle
-                return;
             }
             BatcherState::Busy {
                 pending_batch,

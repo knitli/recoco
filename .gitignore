@@ -34,3 +34,6 @@ examples/**/eval_*
 examples/**/uv.lock
 
 .upstream_cache
+
+.gemini/
+gha-creds-*.json

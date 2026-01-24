@@ -132,7 +132,7 @@ impl Error {
             write!(f, "\nContext:\n")?;
             let mut next_id = 1;
             while let Error::Context { msg, source } = current {
-                write!(f, "  {next_id}: {msg}\n")?;
+                writeln!(f, "  {next_id}: {msg}")?;
                 current = source.inner();
                 next_id += 1;
             }
@@ -274,6 +274,18 @@ impl From<std::fmt::Error> for Error {
     }
 }
 
+impl From<std::string::FromUtf8Error> for Error {
+    fn from(e: std::string::FromUtf8Error) -> Self {
+        Error::Internal(e.into())
+    }
+}
+
+impl From<std::borrow::Cow<'_, str>> for Error {
+    fn from(e: std::borrow::Cow<'_, str>) -> Self {
+        Error::Internal(anyhow::anyhow!("{}", e))
+    }
+}
+
 impl From<tokio::sync::AcquireError> for Error {
     fn from(e: tokio::sync::AcquireError) -> Self {
         Error::Internal(e.into())
@@ -328,6 +340,40 @@ impl From<async_openai::error::OpenAIError> for Error {
     }
 }
 
+#[cfg(feature = "qdrant")]
+impl From<qdrant_client::QdrantError> for Error {
+    fn from(e: qdrant_client::QdrantError) -> Self {
+        Error::Internal(anyhow::Error::msg(e.to_string()))
+    }
+}
+
+#[cfg(feature = "redis")]
+impl From<redis::RedisError> for Error {
+    fn from(e: redis::RedisError) -> Self {
+        Error::Internal(e.into())
+    }
+}
+
+#[cfg(feature = "azure")]
+impl From<azure_storage::Error> for Error {
+    fn from(e: azure_storage::Error) -> Self {
+        Error::Internal(anyhow::Error::msg(e.to_string()))
+    }
+}
+
+#[cfg(feature = "google-drive")]
+impl From<google_drive3::Error> for Error {
+    fn from(e: google_drive3::Error) -> Self {
+        Error::Internal(anyhow::Error::msg(e.to_string()))
+    }
+}
+
+#[cfg(feature = "google-drive")]
+impl From<google_drive3::hyper::Error> for Error {
+    fn from(e: google_drive3::hyper::Error) -> Self {
+        Error::Internal(e.into())
+    }
+}
 
 pub trait ContextExt<T> {
     fn context<C: Into<String>>(self, context: C) -> Result<T>;
@@ -712,10 +758,7 @@ mod tests {
         let inner = Error::client("base error");
         let with_context: Result<()> = Err(inner);
         let wrapped = ContextExt::context(
-            ContextExt::context(
-                ContextExt::context(with_context, "layer 1"),
-                "layer 2",
-            ),
+            ContextExt::context(ContextExt::context(with_context, "layer 1"), "layer 2"),
             "layer 3",
         );
 

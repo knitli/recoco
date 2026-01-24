@@ -928,15 +928,14 @@ async fn clear_graph_element_data(
 }
 
 /// Factory for Neo4j relationships
+#[derive(Default)]
 pub struct Factory {
     graph_pool: Arc<GraphPool>,
 }
 
 impl Factory {
     pub fn new() -> Self {
-        Self {
-            graph_pool: Arc::default(),
-        }
+        Self::default()
     }
 }
 

@@ -97,15 +97,13 @@ impl FlowExecutionContext {
     ) -> Result<&Arc<SourceIndexingContext>> {
         self.source_indexing_contexts[source_idx]
             .get_or_try_init(|| async move {
-                Ok::<_, Error>(
-                    SourceIndexingContext::load(
-                        flow.clone(),
-                        source_idx,
-                        self.setup_execution_context.clone(),
-                        pool,
-                    )
-                    .await?,
+                SourceIndexingContext::load(
+                    flow.clone(),
+                    source_idx,
+                    self.setup_execution_context.clone(),
+                    pool,
                 )
+                .await
             })
             .await
     }
@@ -341,6 +339,7 @@ pub async fn create_lib_context(settings: settings::Settings) -> Result<LibConte
     })
 }
 
+#[allow(clippy::type_complexity)]
 static GET_SETTINGS_FN: Mutex<Option<Box<dyn Fn() -> Result<settings::Settings> + Send + Sync>>> =
     Mutex::new(None);
 fn get_settings() -> Result<settings::Settings> {
@@ -353,9 +352,7 @@ fn get_settings() -> Result<settings::Settings> {
     Ok(settings)
 }
 
-pub fn set_settings_fn(
-    get_settings_fn: Box<dyn Fn() -> Result<settings::Settings> + Send + Sync>,
-) {
+pub fn set_settings_fn(get_settings_fn: Box<dyn Fn() -> Result<settings::Settings> + Send + Sync>) {
     let mut get_settings_fn_locked = GET_SETTINGS_FN.lock().unwrap();
     *get_settings_fn_locked = Some(get_settings_fn);
 }

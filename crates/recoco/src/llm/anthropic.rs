@@ -113,7 +113,11 @@ impl LlmGenerationClient for Client {
         .await
         .with_context(|| "Anthropic API error")?;
 
-        let mut resp_json: serde_json::Value = resp.json().await.with_context(|| "Invalid JSON")?;
+        let mut resp_json: serde_json::Value = resp
+            .json()
+            .await
+            .map_err(Error::internal)
+            .context("Invalid JSON")?;
         if let Some(error) = resp_json.get("error") {
             client_bail!("Anthropic API error: {:?}", error);
         }

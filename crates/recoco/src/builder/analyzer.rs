@@ -802,7 +802,7 @@ fn analyze_input_fields(
             value_type,
             analyzed_value: analyzed_value.clone(),
         };
-        def_fp_builder.add(arg_binding.arg_name.0.as_ref().map(|n| n.as_str()), def_fp)?;
+        def_fp_builder.add(arg_binding.arg_name.0.as_deref(), def_fp)?;
         op_arg_schemas.push(op_arg_schema);
     }
     Ok((op_arg_schemas, def_fp_builder.build()))
@@ -1291,16 +1291,14 @@ impl AnalyzerContext {
         // Build the qualifier string
         let mut result = String::new();
         for name in scope_names {
-            result.push_str(&name);
+            result.push_str(name);
             result.push('.');
         }
         result
     }
 }
 
-pub fn build_flow_instance_context(
-    flow_inst_name: &str,
-) -> Arc<FlowInstanceContext> {
+pub fn build_flow_instance_context(flow_inst_name: &str) -> Arc<FlowInstanceContext> {
     Arc::new(FlowInstanceContext {
         flow_instance_name: flow_inst_name.to_string(),
         auth_registry: get_auth_registry().clone(),

@@ -24,7 +24,10 @@ use crate::{
 };
 
 // Re-export core types from splitters
-pub use recoco_splitters::split::OutputPosition;
+pub use recoco_splitters::split::{
+    CustomLanguageConfig, KeepSeparator, OutputPosition, RecursiveChunkConfig, RecursiveChunker,
+    RecursiveSplitConfig, SeparatorSplitConfig, SeparatorSplitter,
+};
 
 /// Convert an OutputPosition to cocoindex Value format.
 pub fn output_position_to_value(pos: OutputPosition) -> value::Value {

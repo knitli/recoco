@@ -10,12 +10,12 @@
 // Both the upstream CocoIndex code and the ReCoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
-use recoco::prelude::*;
 use recoco::builder::FlowBuilder;
 use recoco::execution::evaluator::evaluate_transient_flow;
+use recoco::prelude::*;
 use serde_json::json;
-use tokio::io::AsyncBufReadExt;
 use tokio::fs::File;
+use tokio::io::AsyncBufReadExt;
 use tokio::io::BufReader;
 
 /// This example demonstrates how to process a file line-by-line using a transient flow.
@@ -40,18 +40,23 @@ async fn main() -> anyhow::Result<()> {
 
     // 4. Transform: Split line by spaces
     // Using "SplitBySeparators" to tokenise the line
-    let tokens = builder.transform(
-        "SplitBySeparators".to_string(),
-        json!({
-            "separators_regex": [" ", "\t", "\\.", ","],
-            "keep_separator": null,
-            "include_empty": false,
-            "trim": true
-        }).as_object().unwrap().clone(),
-        vec![(line_input, Some("text".to_string()))],
-        None,
-        "tokenizer".to_string(),
-    ).await?;
+    let tokens = builder
+        .transform(
+            "SplitBySeparators".to_string(),
+            json!({
+                "separators_regex": [" ", "\t", "\\.", ","],
+                "keep_separator": null,
+                "include_empty": false,
+                "trim": true
+            })
+            .as_object()
+            .unwrap()
+            .clone(),
+            vec![(line_input, Some("text".to_string()))],
+            None,
+            "tokenizer".to_string(),
+        )
+        .await?;
 
     // 5. Output the tokens
     builder.set_direct_output(tokens)?;
@@ -77,20 +82,20 @@ async fn main() -> anyhow::Result<()> {
         }
 
         let input_value = value::Value::Basic(value::BasicValue::Str(line.clone().into()));
-        
+
         // Execute flow for this line
         let result = evaluate_transient_flow(&flow.0, &vec![input_value]).await?;
 
         // Inspect result (it should be a KTable of chunks)
         if let value::Value::KTable(chunks) = result {
-             let count = chunks.len();
-             if count > 0 {
-                 println!("Line {}: found {} tokens", line_num, count);
-                 // Optional: print first few tokens
-                 for (k, v) in chunks.iter().take(3) {
-                     println!("  - {:?} -> {:?}", k, v);
-                 }
-             }
+            let count = chunks.len();
+            if count > 0 {
+                println!("Line {}: found {} tokens", line_num, count);
+                // Optional: print first few tokens
+                for (k, v) in chunks.iter().take(3) {
+                    println!("  - {:?} -> {:?}", k, v);
+                }
+            }
         }
 
         line.clear();

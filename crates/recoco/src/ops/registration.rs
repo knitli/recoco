@@ -10,9 +10,22 @@
 // Both the upstream CocoIndex code and the ReCoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
-use super::{
-    factory_bases::*, registry::ExecutorFactoryRegistry, sdk::ExecutorFactory, sources,
-};
+#[cfg(any(
+    feature = "function-detect-lang",
+    feature = "function-embed",
+    feature = "function-extract-llm",
+    feature = "function-json",
+    feature = "function-split"
+))]
+use super::functions;
+#[cfg(any(
+    feature = "target-kuzu",
+    feature = "target-neo4j",
+    feature = "target-postgres",
+    feature = "target-qdrant"
+))]
+use super::targets;
+use super::{factory_bases::*, registry::ExecutorFactoryRegistry, sdk::ExecutorFactory, sources};
 use crate::prelude::*;
 use recoco_utils::client_error;
 use std::sync::{LazyLock, RwLock};

@@ -107,7 +107,7 @@ pub async fn get_source_row_indexing_status(
         is_logic_current: l
             .process_logic_fingerprint
             .as_ref()
-            .map_or(false, |fp| src_eval_ctx.source_logic_fp.matches(fp)),
+            .is_some_and(|fp| src_eval_ctx.source_logic_fp.matches(fp)),
     });
     let current = SourceRowInfo {
         ordinal: current.ordinal,

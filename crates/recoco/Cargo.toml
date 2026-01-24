@@ -140,21 +140,29 @@ source-azure = [
   "dep:azure_core",
   "dep:azure_identity",
   "dep:azure_storage",
-  "dep:azure_storage_blobs"
+  "dep:azure_storage_blobs",
+  "recoco-utils/azure"
 ]
 source-gdrive = [
   "dep:google-drive3",
   "dep:http-body-util",
   "dep:hyper-rustls",
   "dep:hyper-util",
-  "dep:yup-oauth2"
+  "dep:yup-oauth2",
+  "recoco-utils/google-drive"
 ]
 # Sources
 source-local-file = []
 source-postgres = ["dep:pgvector", "recoco-utils/sqlx"]
-source-s3 = ["dep:aws-config", "dep:aws-sdk-s3", "dep:aws-sdk-sqs", "dep:redis"]
+source-s3 = [
+  "dep:aws-config",
+  "dep:aws-sdk-s3",
+  "dep:aws-sdk-sqs",
+  "dep:redis",
+  "recoco-utils/redis"
+]
 target-kuzu = ["dep:reqwest", "recoco-utils/reqwest", "target-neo4j"]
 target-neo4j = ["dep:neo4rs", "recoco-utils/neo4rs"]
 # Targets
 target-postgres = ["source-postgres"]
-target-qdrant = ["dep:qdrant-client"]
+target-qdrant = ["dep:qdrant-client", "recoco-utils/qdrant"]

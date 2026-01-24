@@ -421,20 +421,15 @@ impl SourceUpdateTask {
 
         let update_fut = source_indexing_context.update(&update_stats, update_options);
 
-        self.run_with_progress_report(
-            update_fut,
-            &update_stats,
-            update_title,
-            Some(start_time),
-        )
-        .await
-        .with_context(|| {
-            format!(
-                "Error in processing flow `{}` source `{}` ({update_title})",
-                self.flow.flow_instance.name,
-                self.import_op().name
-            )
-        })?;
+        self.run_with_progress_report(update_fut, &update_stats, update_title, Some(start_time))
+            .await
+            .with_context(|| {
+                format!(
+                    "Error in processing flow `{}` source `{}` ({update_title})",
+                    self.flow.flow_instance.name,
+                    self.import_op().name
+                )
+            })?;
 
         if update_stats.has_any_change() {
             self.status_tx.send_modify(|update| {
@@ -455,11 +450,7 @@ impl SourceUpdateTask {
         update_options: super::source_indexer::UpdateOptions,
     ) {
         let result = self
-            .update_one_pass(
-                source_indexing_context,
-                update_title,
-                update_options,
-            )
+            .update_one_pass(source_indexing_context, update_title, update_options)
             .await;
 
         if let Err(err) = result {

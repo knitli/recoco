@@ -325,7 +325,7 @@ pub async fn query(
             .clone()
     };
     let query_output = query_handler
-        .query(query.into(), &flow_ctx.flow.flow_instance_ctx)
+        .query(query, &flow_ctx.flow.flow_instance_ctx)
         .await?;
     Ok(Json(query_output))
 }

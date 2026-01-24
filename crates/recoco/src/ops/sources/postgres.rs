@@ -367,17 +367,17 @@ async fn fetch_table_schema(
 
         let info = FieldSchemaInfo {
             schema: field_schema.clone(),
-            decoder: decoder.clone(),
+            decoder,
         };
 
-        if let Some(ord_col) = ordinal_column {
-            if &col_name == ord_col {
-                ordinal_field_schema = Some(info.clone());
-                if is_primary_key {
-                    api_bail!(
-                        "`ordinal_column` cannot be a primary key column. It must be one of the value columns."
-                    );
-                }
+        if let Some(ord_col) = ordinal_column
+            && &col_name == ord_col
+        {
+            ordinal_field_schema = Some(info.clone());
+            if is_primary_key {
+                api_bail!(
+                    "`ordinal_column` cannot be a primary key column. It must be one of the value columns."
+                );
             }
         }
 
@@ -385,7 +385,7 @@ async fn fetch_table_schema(
             primary_key_columns.push(info);
         } else if included_columns
             .as_ref()
-            .map_or(true, |cols| cols.contains(&col_name))
+            .is_none_or(|cols| cols.contains(&col_name))
         {
             value_columns.push(info.clone());
         }
@@ -430,7 +430,8 @@ async fn fetch_table_schema(
 /// - Basic(Int64): interpreted directly as microseconds
 /// - Basic(LocalDateTime): converted to UTC micros
 /// - Basic(OffsetDateTime): micros since epoch
-/// Otherwise returns unavailable.
+///
+///   Otherwise returns unavailable.
 fn is_supported_ordinal_type(t: &ValueType) -> bool {
     matches!(
         t,
@@ -561,7 +562,7 @@ impl SourceExecutor for PostgresSourceExecutor {
 
         let row_opt = qb.build().fetch_optional(&self.db_pool).await?;
         let data = match &row_opt {
-            Some(row) => self.decode_row_data(&row, options, ordinal_col_index, 0)?,
+            Some(row) => self.decode_row_data(row, options, ordinal_col_index, 0)?,
             None => PartialSourceRowData {
                 value: Some(SourceValue::NonExistence),
                 ordinal: Some(Ordinal::unavailable()),

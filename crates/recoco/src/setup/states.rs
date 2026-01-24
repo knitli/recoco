@@ -370,24 +370,14 @@ impl<K, S, C: ResourceSetupChange> std::fmt::Display for ResourceSetupInfo<K, S,
             let changes = setup_change.describe_changes();
             if !changes.is_empty() {
                 let mut f = indented(f).with_str(INDENT);
-                writeln!(f, "")?;
+                writeln!(f)?;
                 for change in changes {
                     match change {
                         ChangeDescription::Action(action) => {
-                            writeln!(
-                                f,
-                                "{} {}",
-                                "TODO:",
-                                action
-                            )?;
+                            writeln!(f, "TODO: {}", action)?;
                         }
                         ChangeDescription::Note(note) => {
-                            writeln!(
-                                f,
-                                "{} {}",
-                                "NOTE:",
-                                note
-                            )?;
+                            writeln!(f, "NOTE: {}", note)?;
                         }
                     }
                 }
@@ -424,7 +414,7 @@ pub trait ObjectSetupChange {
     fn has_external_changes(&self) -> bool;
 
     fn is_up_to_date(&self) -> bool {
-        return !self.has_internal_changes() && !self.has_external_changes();
+        !self.has_internal_changes() && !self.has_external_changes()
     }
 }
 
@@ -501,7 +491,7 @@ impl ObjectSetupChange for FlowSetupChange {
             || self
                 .tracking_table
                 .as_ref()
-                .map_or(false, |t| t.has_tracked_state_change)
+                .is_some_and(|t| t.has_tracked_state_change)
             || self
                 .target_resources
                 .iter()
@@ -509,14 +499,13 @@ impl ObjectSetupChange for FlowSetupChange {
     }
 
     fn has_external_changes(&self) -> bool {
-        return self
-            .tracking_table
+        self.tracking_table
             .as_ref()
             .is_some_and(|t| !t.is_up_to_date())
             || self
                 .target_resources
                 .iter()
-                .any(|target| !target.is_up_to_date());
+                .any(|target| !target.is_up_to_date())
     }
 }
 
@@ -582,8 +571,7 @@ impl std::fmt::Display for FormattedFlowSetupChange<'_> {
         writeln!(
             f,
             "{} Flow: {}",
-            ObjectSetupChangeCode(flow_setup_change)
-                .to_string(),
+            ObjectSetupChangeCode(flow_setup_change),
             self.0
         )?;
 

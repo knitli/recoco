@@ -50,21 +50,21 @@ impl<'arg> OpArgResolver<'arg> {
     }
     pub fn expect_type(self, expected_type: &ValueType) -> Result<Self> {
         let resolver = self.expect_nullable_type(expected_type)?;
-        resolver.resolved_op_arg.as_ref().map(|(idx, typ)| {
+        if let Some((idx, typ)) = resolver.resolved_op_arg.as_ref() {
             resolver.nonnull_args_idx.push(*idx);
             if typ.nullable {
                 *resolver.may_nullify_output = true;
             }
-        });
+        }
         Ok(resolver)
     }
 
     pub fn optional(self) -> Option<ResolvedOpArg> {
-        return self.resolved_op_arg.map(|(idx, typ)| ResolvedOpArg {
+        self.resolved_op_arg.map(|(idx, typ)| ResolvedOpArg {
             name: self.name,
             typ,
             idx,
-        });
+        })
     }
 
     pub fn required(self) -> Result<ResolvedOpArg> {
@@ -441,7 +441,7 @@ impl<E: BatchedFunctionExecutor> BatchedFunctionExecutorWrapper<E> {
 #[async_trait]
 impl<E: BatchedFunctionExecutor> SimpleFunctionExecutor for BatchedFunctionExecutorWrapper<E> {
     async fn evaluate(&self, args: Vec<value::Value>) -> Result<value::Value> {
-        self.batcher.run(args).await.map_err(Error::from)
+        self.batcher.run(args).await
     }
 
     fn enable_cache(&self) -> bool {
@@ -830,9 +830,7 @@ impl<T: TargetSpecificAttachmentFactoryBase> TargetAttachmentFactory for T {
             .diff_setup_states(
                 &utils::deser::from_json_value(target_key.clone())?,
                 &utils::deser::from_json_value(attachment_key.clone())?,
-                new_state
-                    .map(|v| utils::deser::from_json_value(v))
-                    .transpose()?,
+                new_state.map(utils::deser::from_json_value).transpose()?,
                 from_json_combined_state(existing_states)?,
                 context,
             )

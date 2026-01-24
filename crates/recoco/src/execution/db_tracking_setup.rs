@@ -39,10 +39,11 @@ async fn upgrade_tracking_table(
 ) -> Result<()> {
     if existing_version_id < 1 && desired_state.version_id >= 1 {
         let table_name = &desired_state.table_name;
-        let opt_fast_fingerprint_column = desired_state
-            .has_fast_fingerprint_column
-            .then(|| "processed_source_fp BYTEA,")
-            .unwrap_or("");
+        let opt_fast_fingerprint_column = if desired_state.has_fast_fingerprint_column {
+            "processed_source_fp BYTEA,"
+        } else {
+            ""
+        };
         let query =  format!(
             "CREATE TABLE IF NOT EXISTS {table_name} (
                 source_id INTEGER NOT NULL,
@@ -311,7 +312,7 @@ impl TrackingTableSetupChange {
                     &self
                         .source_names_need_state_cleanup
                         .keys()
-                        .map(|v| *v)
+                        .copied()
                         .collect::<Vec<_>>(),
                 )
                 .await?;

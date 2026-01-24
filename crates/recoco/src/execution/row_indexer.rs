@@ -138,10 +138,8 @@ impl SourceVersion {
             }
             _ => false,
         };
-        if should_skip {
-            if let Some(update_stats) = update_stats {
-                update_stats.num_no_change.inc(1);
-            }
+        if should_skip && let Some(update_stats) = update_stats {
+            update_stats.num_no_change.inc(1);
         }
         should_skip
     }
@@ -253,7 +251,7 @@ impl<'a> RowIndexer<'a> {
             Some(info) => {
                 let existing_version = SourceVersion::from_stored_processing_info(
                     info,
-                    &self.src_eval_ctx.source_logic_fp,
+                    self.src_eval_ctx.source_logic_fp,
                 );
 
                 // First check ordinal-based skipping
@@ -301,8 +299,8 @@ impl<'a> RowIndexer<'a> {
                 && let Some(optimization_result) = self
                     .try_collapse(
                         source_version,
-                        &content_version_fp.as_slice(),
-                        &existing_version,
+                        content_version_fp.as_slice(),
+                        existing_version,
                         baseline,
                     )
                     .await?
@@ -317,10 +315,10 @@ impl<'a> RowIndexer<'a> {
                 .and_then(|info| info.0);
 
             // Invalidate memoization cache if full reprocess is requested
-            if self.mode == super::source_indexer::UpdateMode::FullReprocess {
-                if let Some(ref mut info) = extracted_memoization_info {
-                    info.cache.clear();
-                }
+            if self.mode == super::source_indexer::UpdateMode::FullReprocess
+                && let Some(ref mut info) = extracted_memoization_info
+            {
+                info.cache.clear();
             }
 
             match source_value {
@@ -400,7 +398,7 @@ impl<'a> RowIndexer<'a> {
 
                         async move {
                             // Track export operation start
-                            if let Some(ref op_stats) = operation_in_process_stats {
+                            if let Some(op_stats) = operation_in_process_stats {
                                 op_stats.start_processing(&export_key, 1);
                             }
 
@@ -410,7 +408,7 @@ impl<'a> RowIndexer<'a> {
                                 .await;
 
                             // Track export operation completion
-                            if let Some(ref op_stats) = operation_in_process_stats {
+                            if let Some(op_stats) = operation_in_process_stats {
                                 op_stats.finish_processing(&export_key, 1);
                             }
 
@@ -505,7 +503,7 @@ impl<'a> RowIndexer<'a> {
         // Check 1: Same check as precommit - verify no newer version exists
         let existing_source_version = SourceVersion::from_stored_precommit_info(
             &existing_tracking_info,
-            &self.src_eval_ctx.source_logic_fp,
+            self.src_eval_ctx.source_logic_fp,
         );
         if existing_source_version.should_skip(source_version, Some(self.update_stats)) {
             return Ok(Some(SkippedOr::Skipped(
@@ -517,12 +515,7 @@ impl<'a> RowIndexer<'a> {
         // Check 2: Verify the situation hasn't changed (no concurrent processing)
         match baseline {
             ContentHashBasedCollapsingBaseline::ProcessedSourceFingerprint(fp) => {
-                if existing_tracking_info
-                    .processed_source_fp
-                    .as_ref()
-                    .map(|fp| fp.as_slice())
-                    != Some(fp)
-                {
+                if existing_tracking_info.processed_source_fp.as_deref() != Some(fp) {
                     return Ok(None);
                 }
             }
@@ -570,8 +563,8 @@ impl<'a> RowIndexer<'a> {
             && let Some(tracking_info) = &tracking_info
         {
             let existing_source_version = SourceVersion::from_stored_precommit_info(
-                &tracking_info,
-                &self.src_eval_ctx.source_logic_fp,
+                tracking_info,
+                self.src_eval_ctx.source_logic_fp,
             );
             if existing_source_version.should_skip(source_version, Some(self.update_stats)) {
                 return Ok(SkippedOr::Skipped(
@@ -687,11 +680,11 @@ impl<'a> RowIndexer<'a> {
                         None
                     };
                     if !self.mode.needs_full_export()
-                        && existing_target_keys.as_ref().map_or(false, |keys| {
+                        && existing_target_keys.as_ref().is_some_and(|keys| {
                             !keys.is_empty() && keys.iter().all(|(_, fp)| fp == &curr_fp)
                         })
                         && existing_staging_target_keys
-                            .map_or(true, |keys| keys.iter().all(|(_, fp)| fp == &curr_fp))
+                            .is_none_or(|keys| keys.iter().all(|(_, fp)| fp == &curr_fp))
                     {
                         // carry over existing target keys info
                         let (existing_ordinal, existing_fp) = existing_target_keys

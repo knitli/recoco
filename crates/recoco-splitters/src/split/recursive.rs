@@ -38,18 +38,10 @@ pub struct CustomLanguageConfig {
 }
 
 /// Configuration for recursive text splitting.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct RecursiveSplitConfig {
     /// Custom language configurations.
     pub custom_languages: Vec<CustomLanguageConfig>,
-}
-
-impl Default for RecursiveSplitConfig {
-    fn default() -> Self {
-        Self {
-            custom_languages: vec![],
-        }
-    }
 }
 
 /// Configuration for a single chunking operation.

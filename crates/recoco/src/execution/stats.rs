@@ -170,7 +170,7 @@ impl OperationInProcessStats {
 
     /// Finish processing rows for the specified operation.
     pub fn finish_processing(&self, operation_name: &str, count: i64) {
-        let counters = self.operation_counters.write().unwrap();
+        let counters = self.operation_counters.read().unwrap();
         if let Some(counter) = counters.get(operation_name) {
             counter.end(count);
         }

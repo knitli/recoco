@@ -290,7 +290,7 @@ pub fn build_flow_setup_execution_context(
                 .get(&import_op.name)
                 .ok_or_else(invariance_violation)?;
             build_import_op_exec_ctx(
-                &import_op,
+                import_op,
                 output_type,
                 source_states_by_name.get(&import_op.name.as_str()),
                 &mut metadata,

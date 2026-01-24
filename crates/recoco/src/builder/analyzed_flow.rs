@@ -67,11 +67,8 @@ pub struct AnalyzedTransientFlow {
 }
 
 impl AnalyzedTransientFlow {
-    pub async fn from_transient_flow(
-        transient_flow: spec::TransientFlowSpec,
-    ) -> Result<Self> {
-        let ctx =
-            analyzer::build_flow_instance_context(&transient_flow.name);
+    pub async fn from_transient_flow(transient_flow: spec::TransientFlowSpec) -> Result<Self> {
+        let ctx = analyzer::build_flow_instance_context(&transient_flow.name);
         let (output_type, data_schema, execution_plan_fut) =
             analyzer::analyze_transient_flow(&transient_flow, ctx).await?;
         Ok(Self {

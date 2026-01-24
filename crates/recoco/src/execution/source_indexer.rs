@@ -160,7 +160,7 @@ impl<'a> LocalSourceRowStateOperator<'a> {
                     let sem = if self
                         .processing_sem
                         .as_ref()
-                        .is_none_or(|sem| !Arc::ptr_eq(sem, &entry_sem))
+                        .is_none_or(|sem| !Arc::ptr_eq(sem, entry_sem))
                     {
                         Some(entry_sem.clone())
                     } else {
@@ -308,10 +308,10 @@ impl SourceIndexingContext {
                     key_metadata.source_key,
                     &import_op.primary_key_schema,
                 )?;
-                if let Some(rows_to_retry) = &mut rows_to_retry {
-                    if key_metadata.max_process_ordinal > key_metadata.process_ordinal {
-                        rows_to_retry.insert(source_pk.clone());
-                    }
+                if let Some(rows_to_retry) = &mut rows_to_retry
+                    && key_metadata.max_process_ordinal > key_metadata.process_ordinal
+                {
+                    rows_to_retry.insert(source_pk.clone());
                 }
                 rows.insert(
                     source_pk,
@@ -572,10 +572,7 @@ impl SourceIndexingContext {
             stats: update_stats.clone(),
             options: update_options,
         };
-        self.update_once_batcher
-            .run(input)
-            .await
-            .map_err(Error::from)
+        self.update_once_batcher.run(input).await
     }
 
     async fn update_once(
@@ -651,10 +648,10 @@ impl SourceIndexingContext {
             }
         }
         while let Some(result) = join_set.join_next().await {
-            if let Err(e) = result {
-                if !e.is_cancelled() {
-                    error!("{e:?}");
-                }
+            if let Err(e) = result
+                && !e.is_cancelled()
+            {
+                error!("{e:?}");
             }
         }
 
@@ -689,10 +686,10 @@ impl SourceIndexingContext {
             ));
         }
         while let Some(result) = join_set.join_next().await {
-            if let Err(e) = result {
-                if !e.is_cancelled() {
-                    error!("{e:?}");
-                }
+            if let Err(e) = result
+                && !e.is_cancelled()
+            {
+                error!("{e:?}");
             }
         }
 
@@ -739,6 +736,6 @@ impl batching::Runner for UpdateOnceRunner {
             .context
             .update_once(&input.stats, &update_options)
             .await?;
-        Ok(std::iter::repeat(()).take(num_inputs))
+        Ok(std::iter::repeat_n((), num_inputs))
     }
 }

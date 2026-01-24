@@ -142,7 +142,7 @@ impl<'a> ScopeKey<'a> {
     pub fn key(&self) -> Option<Cow<'a, value::KeyValue>> {
         match self {
             ScopeKey::None => None,
-            ScopeKey::MapKey(k) => Some(Cow::Borrowed(&k)),
+            ScopeKey::MapKey(k) => Some(Cow::Borrowed(k)),
             ScopeKey::ListIndex(i) => {
                 Some(Cow::Owned(value::KeyValue::from_single_part(*i as i64)))
             }
@@ -247,7 +247,7 @@ impl<'a> ScopeEntry<'a> {
     ) -> Result<&value::Value<ScopeValueBuilder>> {
         let first_index = field_ref.fields_idx[0] as usize;
         let index_base = self.key.value_field_index_base();
-        let val = self.value.fields[(first_index - index_base) as usize]
+        let val = self.value.fields[first_index - index_base]
             .get()
             .ok_or_else(|| internal_error!("Field {} is not set", first_index))?;
         Self::get_local_field(val, &field_ref.fields_idx[1..])
@@ -265,7 +265,7 @@ impl<'a> ScopeEntry<'a> {
                 Self::get_local_key_field(&key_val[first_index], &field_ref.fields_idx[1..])?;
             key_part.clone().into()
         } else {
-            let val = self.value.fields[(first_index - index_base) as usize]
+            let val = self.value.fields[first_index - index_base]
                 .get()
                 .ok_or_else(|| internal_error!("Field {} is not set", first_index))?;
             let val_part = Self::get_local_field(val, &field_ref.fields_idx[1..])?;
@@ -278,10 +278,7 @@ impl<'a> ScopeEntry<'a> {
         &self,
         field_ref: &AnalyzedLocalFieldReference,
     ) -> Result<&schema::FieldSchema> {
-        Ok(Self::get_local_field_schema(
-            self.schema,
-            &field_ref.fields_idx,
-        )?)
+        Self::get_local_field_schema(self.schema, &field_ref.fields_idx)
     }
 
     fn define_field_w_builder(
@@ -290,7 +287,7 @@ impl<'a> ScopeEntry<'a> {
         val: value::Value<ScopeValueBuilder>,
     ) -> Result<()> {
         let field_index = output_field.field_idx as usize;
-        let index_base = self.key.value_field_index_base() as usize;
+        let index_base = self.key.value_field_index_base();
         self.value.fields[field_index - index_base].set(val).map_err(|_| {
             internal_error!("Field {field_index} for scope is already set, violating single-definition rule.")
         })?;
@@ -421,7 +418,7 @@ async fn evaluate_op_scope(
         match reactive_op {
             AnalyzedReactiveOp::Transform(op) => {
                 // Track transform operation start
-                if let Some(ref op_stats) = operation_in_process_stats {
+                if let Some(op_stats) = operation_in_process_stats {
                     let transform_key =
                         format!("transform/{}{}", op_scope.scope_qualifier, op.name);
                     op_stats.start_processing(&transform_key, 1);
@@ -483,7 +480,7 @@ async fn evaluate_op_scope(
                 };
 
                 // Track transform operation completion
-                if let Some(ref op_stats) = operation_in_process_stats {
+                if let Some(op_stats) = operation_in_process_stats {
                     let transform_key =
                         format!("transform/{}{}", op_scope.scope_qualifier, op.name);
                     op_stats.finish_processing(&transform_key, 1);
@@ -609,23 +606,23 @@ async fn evaluate_op_scope(
                     .collect::<Vec<_>>();
 
                 // Handle auto_uuid_field (assumed to be at position 0 for efficiency)
-                if op.has_auto_uuid_field {
-                    if let Some(uuid_idx) = op.collector_schema.auto_uuid_field_idx {
-                        let uuid = memory.next_uuid(
-                            op.fingerprinter
-                                .clone()
-                                .with(
-                                    &field_values
-                                        .iter()
-                                        .enumerate()
-                                        .filter(|(i, _)| *i != uuid_idx)
-                                        .map(|(_, v)| v)
-                                        .collect::<Vec<_>>(),
-                                )?
-                                .into_fingerprint(),
-                        )?;
-                        field_values[uuid_idx] = value::Value::Basic(value::BasicValue::Uuid(uuid));
-                    }
+                if op.has_auto_uuid_field
+                    && let Some(uuid_idx) = op.collector_schema.auto_uuid_field_idx
+                {
+                    let uuid = memory.next_uuid(
+                        op.fingerprinter
+                            .clone()
+                            .with(
+                                &field_values
+                                    .iter()
+                                    .enumerate()
+                                    .filter(|(i, _)| *i != uuid_idx)
+                                    .map(|(_, v)| v)
+                                    .collect::<Vec<_>>(),
+                            )?
+                            .into_fingerprint(),
+                    )?;
+                    field_values[uuid_idx] = value::Value::Basic(value::BasicValue::Uuid(uuid));
                 }
 
                 {

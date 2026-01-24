@@ -231,12 +231,11 @@ fn group_states<K: Hash + Eq + std::fmt::Display + std::fmt::Debug + Clone, S: D
         .collect();
     for (key, state) in existing {
         let entry = grouped.entry(key.clone());
-        if state.current.is_some() {
-            if let indexmap::map::Entry::Occupied(entry) = &entry {
-                if entry.get().existing.current.is_some() {
-                    internal_bail!("Duplicate existing state for key: {}", entry.key());
-                }
-            }
+        if state.current.is_some()
+            && let indexmap::map::Entry::Occupied(entry) = &entry
+            && entry.get().existing.current.is_some()
+        {
+            internal_bail!("Duplicate existing state for key: {}", entry.key());
         }
         let entry = entry.or_default();
         if let Some(current) = &state.current {
@@ -332,7 +331,7 @@ async fn collect_attachments_setup_change(
         let is_upsertion = setup_state.desired.is_some();
         if let Some(action) = factory
             .diff_setup_states(
-                &target_key,
+                target_key,
                 &key,
                 setup_state.desired,
                 setup_state.existing,
@@ -385,13 +384,13 @@ pub async fn diff_flow_setup_states(
                     existing_source_id_to_name_kind
                         .entry(setup_state.source_id)
                         .or_default()
-                        .push((&name, &setup_state.source_kind));
+                        .push((name, &setup_state.source_kind));
                 }
             }
 
             (existing_source_id_to_name_kind.into_iter())
                 .map(|(id, name_kinds)| {
-                    let new_kind = new_source_id_to_kind.get(&id).map(|v| *v);
+                    let new_kind = new_source_id_to_kind.get(&id).copied();
                     let source_names_for_legacy_states = name_kinds
                         .into_iter()
                         .filter_map(|(name, kind)| {
@@ -442,7 +441,7 @@ pub async fn diff_flow_setup_states(
             &resource_id.key,
             target_states_group.desired.as_ref(),
             &target_states_group.existing,
-            &flow_instance_ctx,
+            flow_instance_ctx,
         )
         .await?;
 
@@ -535,20 +534,20 @@ async fn maybe_update_resource_setup<
 ) -> Result<()> {
     let mut changes = Vec::new();
     for resource in resources {
-        if let Some(setup_change) = &resource.setup_change {
-            if setup_change.change_type() != SetupChangeType::NoChange {
-                changes.push(ResourceSetupChangeItem {
-                    key: &resource.key,
-                    setup_change,
-                });
-                writeln!(write, "{}:", resource.description)?;
-                for change in setup_change.describe_changes() {
-                    match change {
-                        setup::ChangeDescription::Action(action) => {
-                            writeln!(write, "  - {action}")?;
-                        }
-                        setup::ChangeDescription::Note(_) => {}
+        if let Some(setup_change) = &resource.setup_change
+            && setup_change.change_type() != SetupChangeType::NoChange
+        {
+            changes.push(ResourceSetupChangeItem {
+                key: &resource.key,
+                setup_change,
+            });
+            writeln!(write, "{}:", resource.description)?;
+            for change in setup_change.describe_changes() {
+                match change {
+                    setup::ChangeDescription::Action(action) => {
+                        writeln!(write, "  - {action}")?;
                     }
+                    setup::ChangeDescription::Note(_) => {}
                 }
             }
         }
@@ -594,21 +593,20 @@ async fn apply_changes_for_flow(
             db_metadata::StateUpdateInfo::new(metadata_change.desired_state(), None)?,
         );
     }
-    if let Some(tracking_table) = &flow_setup_change.tracking_table {
-        if tracking_table
+    if let Some(tracking_table) = &flow_setup_change.tracking_table
+        && tracking_table
             .setup_change
             .as_ref()
             .map(|c| c.change_type() != SetupChangeType::NoChange)
             .unwrap_or_default()
-        {
-            update_info.insert(
-                db_metadata::ResourceTypeKey::new(
-                    MetadataRecordType::TrackingTable.to_string(),
-                    serde_json::Value::Null,
-                ),
-                db_metadata::StateUpdateInfo::new(tracking_table.state.as_ref(), None)?,
-            );
-        }
+    {
+        update_info.insert(
+            db_metadata::ResourceTypeKey::new(
+                MetadataRecordType::TrackingTable.to_string(),
+                serde_json::Value::Null,
+            ),
+            db_metadata::StateUpdateInfo::new(tracking_table.state.as_ref(), None)?,
+        );
     }
 
     for target_resource in &flow_setup_change.target_resources {
@@ -932,8 +930,8 @@ pub(crate) async fn apply_changes_for_flow_ctx(
     let mut setup_change_buffer = None;
     let setup_change = get_flow_setup_change(
         setup_ctx,
-        &flow_ctx,
-        &flow_exec_ctx,
+        flow_ctx,
+        flow_exec_ctx,
         &action,
         &mut setup_change_buffer,
     )
@@ -952,7 +950,7 @@ pub(crate) async fn apply_changes_for_flow_ctx(
 
     apply_changes_for_flow(
         write,
-        &flow_ctx,
+        flow_ctx,
         setup_change,
         &mut flow_states,
         db_pool,

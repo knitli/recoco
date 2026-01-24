@@ -19,19 +19,23 @@ anyhow = { workspace = true }
 async-openai = { workspace = true, optional = true }
 async-trait = { workspace = true }
 axum = { workspace = true }
+azure_storage = { workspace = true, optional = true }
 base64 = { workspace = true }
 blake3 = { workspace = true }
 chrono = { workspace = true }
 encoding_rs = { workspace = true, optional = true }
 futures = { workspace = true }
 globset = { workspace = true }
+google-drive3 = { workspace = true, optional = true }
 hex = { workspace = true }
 http = { workspace = true }
 indenter = { workspace = true }
 indexmap = { workspace = true }
 itertools = { workspace = true }
 neo4rs = { workspace = true, optional = true }
+qdrant-client = { workspace = true, optional = true }
 rand = { workspace = true }
+redis = { workspace = true, optional = true }
 regex = { workspace = true }
 reqwest = { workspace = true, optional = true }
 serde = { workspace = true }
@@ -46,9 +50,13 @@ yaml-rust2 = { workspace = true, optional = true }
 
 [features]
 default = []
+azure = ["dep:azure_storage"]
 bytes_decode = ["dep:encoding_rs"]
+google-drive = ["dep:google-drive3"]
 neo4rs = ["dep:neo4rs"]
 openai = ["dep:async-openai", "reqwest"]
+qdrant = ["dep:qdrant-client"]
+redis = ["dep:redis"]
 reqwest = ["dep:reqwest"]
 sqlx = ["dep:sqlx"]
 yaml = ["dep:yaml-rust2"]

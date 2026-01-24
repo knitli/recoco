@@ -57,11 +57,7 @@ impl BatchedFunctionExecutor for Executor {
     async fn evaluate_batch(&self, args: Vec<Vec<Value>>) -> Result<Vec<Value>> {
         let texts = args
             .iter()
-            .map(|arg| {
-                Ok(Cow::Borrowed(
-                    self.args.text.value(&arg)?.as_str()?.as_ref(),
-                ))
-            })
+            .map(|arg| Ok(Cow::Borrowed(self.args.text.value(arg)?.as_str()?.as_ref())))
             .collect::<Result<_>>()?;
         let req = LlmEmbeddingRequest {
             model: &self.spec.model,

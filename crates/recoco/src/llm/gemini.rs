@@ -29,11 +29,10 @@ fn get_embedding_dimension(model: &str) -> Option<u32> {
     let model = model.to_ascii_lowercase();
     if model.starts_with("gemini-embedding-") {
         Some(3072)
-    } else if model.starts_with("text-embedding-") {
-        Some(768)
-    } else if model.starts_with("embedding-") {
-        Some(768)
-    } else if model.starts_with("text-multilingual-embedding-") {
+    } else if model.starts_with("text-embedding-")
+        || model.starts_with("embedding-")
+        || model.starts_with("text-multilingual-embedding-")
+    {
         Some(768)
     } else {
         None
@@ -163,9 +162,12 @@ impl LlmGenerationClient for AiStudioClient {
                 .json(&payload)
         })
         .await
-        .map_err(Error::from)
         .with_context(|| "Gemini API error")?;
-        let resp_json: Value = resp.json().await.with_context(|| "Invalid JSON")?;
+        let resp_json: Value = resp
+            .json()
+            .await
+            .map_err(Error::internal)
+            .context("Invalid JSON")?;
 
         if let Some(error) = resp_json.get("error") {
             client_bail!("Gemini API error: {:?}", error);
@@ -226,10 +228,12 @@ impl LlmEmbeddingClient for AiStudioClient {
                 .json(&payload)
         })
         .await
-        .map_err(Error::from)
         .with_context(|| "Gemini API error")?;
-        let embedding_resp: BatchEmbedContentResponse =
-            resp.json().await.with_context(|| "Invalid JSON")?;
+        let embedding_resp: BatchEmbedContentResponse = resp
+            .json()
+            .await
+            .map_err(Error::internal)
+            .context("Invalid JSON")?;
         Ok(super::LlmEmbeddingResponse {
             embeddings: embedding_resp
                 .embeddings
@@ -304,7 +308,8 @@ impl VertexAiClient {
             .with_backoff_policy(ExponentialBackoff::default())
             .with_retry_throttler(SHARED_RETRY_THROTTLER.clone())
             .build()
-            .await?;
+            .await
+            .map_err(Error::internal)?;
         Ok(Self { client, config })
     }
 
@@ -342,8 +347,7 @@ impl LlmGenerationClient for VertexAiClient {
             );
         }
         // Compose content
-        let mut contents = Vec::new();
-        contents.push(Content::new().set_role("user".to_string()).set_parts(parts));
+        let contents = vec![Content::new().set_role("user".to_string()).set_parts(parts)];
         // Compose system instruction if present
         let system_instruction = request.system_prompt.as_ref().map(|sys| {
             Content::new()
@@ -377,7 +381,7 @@ impl LlmGenerationClient for VertexAiClient {
         }
 
         // Call the API
-        let resp = req.send().await?;
+        let resp = req.send().await.map_err(Error::internal)?;
         // Extract text from response
         let Some(Data::Text(text)) = resp
             .candidates
@@ -447,7 +451,8 @@ impl LlmEmbeddingClient for VertexAiClient {
             .set_parameters(parameters)
             .with_idempotency(true)
             .send()
-            .await?;
+            .await
+            .map_err(Error::internal)?;
 
         // Extract the embeddings from the response
         let embeddings: Vec<Vec<f32>> = response

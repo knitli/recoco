@@ -64,7 +64,8 @@ impl SqsContext {
             .queue_url(&self.queue_url)
             .receipt_handle(receipt_handle)
             .send()
-            .await?;
+            .await
+            .map_err(Error::internal)?;
         Ok(())
     }
 }
@@ -123,7 +124,7 @@ impl SourceExecutor for Executor {
                 if let Some(ref token) = continuation_token {
                     req = req.continuation_token(token);
                 }
-                let resp = req.send().await?;
+                let resp = req.send().await.map_err(Error::internal)?;
                 if let Some(contents) = &resp.contents {
                     let mut batch = Vec::new();
                     for obj in contents {
@@ -187,7 +188,8 @@ impl SourceExecutor for Executor {
                 .bucket(&self.bucket_name)
                 .key(key_str.as_ref())
                 .send()
-                .await?;
+                .await
+                .map_err(Error::internal)?;
             if let Some(size) = head_result.content_length() {
                 if size > max_size {
                     return Ok(PartialSourceRowData {
@@ -213,7 +215,7 @@ impl SourceExecutor for Executor {
                     content_version_fp: None,
                 });
             }
-            r => r?,
+            r => r.map_err(Error::internal)?,
         };
         let ordinal = if options.include_ordinal {
             obj.last_modified().map(datetime_to_ordinal)
@@ -221,7 +223,12 @@ impl SourceExecutor for Executor {
             None
         };
         let value = if options.include_value {
-            let bytes = obj.body.collect().await?.into_bytes();
+            let bytes = obj
+                .body
+                .collect()
+                .await
+                .map_err(Error::internal)?
+                .into_bytes();
             Some(SourceValue::Existence(if self.binary {
                 fields_value!(bytes.to_vec())
             } else {
@@ -322,7 +329,8 @@ impl Executor {
             .max_number_of_messages(10)
             .wait_time_seconds(20)
             .send()
-            .await?;
+            .await
+            .map_err(Error::internal)?;
         let messages = if let Some(messages) = resp.messages {
             messages
         } else {

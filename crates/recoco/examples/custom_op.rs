@@ -10,10 +10,10 @@
 // Both the upstream CocoIndex code and the ReCoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
-use recoco::prelude::*;
 use recoco::builder::FlowBuilder;
 use recoco::execution::evaluator::evaluate_transient_flow;
 use recoco::ops::sdk::*;
+use recoco::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::sync::Arc;
@@ -58,9 +58,9 @@ impl SimpleFunctionFactoryBase for ReverseStringFactory {
             .next_arg("text")?
             .expect_type(&ValueType::Basic(BasicValueType::Str))?
             .required()?;
-        
+
         let output_schema = schema::make_output_type(schema::BasicValueType::Str);
-        
+
         Ok(SimpleFunctionAnalysisOutput {
             resolved_args: (),
             output_schema,
@@ -94,19 +94,21 @@ async fn main() -> anyhow::Result<()> {
 
     // 4. Build flow using the custom op
     let mut builder = FlowBuilder::new("custom_op_flow").await?;
-    
+
     let text_input = builder.add_direct_input(
-        "text".to_string(), 
-        schema::make_output_type(schema::BasicValueType::Str)
+        "text".to_string(),
+        schema::make_output_type(schema::BasicValueType::Str),
     )?;
-    
-    let reversed = builder.transform(
-        "ReverseString".to_string(),
-        json!({}).as_object().unwrap().clone(),
-        vec![(text_input, Some("text".to_string()))],
-        None,
-        "reverser".to_string()
-    ).await?;
+
+    let reversed = builder
+        .transform(
+            "ReverseString".to_string(),
+            json!({}).as_object().unwrap().clone(),
+            vec![(text_input, Some("text".to_string()))],
+            None,
+            "reverser".to_string(),
+        )
+        .await?;
 
     builder.set_direct_output(reversed)?;
     let flow = builder.build_transient_flow().await?;
@@ -114,7 +116,7 @@ async fn main() -> anyhow::Result<()> {
     // 5. Execute
     let input_text = "ReCoco is Awesome";
     println!("Input:  {}", input_text);
-    
+
     let input_val = value::Value::Basic(value::BasicValue::Str(input_text.into()));
     let result = evaluate_transient_flow(&flow.0, &vec![input_val]).await?;
 

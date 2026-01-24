@@ -61,8 +61,9 @@ impl Executor {
             include_empty: spec.include_empty,
             trim: spec.trim,
         };
-        let splitter =
-            SeparatorSplitter::new(config).map_err(Error::from).with_context(|| "failed to compile separators_regex")?;
+        let splitter = SeparatorSplitter::new(config)
+            .map_err(Error::from)
+            .with_context(|| "failed to compile separators_regex")?;
         Ok(Self { args, splitter })
     }
 }
@@ -73,7 +74,7 @@ impl SimpleFunctionExecutor for Executor {
         let full_text = self.args.text.value(&input)?.as_str()?;
 
         // Use the extra_text splitter
-        let chunks = self.splitter.split(&full_text);
+        let chunks = self.splitter.split(full_text);
 
         // Convert chunks to cocoindex table format
         let table = chunks

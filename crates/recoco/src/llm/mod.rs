@@ -23,12 +23,14 @@ static INFER: LazyLock<Infer> = LazyLock::new(Infer::new);
 pub enum LlmApiType {
     Ollama,
     OpenAi,
+    #[cfg(feature = "function-embed")]
     Gemini,
     Anthropic,
     LiteLlm,
     OpenRouter,
     Voyage,
     Vllm,
+    #[cfg(feature = "function-embed")]
     VertexAi,
     Bedrock,
     AzureOpenAi,
@@ -135,6 +137,7 @@ pub trait LlmEmbeddingClient: Send + Sync {
 
 mod anthropic;
 mod bedrock;
+#[cfg(feature = "function-embed")]
 mod gemini;
 mod litellm;
 mod ollama;
@@ -155,9 +158,11 @@ pub async fn new_llm_generation_client(
         }
         LlmApiType::OpenAi => Box::new(openai::Client::new(address, api_key, api_config)?)
             as Box<dyn LlmGenerationClient>,
+        #[cfg(feature = "function-embed")]
         LlmApiType::Gemini => {
             Box::new(gemini::AiStudioClient::new(address, api_key)?) as Box<dyn LlmGenerationClient>
         }
+        #[cfg(feature = "function-embed")]
         LlmApiType::VertexAi => {
             Box::new(gemini::VertexAiClient::new(address, api_key, api_config).await?)
                 as Box<dyn LlmGenerationClient>
@@ -200,6 +205,7 @@ pub async fn new_llm_embedding_client(
             Box::new(openrouter::Client::new_openrouter(address, api_key).await?)
                 as Box<dyn LlmEmbeddingClient>
         }
+        #[cfg(feature = "function-embed")]
         LlmApiType::Gemini => {
             Box::new(gemini::AiStudioClient::new(address, api_key)?) as Box<dyn LlmEmbeddingClient>
         }
@@ -208,6 +214,7 @@ pub async fn new_llm_embedding_client(
         LlmApiType::Voyage => {
             Box::new(voyage::Client::new(address, api_key)?) as Box<dyn LlmEmbeddingClient>
         }
+        #[cfg(feature = "function-embed")]
         LlmApiType::VertexAi => {
             Box::new(gemini::VertexAiClient::new(address, api_key, api_config).await?)
                 as Box<dyn LlmEmbeddingClient>

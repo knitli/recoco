@@ -91,7 +91,7 @@ impl SimpleFunctionExecutor for Executor {
             language,
         };
 
-        let chunks = self.chunker.split(&full_text, config);
+        let chunks = self.chunker.split(full_text, config);
 
         let table = chunks
             .into_iter()

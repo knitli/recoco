@@ -174,8 +174,8 @@ impl SimpleFunctionFactoryBase for Factory {
         }
 
         let mut output_type = spec.output_type.clone();
-        if args.text.as_ref().map_or(true, |arg| arg.typ.nullable)
-            && args.image.as_ref().map_or(true, |arg| arg.typ.nullable)
+        if args.text.as_ref().is_none_or(|arg| arg.typ.nullable)
+            && args.image.as_ref().is_none_or(|arg| arg.typ.nullable)
         {
             output_type.nullable = true;
         }

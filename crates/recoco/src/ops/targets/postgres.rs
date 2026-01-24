@@ -461,25 +461,19 @@ fn to_column_type_sql_with_option(
     column_type: &ValueType,
     type_spec: &PostgresTypeSpec,
 ) -> Result<String> {
-    match column_type {
-        ValueType::Basic(basic_type) => match basic_type {
-            BasicValueType::Vector(vec_schema) => {
-                if convertible_to_pgvector(vec_schema) {
-                    let dim = vec_schema.dimension.unwrap_or(0);
-                    let type_sql = match type_spec {
-                        PostgresTypeSpec::Vector => {
-                            format!("vector({dim})")
-                        }
-                        PostgresTypeSpec::HalfVec => {
-                            format!("halfvec({dim})")
-                        }
-                    };
-                    return Ok(type_sql);
-                }
+    if let ValueType::Basic(BasicValueType::Vector(vec_schema)) = column_type
+        && convertible_to_pgvector(vec_schema)
+    {
+        let dim = vec_schema.dimension.unwrap_or(0);
+        let type_sql = match type_spec {
+            PostgresTypeSpec::Vector => {
+                format!("vector({dim})")
             }
-            _ => {}
-        },
-        _ => {}
+            PostgresTypeSpec::HalfVec => {
+                format!("halfvec({dim})")
+            }
+        };
+        return Ok(type_sql);
     }
     api_bail!("Unexpected column type: {}", column_type)
 }

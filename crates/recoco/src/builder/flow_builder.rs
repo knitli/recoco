@@ -18,11 +18,11 @@ use crate::{
 use recoco_utils::fingerprint::Fingerprinter;
 use std::{collections::btree_map, ops::Deref};
 
-
 use super::analyzer::{
     AnalyzerContext, CollectorBuilder, DataScopeBuilder, OpScope, ValueTypeBuilder,
     build_flow_instance_context,
 };
+use crate::lib_context::FlowContext;
 use crate::{
     base::{
         schema::{CollectorSchema, FieldSchema},
@@ -31,7 +31,6 @@ use crate::{
     lib_context::LibContext,
     ops::interface::FlowInstanceContext,
 };
-use crate::lib_context::FlowContext;
 
 #[derive(Debug, Clone)]
 pub struct OpScopeRef(Arc<OpScope>);
@@ -123,9 +122,7 @@ impl DataSlice {
             }
 
             spec::ValueMapping::Constant { .. } => {
-                return Err(client_error!(
-                    "field access not supported for literal",
-                ));
+                return Err(client_error!("field access not supported for literal",));
             }
         };
         Ok(Some(DataSlice {
@@ -177,8 +174,6 @@ pub struct DataCollector {
     scope: Arc<OpScope>,
     collector: Mutex<Option<CollectorBuilder>>,
 }
-
-
 
 impl std::fmt::Display for DataCollector {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -260,12 +255,10 @@ impl FlowBuilder {
         execution_options: Option<spec::ExecutionOptions>,
     ) -> Result<DataSlice> {
         let _span = info_span!("flow_builder.add_source", flow_name = %self.flow_instance_name, source_name = %name, source_kind = %kind).entered();
-        if let Some(target_scope) = target_scope {
-            if *target_scope != self.root_op_scope {
-                return Err(client_error!(
-                    "source can only be added to the root scope",
-                ));
-            }
+        if let Some(target_scope) = target_scope
+            && *target_scope != self.root_op_scope
+        {
+            return Err(client_error!("source can only be added to the root scope",));
         }
         let import_op = spec::NamedSpec {
             name,
@@ -274,19 +267,17 @@ impl FlowBuilder {
                     kind,
                     spec: op_spec,
                 },
-                refresh_options: refresh_options.map(|o| o).unwrap_or_default(),
-                execution_options: execution_options
-                    .map(|o| o)
-                    .unwrap_or_default(),
+                refresh_options: refresh_options.unwrap_or_default(),
+                execution_options: execution_options.unwrap_or_default(),
             },
         };
         let analyzer_ctx = AnalyzerContext {
             lib_ctx: self.lib_context.clone(),
             flow_ctx: self.flow_inst_context.clone(),
         };
-        let analyzed =
-                analyzer_ctx.analyze_import_op(&self.root_op_scope, import_op.clone()).await
-            ?;
+        let analyzed = analyzer_ctx
+            .analyze_import_op(&self.root_op_scope, import_op.clone())
+            .await?;
         std::mem::drop(analyzed);
 
         let result = Self::last_field_to_data_slice(&self.root_op_scope)?;
@@ -304,7 +295,7 @@ impl FlowBuilder {
             scope: self.root_op_scope.clone(),
             value: Arc::new(spec::ValueMapping::Constant(spec::ConstantMapping {
                 schema: schema.clone(),
-                value: value,
+                value,
             })),
         };
         Ok(slice)
@@ -313,28 +304,23 @@ impl FlowBuilder {
     pub fn add_direct_input(
         &mut self,
         name: String,
-        value_type:  schema::EnrichedValueType,
+        value_type: schema::EnrichedValueType,
     ) -> Result<DataSlice> {
-        let value_type = value_type;
         {
             let mut root_data_scope = self.root_op_scope.data.lock().unwrap();
-            root_data_scope
-                .add_field(
-                    name.clone(),
-                    &value_type,
-                    FieldDefFingerprint {
-                        source_op_names: HashSet::from([name.clone()]),
-                        fingerprint: Fingerprinter::default()
-                            .with("input")
-                            .map_err(Error::from)
-                            ?
-                            .with(&name)
-                            .map_err(Error::from)
-                            ?
-                            .into_fingerprint(),
-                    },
-                )
-                ?;
+            root_data_scope.add_field(
+                name.clone(),
+                &value_type,
+                FieldDefFingerprint {
+                    source_op_names: HashSet::from([name.clone()]),
+                    fingerprint: Fingerprinter::default()
+                        .with("input")
+                        .map_err(Error::from)?
+                        .with(&name)
+                        .map_err(Error::from)?
+                        .into_fingerprint(),
+                },
+            )?;
         }
         let result = Self::last_field_to_data_slice(&self.root_op_scope)?;
         self.direct_input_fields.push(FieldSchema {
@@ -358,7 +344,7 @@ impl FlowBuilder {
     pub fn for_each(
         &mut self,
         data_slice: DataSlice,
-        execution_options: Option< spec::ExecutionOptions>,
+        execution_options: Option<spec::ExecutionOptions>,
     ) -> Result<OpScopeRef> {
         let parent_scope = &data_slice.scope;
         let field_path = match data_slice.value.as_ref() {
@@ -371,9 +357,8 @@ impl FlowBuilder {
             field_path.last().map_or("", |s| s.as_str()),
             num_parent_layers
         );
-        let (_, child_op_scope) = parent_scope
-            .new_foreach_op_scope(scope_name.clone(), field_path)
-            ?;
+        let (_, child_op_scope) =
+            parent_scope.new_foreach_op_scope(scope_name.clone(), field_path)?;
 
         let reactive_op = spec::NamedSpec {
             name: format!(".for_each.{}", self.next_generated_op_id),
@@ -383,15 +368,11 @@ impl FlowBuilder {
                     name: scope_name,
                     ops: vec![],
                 },
-                execution_options: execution_options
-                    .map(|o| o)
-                    .unwrap_or_default(),
+                execution_options: execution_options.unwrap_or_default(),
             }),
         };
         self.next_generated_op_id += 1;
-        self.get_mut_reactive_ops(parent_scope)
-            ?
-            .push(reactive_op);
+        self.get_mut_reactive_ops(parent_scope)?.push(reactive_op);
 
         Ok(OpScopeRef(child_op_scope))
     }
@@ -399,7 +380,7 @@ impl FlowBuilder {
     pub async fn transform(
         &mut self,
         kind: String,
-        op_spec:  serde_json::Map<String, serde_json::Value>,
+        op_spec: serde_json::Map<String, serde_json::Value>,
         args: Vec<(DataSlice, Option<String>)>,
         target_scope: Option<OpScopeRef>,
         name: String,
@@ -412,8 +393,7 @@ impl FlowBuilder {
         let op_scope = Self::minimum_common_scope(
             args.iter().map(|(ds, _)| &ds.scope),
             target_scope.as_ref().map(|s| &s.0),
-        )
-        ?;
+        )?;
 
         let reactive_op = spec::NamedSpec {
             name,
@@ -434,14 +414,12 @@ impl FlowBuilder {
             lib_ctx: self.lib_context.clone(),
             flow_ctx: self.flow_inst_context.clone(),
         };
-        let analyzed =
-                analyzer_ctx.analyze_reactive_op(op_scope, &reactive_op).await
-            ?;
+        let analyzed = analyzer_ctx
+            .analyze_reactive_op(op_scope, &reactive_op)
+            .await?;
         std::mem::drop(analyzed);
 
-        self.get_mut_reactive_ops(op_scope)
-            ?
-            .push(reactive_op);
+        self.get_mut_reactive_ops(op_scope)?.push(reactive_op);
 
         let result = Self::last_field_to_data_slice(op_scope)?;
         Ok(result)
@@ -454,8 +432,8 @@ impl FlowBuilder {
         auto_uuid_field: Option<FieldName>,
     ) -> Result<()> {
         let _span = info_span!("flow_builder.collect", flow_name = %self.flow_instance_name, collector_name = %collector.name).entered();
-        let common_scope = Self::minimum_common_scope(fields.iter().map(|(_, ds)| &ds.scope), None)
-            ?;
+        let common_scope =
+            Self::minimum_common_scope(fields.iter().map(|(_, ds)| &ds.scope), None)?;
         let name = format!(".collect.{}", self.next_generated_op_id);
         self.next_generated_op_id += 1;
 
@@ -481,14 +459,12 @@ impl FlowBuilder {
             lib_ctx: self.lib_context.clone(),
             flow_ctx: self.flow_inst_context.clone(),
         };
-        let analyzed =
-                analyzer_ctx.analyze_reactive_op(common_scope, &reactive_op).await
-            ?;
+        let analyzed = analyzer_ctx
+            .analyze_reactive_op(common_scope, &reactive_op)
+            .await?;
         std::mem::drop(analyzed);
 
-        self.get_mut_reactive_ops(common_scope)
-            ?
-            .push(reactive_op);
+        self.get_mut_reactive_ops(common_scope)?.push(reactive_op);
 
         let collector_schema = CollectorSchema::from_fields(
             fields
@@ -500,17 +476,14 @@ impl FlowBuilder {
                         description: None,
                     })
                 })
-                .collect::<Result<Vec<FieldSchema>>>()
-                .map_err(Error::from)
-                ?,
+                .collect::<Result<Vec<FieldSchema>>>()?,
             auto_uuid_field,
         );
         {
             // TODO: Pass in the right field def fingerprint
             let mut collector = collector.collector.lock().unwrap();
             if let Some(collector) = collector.as_mut() {
-                collector
-                    .collect(&collector_schema, FieldDefFingerprint::default())?;
+                collector.collect(&collector_schema, FieldDefFingerprint::default())?;
             } else {
                 *collector = Some(CollectorBuilder::new(
                     Arc::new(collector_schema),
@@ -526,9 +499,9 @@ impl FlowBuilder {
         &mut self,
         name: String,
         kind: String,
-        op_spec:  serde_json::Map<String, serde_json::Value>,
-        attachments:  Vec<spec::OpSpec>,
-        index_options:  spec::IndexOptions,
+        op_spec: serde_json::Map<String, serde_json::Value>,
+        attachments: Vec<spec::OpSpec>,
+        index_options: spec::IndexOptions,
         input: &DataCollector,
         setup_by_user: bool,
     ) -> Result<()> {
@@ -548,8 +521,8 @@ impl FlowBuilder {
             spec: spec::ExportOpSpec {
                 collector_name: input.name.clone(),
                 target: spec,
-                attachments: attachments,
-                index_options: index_options,
+                attachments,
+                index_options,
                 setup_by_user,
             },
         });
@@ -588,7 +561,7 @@ impl FlowBuilder {
             declarations: self.declarations.clone(),
         };
         let flow_instance_ctx = self.flow_inst_context.clone();
-        
+
         let flow_ctx = {
             let analyzed_flow =
                 super::AnalyzedFlow::from_flow_instance(spec, flow_instance_ctx).await?;
@@ -607,8 +580,7 @@ impl FlowBuilder {
 
             // Apply internal-only changes if any.
             {
-                let mut flow_exec_ctx =
-                    flow_ctx.get_execution_ctx_for_setup().write().await;
+                let mut flow_exec_ctx = flow_ctx.get_execution_ctx_for_setup().write().await;
                 if flow_exec_ctx.setup_change.has_internal_changes()
                     && !flow_exec_ctx.setup_change.has_external_changes()
                 {
@@ -618,7 +590,7 @@ impl FlowBuilder {
                         setup::FlowSetupChangeAction::Setup,
                         &flow_ctx,
                         &mut flow_exec_ctx,
-                        &mut *lib_setup_ctx,
+                        &mut lib_setup_ctx,
                         &persistence_ctx.builtin_db_pool,
                         &mut output_buffer,
                     )
@@ -651,9 +623,7 @@ impl FlowBuilder {
         Ok(Flow(flow_ctx))
     }
 
-    pub async fn build_transient_flow(
-        &self,
-    ) -> Result<TransientFlow> {
+    pub async fn build_transient_flow(&self) -> Result<TransientFlow> {
         if self.direct_input_fields.is_empty() {
             return Err(client_error!("expect at least one direct input"));
         }
@@ -670,7 +640,7 @@ impl FlowBuilder {
         };
 
         let analyzed_flow = super::AnalyzedTransientFlow::from_transient_flow(spec).await?;
-        
+
         Ok(TransientFlow(Arc::new(analyzed_flow)))
     }
 }
