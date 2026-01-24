@@ -14,6 +14,8 @@ SPDX-License-Identifier: Apache-2.0
 
   [![Crates.io](https://img.shields.io/crates/v/recoco.svg)](https://crates.io/crates/recoco)
   [![Documentation](https://docs.rs/recoco/badge.svg)](https://docs.rs/recoco)
+  [![CI](https://github.com/knitli/recoco/actions/workflows/ci.yml/badge.svg)](https://github.com/knitli/recoco/actions/workflows/ci.yml)
+  [![MSRV](https://img.shields.io/badge/MSRV-1.89-blue.svg)](https://blog.rust-lang.org/2025/02/20/Rust-1.89.0.html)
   [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
   [![REUSE Compliance](https://img.shields.io/badge/reuse-compliant-brightgreen)](https://reuse.software/)
 
@@ -65,7 +67,7 @@ We will regularly merge in upstream fixes and changes, particularly
 - 🦀 **Pure Rust**: No Python dependencies, interpreters, or build tools required
 - 🤏 **Granular dependency selection**: Select and install only the features you need for your project
 - 🚀 **Additional optimizations**: We add additional compile-time optimizations and use some faster alternatives (i.e. `blake2` -> `blake3`) to make ReCoco as fast as possible
-- 📦 **Workspace Structure**: Clean separation into `recoco`, `recoco_utils`, and `recoco_splitters` crates
+- 📦 **Workspace Structure**: Clean separation into `recoco`, `recoco-utils`, and `recoco-splitters` crates
 
 ### CocoIndex and ReCoco
 

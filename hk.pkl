@@ -1,0 +1,44 @@
+amends "package://github.com/jdx/hk/releases/download/v1.32.0/hk@1.32.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.32.0/hk@1.32.0#/Builtins.pkl"
+
+local linters = new Mapping<String, Step> {
+  ["actionlint"] = Builtins.actionlint
+
+  ["pkl"] = Builtins.pkl
+
+  ["pkl_format"] = Builtins.pkl_format
+
+  ["cargo_check"] = Builtins.cargo_check
+
+  ["cargo_clippy"] = Builtins.cargo_clippy
+
+  ["cargo_fmt"] = Builtins.cargo_fmt
+
+  ["check_conventional_commits"] = Builtins.check_conventional_commit
+
+  ["check_added_large_files"] = Builtins.check_added_large_files
+
+  ["format_mise"] = Builtins.mise
+
+  ["newlines"] = Builtins.newlines
+
+  ["tombi"] = Builtins.tombi
+
+  ["tombi_format"] = Builtins.tombi_format
+}
+
+hooks {
+  ["pre-commit"] {
+    fix = true // automatically modify files with available linter fixes
+    stash = "git" // stashes unstaged changes while running fix steps
+    steps = linters
+  }
+  // "fix" and "check" are special steps for `hk fix` and `hk check` commands
+  ["fix"] {
+    fix = true
+    steps = linters
+  }
+  ["check"] {
+    steps = linters
+  }
+}

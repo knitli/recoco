@@ -10,7 +10,7 @@ ReCoco is a pure Rust fork of CocoIndex, an incremental ETL and data processing 
 - Pure Rust library (no Python dependencies)
 - Fully feature-gated dependencies - every source, target, and function is independently optional
 - Published to crates.io as `recoco`
-- Workspace structure with three crates: `recoco`, `recoco_utils`, `recoco_splitters`
+- Workspace structure with three crates: `recoco`, `recoco-utils`, `recoco-splitters`
 
 ## Build and Development Commands
 

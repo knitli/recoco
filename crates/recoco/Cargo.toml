@@ -64,8 +64,8 @@ pgvector = { workspace = true, optional = true }
 phf = { workspace = true }
 qdrant-client = { workspace = true, optional = true }
 rand = { workspace = true }
-recoco_splitters = { workspace = true }
-recoco_utils = { workspace = true, features = ["bytes_decode", "sqlx", "yaml"] }
+recoco-splitters = { workspace = true }
+recoco-utils = { workspace = true, features = ["bytes_decode", "sqlx", "yaml"] }
 redis = { workspace = true, optional = true }
 regex = { workspace = true }
 reqwest = { workspace = true, optional = true }
@@ -121,15 +121,15 @@ function-embed = [
   "dep:google-cloud-gax",
   "dep:json5",
   "dep:reqwest",
-  "recoco_utils/openai",
-  "recoco_utils/reqwest"
+  "recoco-utils/openai",
+  "recoco-utils/reqwest"
 ]
 function-extract-llm = [
   "dep:async-openai",
   "dep:json5",
   "dep:reqwest",
-  "recoco_utils/openai",
-  "recoco_utils/reqwest"
+  "recoco-utils/openai",
+  "recoco-utils/reqwest"
 ]
 function-json = ["dep:json5"]
 # Functions
@@ -151,10 +151,10 @@ source-gdrive = [
 ]
 # Sources
 source-local-file = []
-source-postgres = ["dep:pgvector", "recoco_utils/sqlx"]
+source-postgres = ["dep:pgvector", "recoco-utils/sqlx"]
 source-s3 = ["dep:aws-config", "dep:aws-sdk-s3", "dep:aws-sdk-sqs", "dep:redis"]
-target-kuzu = ["dep:reqwest", "recoco_utils/reqwest", "target-neo4j"]
-target-neo4j = ["dep:neo4rs", "recoco_utils/neo4rs"]
+target-kuzu = ["dep:reqwest", "recoco-utils/reqwest", "target-neo4j"]
+target-neo4j = ["dep:neo4rs", "recoco-utils/neo4rs"]
 # Targets
 target-postgres = ["source-postgres"]
 target-qdrant = ["dep:qdrant-client"]

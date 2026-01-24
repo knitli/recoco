@@ -64,3 +64,79 @@ jobs:
 
       - name: Clippy
         run: cargo clippy --all-features -- -D warnings
+
+  msrv:
+    name: MSRV (1.89)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust (MSRV)
+        uses: dtolnay/rust-toolchain@1.89
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check MSRV compatibility
+        run: cargo check --all-features
+
+  feature-combinations:
+    name: Feature Combinations
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Individual sources
+          - features: "source-postgres"
+          - features: "source-s3"
+          - features: "source-azure"
+          - features: "source-gdrive"
+          # Individual targets
+          - features: "target-postgres"
+          - features: "target-qdrant"
+          - features: "target-neo4j"
+          - features: "target-kuzu"
+          # Individual functions
+          - features: "function-split"
+          - features: "function-embed"
+          - features: "function-extract-llm"
+          - features: "function-detect-lang"
+          - features: "function-json"
+          # Common combinations
+          - features: "source-postgres,target-postgres"
+          - features: "function-split,function-embed"
+          - features: "source-local-file,function-split,target-qdrant"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.features }}
+
+      - name: Check feature combination
+        env:
+          FEATURES: ${{ matrix.features }}
+        run: cargo check --features "$FEATURES"
+
+  docs:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build documentation
+        run: cargo doc --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings

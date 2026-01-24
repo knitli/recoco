@@ -1,0 +1,349 @@
+[tools]
+actionlint = "latest"
+git-cliff = "latest"
+hk = "latest"
+pkl = "latest"
+tombi = "latest"
+
+[env]
+RUST_BACKTRACE = "1"
+CARGO_TERM_COLOR = "always"
+
+# =============================================================================
+# BUILD TASKS
+# =============================================================================
+
+[tasks.build]
+description = "Build with default features (source-local-file)"
+run = "cargo build"
+
+[tasks."build:full"]
+description = "Build with all features enabled"
+run = "cargo build --features full"
+
+[tasks."build:release"]
+description = "Build release with all features"
+run = "cargo build --release --features full"
+
+[tasks."build:sources"]
+description = "Build with all source connectors"
+run = "cargo build --features all-sources"
+
+[tasks."build:targets"]
+description = "Build with all target connectors"
+run = "cargo build --features all-targets"
+
+[tasks."build:functions"]
+description = "Build with all transform functions"
+run = "cargo build --features all-functions"
+
+# =============================================================================
+# TEST TASKS
+# =============================================================================
+
+[tasks.test]
+description = "Run tests with default features"
+run = "cargo test"
+
+[tasks."test:full"]
+description = "Run tests with all features"
+run = "cargo test --features full"
+
+[tasks."test:sources"]
+description = "Run tests for source connectors"
+run = "cargo test --features all-sources"
+
+[tasks."test:targets"]
+description = "Run tests for target connectors"
+run = "cargo test --features all-targets"
+
+[tasks."test:functions"]
+description = "Run tests for transform functions"
+run = "cargo test --features all-functions"
+
+[tasks."test:verbose"]
+description = "Run tests with output capture disabled"
+run = "cargo test --features full -- --nocapture"
+
+[tasks."test:doc"]
+description = "Run documentation tests"
+run = "cargo test --doc --features full"
+
+# =============================================================================
+# LINT & FORMAT TASKS
+# =============================================================================
+
+[tasks.fmt]
+description = "Format all code"
+run = "cargo fmt --all"
+
+[tasks."fmt:check"]
+description = "Check code formatting"
+run = "cargo fmt --all -- --check"
+
+[tasks.clippy]
+description = "Run clippy with all features"
+run = "cargo clippy --all-features -- -D warnings"
+
+[tasks."clippy:fix"]
+description = "Run clippy and apply fixes"
+run = "cargo clippy --all-features --fix --allow-dirty --allow-staged"
+
+[tasks.lint]
+description = "Run all linting (fmt check + clippy)"
+depends = ["fmt:check", "clippy"]
+
+# =============================================================================
+# DOCUMENTATION TASKS
+# =============================================================================
+
+[tasks.doc]
+description = "Generate documentation"
+run = "cargo doc --features full --no-deps"
+
+[tasks."doc:open"]
+description = "Generate and open documentation"
+run = "cargo doc --features full --no-deps --open"
+
+[tasks."doc:private"]
+description = "Generate docs including private items"
+run = "cargo doc --features full --no-deps --document-private-items"
+
+# =============================================================================
+# EXAMPLE TASKS
+# =============================================================================
+
+[tasks."example:transient"]
+description = "Run transient flow example"
+run = "cargo run -p recoco --example transient --features function-split"
+
+[tasks."example:file"]
+description = "Run file processing example"
+run = "cargo run -p recoco --example file_processing --features function-split"
+
+[tasks."example:custom"]
+description = "Run custom operation example"
+run = "cargo run -p recoco --example custom_op"
+
+[tasks."example:lang"]
+description = "Run language detection example"
+run = "cargo run -p recoco --example detect_lang --features function-detect-lang"
+
+# =============================================================================
+# CI/CHECK TASKS
+# =============================================================================
+
+[tasks.check]
+description = "Quick check with default features"
+run = "cargo check"
+
+[tasks."check:full"]
+description = "Check with all features"
+run = "cargo check --features full"
+
+[tasks."check:all"]
+description = "Check all workspace members with all features"
+run = "cargo check --workspace --all-features"
+
+[tasks.ci]
+description = "Run full CI checks (fmt, clippy, test)"
+depends = ["fmt:check", "clippy", "test:full"]
+
+[tasks."ci:quick"]
+description = "Quick CI checks (fmt, clippy, check)"
+depends = ["fmt:check", "clippy", "check:full"]
+
+# =============================================================================
+# CLEAN & MAINTENANCE TASKS
+# =============================================================================
+
+[tasks.clean]
+description = "Clean build artifacts"
+run = "cargo clean"
+
+[tasks."clean:deep"]
+description = "Deep clean including target and Cargo.lock"
+run = """
+cargo clean
+rm -rf target/
+"""
+
+[tasks.update]
+description = "Update dependencies"
+run = "cargo update"
+
+[tasks.outdated]
+description = "Check for outdated dependencies"
+run = "cargo outdated -R"
+
+[tasks.audit]
+description = "Run security audit"
+run = "cargo audit"
+
+# =============================================================================
+# FEATURE-SPECIFIC BUILD TASKS
+# =============================================================================
+
+[tasks."build:postgres"]
+description = "Build with PostgreSQL source and target"
+run = "cargo build --features source-postgres,target-postgres"
+
+[tasks."build:qdrant"]
+description = "Build with Qdrant vector DB target"
+run = "cargo build --features target-qdrant"
+
+[tasks."build:neo4j"]
+description = "Build with Neo4j graph DB target"
+run = "cargo build --features target-neo4j"
+
+[tasks."build:s3"]
+description = "Build with S3 source connector"
+run = "cargo build --features source-s3"
+
+[tasks."build:azure"]
+description = "Build with Azure Blob source connector"
+run = "cargo build --features source-azure"
+
+[tasks."build:gdrive"]
+description = "Build with Google Drive source connector"
+run = "cargo build --features source-gdrive"
+
+[tasks."build:embed"]
+description = "Build with embedding functions"
+run = "cargo build --features function-embed"
+
+[tasks."build:llm"]
+description = "Build with LLM extraction functions"
+run = "cargo build --features function-extract-llm"
+
+# =============================================================================
+# WORKSPACE MEMBER TASKS
+# =============================================================================
+
+[tasks."build:utils"]
+description = "Build recoco-utils crate"
+run = "cargo build -p recoco-utils"
+
+[tasks."build:splitters"]
+description = "Build recoco-splitters crate"
+run = "cargo build -p recoco-splitters"
+
+[tasks."test:utils"]
+description = "Test recoco-utils crate"
+run = "cargo test -p recoco-utils"
+
+[tasks."test:splitters"]
+description = "Test recoco-splitters crate"
+run = "cargo test -p recoco-splitters"
+
+# =============================================================================
+# DEVELOPMENT WORKFLOW TASKS
+# =============================================================================
+
+[tasks.dev]
+description = "Development build with common features"
+run = "cargo build --features function-split,function-json"
+
+[tasks.watch]
+description = "Watch and rebuild on changes"
+run = "cargo watch -x 'build --features function-split'"
+
+[tasks."watch:test"]
+description = "Watch and run tests on changes"
+run = "cargo watch -x 'test --features full'"
+
+# =============================================================================
+# RELEASE TASKS
+# =============================================================================
+
+[tasks."release:check"]
+description = "Check release build compiles"
+run = "cargo build --release --features full"
+
+[tasks."release:size"]
+description = "Show release binary sizes"
+run = """
+cargo build --release --features full
+ls -lh target/release/*.rlib 2>/dev/null || echo "No rlib files"
+ls -lh target/release/librecoco* 2>/dev/null || echo "No library files yet"
+"""
+
+# =============================================================================
+# CHANGELOG TASKS (git-cliff)
+# =============================================================================
+
+[tasks.changelog]
+description = "Generate full changelog"
+run = "git cliff -o CHANGELOG.md"
+
+[tasks."changelog:unreleased"]
+description = "Generate changelog for unreleased changes"
+run = "git cliff --unreleased"
+
+[tasks."changelog:preview"]
+description = "Preview changelog without writing to file"
+run = "git cliff"
+
+[tasks."changelog:latest"]
+description = "Show changelog for latest tag only"
+run = "git cliff --latest"
+
+[tasks."changelog:bump"]
+description = "Generate changelog and bump version"
+run = "git cliff --bump -o CHANGELOG.md"
+
+[tasks."changelog:tag"]
+description = "Generate changelog for specific tag range (use: mise run changelog:tag -- v0.1.0..v0.2.0)"
+run = "git cliff"
+
+[tasks."changelog:init"]
+description = "Initialize git-cliff config (if needed)"
+run = "git cliff --init"
+
+# =============================================================================
+# PUBLISH TASKS
+# =============================================================================
+
+[tasks."publish:dry-run"]
+description = "Validate all crates can be published (dry-run)"
+run = """
+cargo publish -p recoco-utils --dry-run
+cargo publish -p recoco-splitters --dry-run
+cargo publish -p recoco --dry-run
+"""
+
+[tasks."publish:utils"]
+description = "Publish recoco-utils to crates.io"
+run = "cargo publish -p recoco-utils"
+
+[tasks."publish:splitters"]
+description = "Publish recoco-splitters to crates.io"
+run = "cargo publish -p recoco-splitters"
+
+[tasks."publish:recoco"]
+description = "Publish recoco to crates.io"
+run = "cargo publish -p recoco"
+
+[tasks."publish:all"]
+description = "Publish all crates in order (utils → splitters → recoco)"
+run = """
+cargo publish -p recoco-utils
+echo "Waiting for crates.io propagation..."
+sleep 30
+cargo publish -p recoco-splitters
+echo "Waiting for crates.io propagation..."
+sleep 30
+cargo publish -p recoco
+"""
+
+# =============================================================================
+# MSRV TASKS
+# =============================================================================
+
+[tasks.msrv]
+description = "Check MSRV compatibility (requires rustup)"
+run = "cargo +1.89 check --all-features"
+
+[tasks."msrv:install"]
+description = "Install MSRV toolchain"
+run = "rustup install 1.89"

@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -29,10 +29,10 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@v2.8.2
 
       - name: Generate Changelog
-        uses: orhun/git-cliff-action@v3
+        uses: orhun/git-cliff-action@v4.7.0
         with:
           config: cliff.toml
           args: --verbose --latest --strip header
@@ -41,25 +41,35 @@ jobs:
 
       - name: Build Changelog for Release
         id: changelog
-        uses: orhun/git-cliff-action@v3
+        uses: orhun/git-cliff-action@v4.7.0
         with:
           config: cliff.toml
           args: --verbose --latest --strip header
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2.5.0
         with:
           body: ${{ steps.changelog.outputs.content }}
           files: |
             CHANGELOG.md
 
-      - name: Publish recoco_utils
-        run: cargo publish -p recoco_utils
+      # Validate packages before publishing
+      - name: Dry-run publish recoco-utils
+        run: cargo publish -p recoco-utils --dry-run
+
+      - name: Dry-run publish recoco-splitters
+        run: cargo publish -p recoco-splitters --dry-run
+
+      - name: Dry-run publish recoco
+        run: cargo publish -p recoco --dry-run
+
+      - name: Publish recoco-utils
+        run: cargo publish -p recoco-utils
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
-      - name: Publish recoco_splitters
-        run: cargo publish -p recoco_splitters
+      - name: Publish recoco-splitters
+        run: cargo publish -p recoco-splitters
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
