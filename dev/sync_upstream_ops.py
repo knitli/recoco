@@ -3,7 +3,9 @@
 # SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 #
 # SPDX-License-Identifier: Apache-2.0
-
+"""
+Sync upstream CocoIndex ops to local ReCoco ops, applying necessary replacements.
+"""
 import os
 import subprocess
 import sys
@@ -22,7 +24,7 @@ UPSTREAM_SUBPATH = Path("rust/cocoindex/src/ops")
 # Basic crates replacements based on observed structure
 REPLACEMENTS = [
     (r'cocoindex_utils', 'recoco_utils'),
-    (r'cocoindex_extra_text', 'recoco_extra_text'),
+    (r'cocoindex_extra_text', 'recoco_splitters'),
     # Add more specific replacements here if needed
 ]
 

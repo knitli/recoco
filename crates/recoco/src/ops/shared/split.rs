@@ -23,8 +23,8 @@ use crate::{
     prelude::*,
 };
 
-// Re-export core types from extra_text
-pub use recoco_extra_text::split::OutputPosition;
+// Re-export core types from splitters
+pub use recoco_splitters::split::OutputPosition;
 
 /// Convert an OutputPosition to cocoindex Value format.
 pub fn output_position_to_value(pos: OutputPosition) -> value::Value {

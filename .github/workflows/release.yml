@@ -58,8 +58,8 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
-      - name: Publish recoco_extra_text
-        run: cargo publish -p recoco_extra_text
+      - name: Publish recoco_splitters
+        run: cargo publish -p recoco_splitters
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 

@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::ops::sdk::*;
-use recoco_extra_text::prog_langs;
+use recoco_splitters::prog_langs;
 
 pub struct Args {
     filename: ResolvedOpArg,

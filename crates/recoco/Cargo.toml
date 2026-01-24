@@ -11,11 +11,11 @@ name = "ReCoco"
 version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
-categories = { workspace = true }
 description = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }
 keywords = { workspace = true }
+categories = { workspace = true }
 
 [lib]
 name = "recoco"
@@ -64,7 +64,7 @@ pgvector = { workspace = true, optional = true }
 phf = { workspace = true }
 qdrant-client = { workspace = true, optional = true }
 rand = { workspace = true }
-recoco_extra_text = { workspace = true }
+recoco_splitters = { workspace = true }
 recoco_utils = { workspace = true, features = ["bytes_decode", "sqlx", "yaml"] }
 redis = { workspace = true, optional = true }
 regex = { workspace = true }
