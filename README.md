@@ -46,28 +46,41 @@ I decided to create a Rust-only fork of CocoIndex for a couple reasons:
 
 2. **CocoIndex is heavy.** CocoIndex has several very heavy dependencies that you probably don't need all of, including Google/AWS/Azure components, Qdrant/Postgres/Neo4j, and more. 
 
-## How ReCoco is Different
+For [Knitli](https://knitli.com), I particularly needed dependency control. I wanted to use CocoIndex as an ETL engine for [Thread](https://github.com/knitli/thread/), but Thread needs to be edge-deployable. The dependencies were way too heavy and would never compile to WASM. Thread, of course, is also a Rust project, so pulling in a lot of Python dependencies didn't make sense for me.
+
+> [!NOTE] Knitli and ReCoco have no official relationship with CocoIndex and this project is not endorsed by them. **We will contribute as much as we can upstream**, our [contribution guidelines](CONTRIBUTING.md) encourage you to submit PRs and issues affecting shared code upstream to help both projects.
+
+## How ReCoco is Different from CocoIndex
 
 1. **ReCoco fully exposes a Rust API.** You can use ReCoco to support your rust ETL projects directly. **Build on it.**
 
 2. **Every target, source, and function is independently feature-gated. Use only what you want.**
 
+We will regularly merge in upstream fixes and changes, particularly 
+
 ## ✨ Key Features
 
+### Unique to ReCoco
+
 - 🦀 **Pure Rust**: No Python dependencies, interpreters, or build tools required
+- 🤏 **Granular dependency selection**: Select and install only the features you need for your project
+- 🚀 **Additional optimizations**: We add additional compile-time optimizations and use some faster alternatives (i.e. `blake2` -> `blake3`) to make ReCoco as fast as possible
+- 📦 **Workspace Structure**: Clean separation into `recoco`, `recoco_utils`, and `recoco_splitters` crates
+
+### CocoIndex and ReCoco
+
 - ⚡ **Incremental Processing**: Built on a dataflow engine that processes only changed data
 - 🎯 **Modular Architecture**: Feature-gated sources, targets, and functions - use only what you need
 - 🔌 **Rich Connector Ecosystem**:
   - **Sources**: Local Files, PostgreSQL, S3, Azure Blob, Google Drive
   - **Targets**: PostgreSQL, Qdrant, Neo4j, Kùzu
-  - **Functions**: Text splitting, LLM embedding (OpenAI/Google), JSON parsing, language detection
+  - **Functions**: Text splitting, LLM embedding and calling, Embedding generation (SentenceTransformers), JSON parsing, language detection
 - 🚀 **Async API**: Fully async/await compatible API based on Tokio
-- 📦 **Workspace Structure**: Clean separation into `recoco`, `recoco_utils`, and `recoco_splitters` crates
 - 🔄 **Data Lineage Tracking**: Automatic tracking of data dependencies for smart incremental updates
 
 ## 🎯 Use Cases
 
-ReCoco is designed for building scalable data pipelines with intelligent incremental processing:
+ReCoco, like CocoIndex, enables scalable data pipelines with intelligent incremental processing for many use cases, including:
 
 - **RAG (Retrieval-Augmented Generation) Pipelines**: Ingest documents, split them intelligently, generate embeddings, and store in vector databases
 - **ETL Workflows**: Extract data from various sources, transform it, and load into databases or data warehouses

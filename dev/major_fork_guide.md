@@ -7,8 +7,13 @@
 - move ./rust/utils/ to ./crates/recoco_utils
 - in ReCoco repo:
   - delete ./crates, but preserve any sources/functions/targets not in the CocoIndex pull
+  - Retain the `builder` module and files, moving them to a temporary location
   - copy over the new ./crates
   - Add back in any sources/functions/targets not in the new code
+
+### Reintegrate Builder
+
+- ReCoco's flow builder implementation has some significant differences to best align it with a rust-only API. This is the main "heavy lift" -- you need to identify what has changed about this module, compare the changes with the current ReCoco implementation, and either update the new crate to incorporate the Recoco functionality/considerations or vice versa. 
 
 ## Update to Align with ReCoco
 
