@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2026 Knitli Inc.
+SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # CLAUDE.md/AGENTS.md/GEMINI.md
 
 This file provides guidance to Agents like Claude, Gemini, or ChatGPT.

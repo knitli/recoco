@@ -1,4 +1,5 @@
 <!--
+SPDX-FileCopyrightText: 2026 Knitli Inc.
 SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
 SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 

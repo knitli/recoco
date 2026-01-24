@@ -1,9 +1,8 @@
 # SPDX-FileCopyrightText: 2025 Knitli Inc. <knitli@knit.li>
+# SPDX-FileCopyrightText: 2026 Knitli Inc.
 # SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 #
 # SPDX-License-Identifier: Apache-2.0
-# ! GitHub Action to check CLA signatures for Knitli repositories
-# ! This action is triggered on issue comments and pull request events.
 name: CLA Assistant
 on:
   issue_comment:
