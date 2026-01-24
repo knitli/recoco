@@ -26,7 +26,7 @@ anyhow = { version = "1.0.100", features = ["std"] }
 async-openai = "0.30.1"
 async-stream = "0.3.6"
 async-trait = "0.1.89"
-aws-config = "1.8.11"
+aws-config = "1.8.12"
 aws-sdk-s3 = "1.115.0"
 aws-sdk-sqs = "1.90.0"
 axum = "0.8.7"
