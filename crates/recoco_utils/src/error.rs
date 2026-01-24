@@ -226,12 +226,6 @@ impl From<globset::Error> for Error {
     }
 }
 
-impl From<indicatif::style::TemplateError> for Error {
-    fn from(e: indicatif::style::TemplateError) -> Self {
-        Error::Internal(e.into())
-    }
-}
-
 impl From<regex::Error> for Error {
     fn from(e: regex::Error) -> Self {
         Error::Internal(e.into())

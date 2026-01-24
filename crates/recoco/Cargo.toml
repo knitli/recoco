@@ -9,14 +9,13 @@
 [package]
 name = "ReCoco"
 version = { workspace = true }
-authors = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
+categories = { workspace = true }
 description = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }
 keywords = { workspace = true }
-categories = { workspace = true }
 
 [lib]
 name = "recoco"
@@ -37,12 +36,11 @@ azure_identity = { workspace = true, optional = true }
 azure_storage = { workspace = true, optional = true }
 azure_storage_blobs = { workspace = true, optional = true }
 base64 = { workspace = true }
-blake2 = { workspace = true }
 bytes = { workspace = true, features = ["serde"] }
 chrono = { workspace = true }
 config = { workspace = true }
 const_format = { workspace = true }
-derivative = { workspace = true }
+derive-where = { workspace = true }
 encoding_rs = { workspace = true }
 expect-test = { workspace = true }
 futures = { workspace = true }
@@ -155,7 +153,7 @@ source-gdrive = [
 source-local-file = []
 source-postgres = ["dep:pgvector", "recoco_utils/sqlx"]
 source-s3 = ["dep:aws-config", "dep:aws-sdk-s3", "dep:aws-sdk-sqs", "dep:redis"]
-target-kuzu = ["dep:reqwest", "target-neo4j"]
+target-kuzu = ["dep:reqwest", "recoco_utils/reqwest", "target-neo4j"]
 target-neo4j = ["dep:neo4rs", "recoco_utils/neo4rs"]
 # Targets
 target-postgres = ["source-postgres"]

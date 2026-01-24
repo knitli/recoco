@@ -15,11 +15,13 @@ I decided to create a Rust-only fork of CocoIndex for a couple reasons:
 
 1. **CocoIndex is not a Rust library.**  CocoIndex is written in Rust, but it does not expose a Rust API and its packaging, documentation, and examples are only focused on *Python*. It exposes a more limited API through its Rust extensions. It's not even released on crates.io.
 
-2. **CocoIndex is heavy.** CocoIndex has several very heavy dependencies that very few deployments would need to use all of, including Google/AWS/Azure components, Qdrant/Postgres/Neo4j, and more. 
+2. **CocoIndex is heavy.** CocoIndex has several very heavy dependencies that you probably don't need all of, including Google/AWS/Azure components, Qdrant/Postgres/Neo4j, and more. 
 
-CocoIndex itself is written in Rust, but does not expose a Rust API and is not distributed on crates.io. It's designed as a performant *python tool* through its Python language extensions. 
+## How ReCoco is Different
 
-Unlike the original CocoIndex which is designed as a Python library with a private Rust core, ReCoco is a **Rust-first library** designed for building robust data pipelines in Rust. It features an "a-la-carte" dependency model, allowing you to only pull in the connectors you need, keeping compile times and binary sizes minimal.
+1. **ReCoco fully exposes a Rust API.** You can use ReCoco to support your rust ETL projects directly. **Build on it.**
+
+2. **Every target, source, and function is independently feature-gated. Use only what you want.**
 
 ## Features
 

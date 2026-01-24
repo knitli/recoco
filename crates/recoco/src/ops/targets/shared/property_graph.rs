@@ -102,14 +102,8 @@ impl std::fmt::Display for ElementType {
         }
     }
 }
-
-#[derive(Debug, Serialize, Deserialize, Derivative)]
-#[derivative(
-    Clone(bound = ""),
-    PartialEq(bound = ""),
-    Eq(bound = ""),
-    Hash(bound = "")
-)]
+#[derive(Debug, Serialize, Deserialize)]
+#[derive_where::derive_where(Clone, PartialEq, Eq, Hash)]
 pub struct GraphElementType<AuthEntry> {
     #[serde(bound = "")]
     pub connection: AuthEntryReference<AuthEntry>,

@@ -17,3 +17,13 @@ updates:
     commit-message:
       prefix: "ci"
       include: "scope"
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "cargo"
+    commit-message:
+      prefix: "ci"
+      include: "scope"

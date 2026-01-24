@@ -23,5 +23,5 @@ assignees: ''
 
 
 ---
-❤️ Contributors, please refer to 📙[Contributing Guide](https://cocoindex.io/docs/about/contributing).
-Unless the PR can be sent immediately (e.g. just a few lines of code), we recommend you to leave a comment on the issue like **`I'm working on it`**  or **`Can I work on this issue?`** to avoid duplicating work. Our [Discord server](https://discord.com/invite/zpA9S2DR7s) is always open and friendly.
+❤️ Contributors, please refer to 📙[Contributing Guide](../../CONTRIBUTING.md).
+If the PR is short (a few lines) and is a bug fix, you can submit your PR directly. Otherwise, please create an issue or leave a comment on an existing issue and ask to work on it.

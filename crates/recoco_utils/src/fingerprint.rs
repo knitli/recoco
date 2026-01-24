@@ -1,13 +1,8 @@
-// ReCoco is a Rust-only fork of CocoIndex, by [CocoIndex.io](https://cocoindex.io)
-// Original code from CocoIndex is copyrighted by CocoIndex.io
-// SPDX-FileCopyrightText: 2025-2026 CocoIndex.io (upstream)
-// SPDX-FileContributor: CocoIndex Contributors
-//
-// All modifications from the upstream for ReCoco are copyrighted by Knitli Inc.
+// SPDX-FileCopyrightText: 2026 CocoIndex.io (upstream)
 // SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
 // SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+// SPDX-FileContributor: CocoIndex Contributors
 //
-// Both the upstream CocoIndex code and the ReCoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::{
@@ -15,8 +10,6 @@ use crate::{
     error::{Error, Result},
 };
 use base64::prelude::*;
-use blake2::digest::typenum;
-use blake2::{Blake2b, Digest};
 use serde::Deserialize;
 use serde::ser::{
     Serialize, SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple,
@@ -125,12 +118,14 @@ impl<'de> Deserialize<'de> for Fingerprint {
 }
 #[derive(Clone, Default)]
 pub struct Fingerprinter {
-    hasher: Blake2b<typenum::U16>,
+    hasher: blake3::Hasher,
 }
 
 impl Fingerprinter {
     pub fn into_fingerprint(self) -> Fingerprint {
-        Fingerprint(self.hasher.finalize().into())
+        let mut output = [0u8; 16];
+        self.hasher.finalize_xof().fill(&mut output);
+        Fingerprint(output)
     }
 
     pub fn with<S: Serialize + ?Sized>(
@@ -168,7 +163,7 @@ impl Fingerprinter {
     }
 
     fn write_usize(&mut self, value: usize) {
-        self.hasher.update((value as u32).to_le_bytes());
+        self.hasher.update(&(value as u32).to_le_bytes());
     }
 }
 
@@ -191,61 +186,61 @@ impl Serializer for &mut Fingerprinter {
 
     fn serialize_i8(self, v: i8) -> std::result::Result<(), Self::Error> {
         self.write_type_tag("i1");
-        self.hasher.update(v.to_le_bytes());
+        self.hasher.update(&v.to_le_bytes());
         Ok(())
     }
 
     fn serialize_i16(self, v: i16) -> std::result::Result<(), Self::Error> {
         self.write_type_tag("i2");
-        self.hasher.update(v.to_le_bytes());
+        self.hasher.update(&v.to_le_bytes());
         Ok(())
     }
 
     fn serialize_i32(self, v: i32) -> std::result::Result<(), Self::Error> {
         self.write_type_tag("i4");
-        self.hasher.update(v.to_le_bytes());
+        self.hasher.update(&v.to_le_bytes());
         Ok(())
     }
 
     fn serialize_i64(self, v: i64) -> std::result::Result<(), Self::Error> {
         self.write_type_tag("i8");
-        self.hasher.update(v.to_le_bytes());
+        self.hasher.update(&v.to_le_bytes());
         Ok(())
     }
 
     fn serialize_u8(self, v: u8) -> std::result::Result<(), Self::Error> {
         self.write_type_tag("u1");
-        self.hasher.update(v.to_le_bytes());
+        self.hasher.update(&v.to_le_bytes());
         Ok(())
     }
 
     fn serialize_u16(self, v: u16) -> std::result::Result<(), Self::Error> {
         self.write_type_tag("u2");
-        self.hasher.update(v.to_le_bytes());
+        self.hasher.update(&v.to_le_bytes());
         Ok(())
     }
 
     fn serialize_u32(self, v: u32) -> std::result::Result<(), Self::Error> {
         self.write_type_tag("u4");
-        self.hasher.update(v.to_le_bytes());
+        self.hasher.update(&v.to_le_bytes());
         Ok(())
     }
 
     fn serialize_u64(self, v: u64) -> std::result::Result<(), Self::Error> {
         self.write_type_tag("u8");
-        self.hasher.update(v.to_le_bytes());
+        self.hasher.update(&v.to_le_bytes());
         Ok(())
     }
 
     fn serialize_f32(self, v: f32) -> std::result::Result<(), Self::Error> {
         self.write_type_tag("f4");
-        self.hasher.update(v.to_le_bytes());
+        self.hasher.update(&v.to_le_bytes());
         Ok(())
     }
 
     fn serialize_f64(self, v: f64) -> std::result::Result<(), Self::Error> {
         self.write_type_tag("f8");
-        self.hasher.update(v.to_le_bytes());
+        self.hasher.update(&v.to_le_bytes());
         Ok(())
     }
 

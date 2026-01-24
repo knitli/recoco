@@ -12,7 +12,6 @@
 
 use super::{CombinedState, ResourceSetupChange, SetupChangeType, StateChange};
 use crate::prelude::*;
-use std::fmt::Debug;
 
 pub trait State<Key>: Debug + Send + Sync {
     fn key(&self) -> Key;
@@ -46,11 +45,8 @@ struct CompositeStateUpsert<S> {
     state: S,
     already_exists: bool,
 }
-
-#[derive(Derivative)]
-#[derivative(Debug)]
+#[derive(Debug)]
 pub struct SetupChange<D: SetupOperator> {
-    #[derivative(Debug = "ignore")]
     desc: D,
     keys_to_delete: IndexSet<D::Key>,
     states_to_upsert: Vec<CompositeStateUpsert<D::State>>,
