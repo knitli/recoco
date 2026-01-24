@@ -14,8 +14,6 @@ local linters = new Mapping<String, Step> {
 
   ["cargo_fmt"] = Builtins.cargo_fmt
 
-  ["check_conventional_commits"] = Builtins.check_conventional_commit
-
   ["check_added_large_files"] = Builtins.check_added_large_files
 
   ["format_mise"] = Builtins.mise

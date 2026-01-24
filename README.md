@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <div align="center">
-  <img src="docs/assets/recoco.webp" alt="ReCoco Logo" width="200"/>
+  <img src="assets/recoco.webp" alt="ReCoco Logo" width="200"/>
 
   # ReCoco
 
@@ -23,7 +23,7 @@ SPDX-License-Identifier: Apache-2.0
 
 ---
 
-**ReCoco** is a pure Rust fork of the excellent [CocoIndex](https://github.com/cocoindex-io/cocoindex), a high-performance, incremental ETL and data processing framework.
+**[ReCoco](https://github.com/knitli/recoco)** is a pure Rust fork of the excellent [CocoIndex](https://github.com/cocoindex-io/cocoindex), a high-performance, incremental ETL and data processing framework.
 
 ## 📑 Table of Contents
 
