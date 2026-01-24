@@ -1,6 +1,6 @@
-// ReCoco is a Rust-only fork of CocoIndex, by [CocoIndex.io](https://cocoindex.io)
-// Original code from CocoIndex is copyrighted by CocoIndex.io
-// SPDX-FileCopyrightText: 2025-2026 CocoIndex.io (upstream)
+// ReCoco is a Rust-only fork of CocoIndex, by [CocoIndex](https://CocoIndex)
+// Original code from CocoIndex is copyrighted by CocoIndex
+// SPDX-FileCopyrightText: 2025-2026 CocoIndex (upstream)
 // SPDX-FileContributor: CocoIndex Contributors
 //
 // All modifications from the upstream for ReCoco are copyrighted by Knitli Inc.
@@ -711,10 +711,13 @@ mod tests {
     fn test_context_chaining() {
         let inner = Error::client("base error");
         let with_context: Result<()> = Err(inner);
-        let wrapped = with_context
-            .context("layer 1")
-            .context("layer 2")
-            .context("layer 3");
+        let wrapped = ContextExt::context(
+            ContextExt::context(
+                ContextExt::context(with_context, "layer 1"),
+                "layer 2",
+            ),
+            "layer 3",
+        );
 
         let err = wrapped.unwrap_err();
         assert!(matches!(&err, Error::Context { msg, .. } if msg == "layer 3"));
@@ -739,7 +742,7 @@ mod tests {
         let mock = MockHostError("original python error".to_string());
         let err = Error::host(mock);
         let wrapped: Result<()> = Err(err);
-        let with_context = wrapped.context("while processing request");
+        let with_context = ContextExt::context(wrapped, "while processing request");
 
         let final_err = with_context.unwrap_err();
         assert!(matches!(final_err.without_contexts(), Error::HostLang(_)));
@@ -778,7 +781,7 @@ mod tests {
     fn test_backtrace_traverses_context() {
         let inner = Error::internal_msg("base");
         let wrapped: Result<()> = Err(inner);
-        let with_context = wrapped.context("context");
+        let with_context = ContextExt::context(wrapped, "context");
 
         let err = with_context.unwrap_err();
         let bt = err.backtrace();
@@ -812,7 +815,7 @@ mod tests {
     fn test_error_source_chain() {
         let inner = Error::internal_msg("root cause");
         let wrapped: Result<()> = Err(inner);
-        let outer = wrapped.context("outer context").unwrap_err();
+        let outer = ContextExt::context(wrapped, "outer context").unwrap_err();
 
         let source = outer.source();
         assert!(source.is_some());

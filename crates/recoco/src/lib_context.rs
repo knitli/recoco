@@ -1,6 +1,6 @@
-// ReCoco is a Rust-only fork of CocoIndex, by [CocoIndex.io](https://cocoindex.io)
-// Original code from CocoIndex is copyrighted by CocoIndex.io
-// SPDX-FileCopyrightText: 2025-2026 CocoIndex.io (upstream)
+// ReCoco is a Rust-only fork of CocoIndex, by [CocoIndex](https://CocoIndex)
+// Original code from CocoIndex is copyrighted by CocoIndex
+// SPDX-FileCopyrightText: 2025-2026 CocoIndex (upstream)
 // SPDX-FileContributor: CocoIndex Contributors
 //
 // All modifications from the upstream for ReCoco are copyrighted by Knitli Inc.
@@ -286,7 +286,7 @@ impl LibContext {
             client_error!(
                 "Database is required for this operation. \
                          The easiest way is to set COCOINDEX_DATABASE_URL environment variable. \
-                         Please see https://cocoindex.io/docs/core/settings for more details."
+                         Please see https://CocoIndex/docs/core/settings for more details."
             )
         })
     }

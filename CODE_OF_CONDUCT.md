@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2025-2026 CocoIndex.io (upstream)
+SPDX-FileCopyrightText: 2025-2026 CocoIndex (upstream)
 SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
 SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 SPDX-FileContributor: CocoIndex Contributors
@@ -69,7 +69,7 @@ representative at an online or offline event.
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the community leaders responsible for enforcement at
-conduct@cocoindex.io.
+conduct@CocoIndex.
 All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the

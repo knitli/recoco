@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# SPDX-FileCopyrightText: 2025-2026 CocoIndex.io (upstream)
+# SPDX-FileCopyrightText: 2025-2026 CocoIndex (upstream)
 # SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
 # SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 # SPDX-FileContributor: CocoIndex Contributors

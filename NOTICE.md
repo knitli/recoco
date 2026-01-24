@@ -8,5 +8,5 @@ Copyright 2026 Knitli Inc
 
 This project is a fork of CocoIndex
 https://github.com/cocoindex-io/cocoindex
-Copyright 2025-2026 CocoIndex.io, CocoIndex Contributors
+Copyright 2025-2026 CocoIndex, CocoIndex Contributors
 Licensed under the Apache License, Version 2.0

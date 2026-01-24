@@ -212,4 +212,4 @@ ReCoco is a **fork** of CocoIndex (https://github.com/cocoindex/cocoindex):
 - **Upstream**: Python-focused with private Rust core, not on crates.io
 - **ReCoco**: Rust-focused public API, published to crates.io, feature-gated architecture
 
-Code headers maintain dual copyright (CocoIndex.io upstream, Knitli Inc. for ReCoco modifications) under Apache-2.0.
+Code headers maintain dual copyright (CocoIndex upstream, Knitli Inc. for ReCoco modifications) under Apache-2.0.

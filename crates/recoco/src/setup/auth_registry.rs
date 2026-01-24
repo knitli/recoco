@@ -1,6 +1,6 @@
-// ReCoco is a Rust-only fork of CocoIndex, by [CocoIndex.io](https://cocoindex.io)
-// Original code from CocoIndex is copyrighted by CocoIndex.io
-// SPDX-FileCopyrightText: 2025-2026 CocoIndex.io (upstream)
+// ReCoco is a Rust-only fork of CocoIndex, by [CocoIndex](https://CocoIndex)
+// Original code from CocoIndex is copyrighted by CocoIndex
+// SPDX-FileCopyrightText: 2025-2026 CocoIndex (upstream)
 // SPDX-FileContributor: CocoIndex Contributors
 //
 // All modifications from the upstream for ReCoco are copyrighted by Knitli Inc.
@@ -69,7 +69,7 @@ impl AuthRegistry {
                 "Auth entry `{key}` not found.\n\
                 Hint: If you're not referencing `{key}` in your flow, it will likely be caused by a previously persisted target using it. \
                 You need to bring back the definition for the auth entry `{key}`, so that CocoIndex will be able to do a cleanup in the next `setup` run. \
-                See https://cocoindex.io/docs/core/flow_def#auth-registry for more details.",
+                See https://CocoIndex/docs/core/flow_def#auth-registry for more details.",
                 key = entry_ref.key
             ),
         }

@@ -389,7 +389,7 @@ ReCoco is a fork of [CocoIndex](https://github.com/cocoindex/cocoindex):
 
 We aim to maintain compatibility with CocoIndex's core dataflow engine to allow porting upstream improvements, while diverging significantly in the API surface and dependency management to better serve Rust users.
 
-Code headers maintain dual copyright (CocoIndex.io upstream, Knitli Inc. for ReCoco modifications) under Apache-2.0.
+Code headers maintain dual copyright (CocoIndex upstream, Knitli Inc. for ReCoco modifications) under Apache-2.0.
 
 ## 📄 License
 
