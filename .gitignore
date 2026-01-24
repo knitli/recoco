@@ -32,3 +32,5 @@ dist/
 # Output of `cocoindex eval`
 examples/**/eval_*
 examples/**/uv.lock
+
+.upstream_cache

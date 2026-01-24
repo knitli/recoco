@@ -5,10 +5,18 @@
 
 [changelog]
 # changelog header
+# We need to add ignore markers for reuse to tell it that this is not a marking for this file
+# REUSE-IgnoreStart
 header = """
-# Changelog\n
-All notable changes to this project will be documented in this file.\n
+<!-- 
+SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+
+SPDX-License-Identifier: Apache-2.0
+-->
+# Changelog\n\n
+We document all important changes to ReCoco here.\n
 """
+# REUSE-IgnoreEnd
 # template for the changelog body
 # https://keats.github.io/tera/docs/#introduction
 body = """
@@ -34,7 +42,7 @@ footer = """
 trim = true
 # postprocessors
 postprocessors = [
-  # { pattern = '<REPO>', replace = "https://github.com/cocoindex-io/recoco" }, # replace repository URL
+  { pattern = "<REPO>", replace = "https://github.com/knitli/recoco" },  # replace repository URL
 ]
 
 [git]

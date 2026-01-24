@@ -42,10 +42,12 @@ impl serde::ser::Error for FingerprinterError {
 pub struct Fingerprint(pub [u8; 16]);
 
 impl Fingerprint {
+    #[inline(always)]
     pub fn to_base64(self) -> String {
         BASE64_STANDARD.encode(self.0)
     }
 
+    #[inline(always)]
     pub fn from_base64(s: &str) -> Result<Self> {
         let bytes = match s.len() {
             24 => BASE64_STANDARD.decode(s)?,
@@ -63,6 +65,7 @@ impl Fingerprint {
         Ok(Fingerprint(bytes))
     }
 
+    #[inline(always)]
     pub fn as_slice(&self) -> &[u8] {
         &self.0
     }
@@ -122,12 +125,14 @@ pub struct Fingerprinter {
 }
 
 impl Fingerprinter {
+    #[inline(always)]
     pub fn into_fingerprint(self) -> Fingerprint {
         let mut output = [0u8; 16];
         self.hasher.finalize_xof().fill(&mut output);
         Fingerprint(output)
     }
 
+    #[inline(always)]
     pub fn with<S: Serialize + ?Sized>(
         self,
         value: &S,
@@ -137,6 +142,7 @@ impl Fingerprinter {
         Ok(fingerprinter)
     }
 
+    #[inline(always)]
     pub fn write<S: Serialize + ?Sized>(
         &mut self,
         value: &S,
@@ -144,24 +150,29 @@ impl Fingerprinter {
         value.serialize(self)
     }
 
+    #[inline(always)]
     pub fn write_raw_bytes(&mut self, bytes: &[u8]) {
         self.hasher.update(bytes);
     }
 
+    #[inline(always)]
     fn write_type_tag(&mut self, tag: &str) {
         self.hasher.update(tag.as_bytes());
         self.hasher.update(b";");
     }
 
+    #[inline(always)]
     fn write_end_tag(&mut self) {
         self.hasher.update(b".");
     }
 
+    #[inline(always)]
     fn write_varlen_bytes(&mut self, bytes: &[u8]) {
         self.write_usize(bytes.len());
         self.hasher.update(bytes);
     }
 
+    #[inline(always)]
     fn write_usize(&mut self, value: usize) {
         self.hasher.update(&(value as u32).to_le_bytes());
     }
