@@ -12,15 +12,6 @@ We document all important changes to ReCoco here.
 
 ### Features
 
-- Feat: Fork CocoIndex and restructured as Rust-only library. \
-  - Feature-gated all sources, targets, etc to make it lean and tailored \
-  - Exposed logical API paths publicly \
-  - Created new README.md \
-  - Created a rustified homage to the logo from scratch \
-  - Added some starter examples in `examples/` \
-  - Removed all python-related packaging, files, references, and all pyO3 links \
-  - Removed docs/ which were completely python focused \
-  - Rewrote CI/CD for rust-only and to publish to crates.io \
 - Add CLAUDE.md for project guidance and enhance README.md with key features and usage instructions
 - Update README to better separate differences and similarities between CocoIndex and ReCoco
 - _(infra)_ Add Knitli CLA and CLI actions.
@@ -37,6 +28,7 @@ We document all important changes to ReCoco here.
 - Syntax error in Cargo.toml
 - Update SPDX license information across multiple files
 - Autolink in prog_langs.rs
+- _(release)_ Dry-runs in release process caused release to fail
 
 ### Miscellaneous Tasks
 

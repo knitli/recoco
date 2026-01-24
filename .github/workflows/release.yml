@@ -12,6 +12,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -32,20 +33,14 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2.8.2
 
-      - name: Generate Changelog
-        uses: orhun/git-cliff-action@v4.7.0
-        with:
-          config: cliff.toml
-          args: --verbose --latest --strip header
-        env:
-          OUTPUT: CHANGELOG.md
-
       - name: Build Changelog for Release
         id: changelog
         uses: orhun/git-cliff-action@v4.7.0
         with:
           config: cliff.toml
-          args: --verbose --latest --strip header
+          args: -o CHANGELOG.md 169cd610761da69cac71222a7a8050e8e4217d3d..v0.1.0 --strip-header
+        env:
+          OUTPUT: CHANGELOG.md
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.5.0
@@ -53,16 +48,6 @@ jobs:
           body: ${{ steps.changelog.outputs.content }}
           files: |
             CHANGELOG.md
-
-      # Validate packages before publishing
-      - name: Dry-run publish recoco-utils
-        run: cargo publish -p recoco-utils --dry-run
-
-      - name: Dry-run publish recoco-splitters
-        run: cargo publish -p recoco-splitters --dry-run
-
-      - name: Dry-run publish recoco
-        run: cargo publish -p recoco --dry-run
 
       - name: Publish recoco-utils
         run: cargo publish -p recoco-utils
