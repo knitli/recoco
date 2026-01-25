@@ -35,7 +35,7 @@ jobs:
         uses: orhun/git-cliff-action@v4.7.0
         with:
           config: cliff.toml
-          args: -o CHANGELOG.md 169cd610761da69cac71222a7a8050e8e4217d3d..v0.1.0 --strip-header
+          args: -o CHANGELOG.md 169cd610761da69cac71222a7a8050e8e4217d3d..v0.1.0 --strip header
         env:
           OUTPUT: CHANGELOG.md
 
