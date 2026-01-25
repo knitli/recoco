@@ -67,18 +67,24 @@ We will regularly merge in upstream fixes and changes, particularly sources, tar
 ### Unique to ReCoco
 
 - 🦀 **Pure Rust**: No Python dependencies, interpreters, or build tools required
-- 🤏 **Granular dependency selection**: Select and install only the features you need for your project
 - 🚀 **Additional optimizations**: We add additional compile-time optimizations and use some faster alternatives (i.e. `blake2` -> `blake3`) to make ReCoco as fast as possible
 - 📦 **Workspace Structure**: Clean separation into `recoco`, `recoco-utils`, and `recoco-splitters` crates
-
-### CocoIndex and ReCoco
-
-- ⚡ **Incremental Processing**: Built on a dataflow engine that processes only changed data
 - 🎯 **Modular Architecture**: Feature-gated sources, targets, and functions - use only what you need
 - 🔌 **Rich Connector Ecosystem**:
   - **Sources**: Local Files, PostgreSQL, S3, Azure Blob, Google Drive
   - **Targets**: PostgreSQL, Qdrant, Neo4j, Kùzu
-  - **Functions**: Text splitting, LLM embedding and calling, Embedding generation (SentenceTransformers), JSON parsing, language detection
+  - **Functions**: Text splitting, LLM embedding and calling, Embedding generation 
+  - **Individual splitter languages, or none at all**: Choose which grammars to install for the tree-sitter based text splitter. Or, keep them all disabled if you don't need text splitting.
+  - **Run without Server or persistence-related dependencies**: If you just want to run local tasks, or integrate ReCoco into an existing server, you can keep it turned off. 
+    - You can also run ReCoco as a memory-only pipeline for use with lightweight tasks.[^1] 
+    - If you don't need these features, you get a very lightweight library without dependencies like axum, tower, or postgres.
+
+[^1]: In-memory operations aren't quite as feature rich; you lose incremental indexing, for example. At least, for now.
+
+### CocoIndex and ReCoco
+
+- ⚡ **Incremental Processing**: Built on a dataflow engine that processes only changed data
+(SentenceTransformers), JSON parsing, language detection
 - 🚀 **Async API**: Fully async/await compatible API based on Tokio
 - 🔄 **Data Lineage Tracking**: Automatic tracking of data dependencies for smart incremental updates
 
