@@ -15,12 +15,8 @@ use axum::{
     Json,
     response::{IntoResponse, Response},
 };
-#[cfg(any(
-    feature = "server",
-    feature = "http",
-    feature = "reqwest",
-    feature = "retryable"
-))]
+
+#[cfg(feature = "http")]
 pub use http::StatusCode;
 #[cfg(feature = "server")]
 use serde::Serialize;
@@ -183,7 +179,8 @@ impl From<std::io::Error> for Error {
     feature = "server",
     feature = "concur_control",
     feature = "retryable",
-    feature = "batching"
+    feature = "batching",
+    feature = "http"
 ))]
 impl From<tokio::task::JoinError> for Error {
     fn from(e: tokio::task::JoinError) -> Self {
@@ -194,7 +191,8 @@ impl From<tokio::task::JoinError> for Error {
     feature = "server",
     feature = "concur_control",
     feature = "retryable",
-    feature = "batching"
+    feature = "batching",
+    feature = "http"
 ))]
 impl From<tokio::sync::oneshot::error::RecvError> for Error {
     fn from(e: tokio::sync::oneshot::error::RecvError) -> Self {
@@ -225,12 +223,7 @@ impl From<crate::fingerprint::FingerprinterError> for Error {
         Error::Internal(anyhow::Error::new(e))
     }
 }
-#[cfg(any(
-    feature = "server",
-    feature = "retryable",
-    feature = "batching",
-    feature = "http"
-))]
+
 impl From<ApiError> for Error {
     fn from(e: ApiError) -> Self {
         Error::Internal(e.err)
@@ -453,7 +446,7 @@ impl<T> ContextExt<T> for Option<T> {
     }
 }
 
-#[cfg(any(feature = "server", feature = "retryable", feature = "batching"))]
+#[cfg(feature = "server")]
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         tracing::debug!("Error response:\n{:?}", self);
@@ -465,7 +458,6 @@ impl IntoResponse for Error {
                 (StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", self))
             }
         };
-
         let error_response = ErrorResponse { error: error_msg };
         (status_code, Json(error_response)).into_response()
     }
@@ -657,71 +649,52 @@ pub fn invariance_violation() -> anyhow::Error {
     anyhow::anyhow!("Invariance violation")
 }
 
-#[cfg(any(
-    feature = "server",
-    feature = "retryable",
-    feature = "batching",
-    feature = "http"
-))]
 #[derive(Debug)]
 pub struct ApiError {
     pub err: anyhow::Error,
+    #[cfg(feature = "http")]
     pub status_code: StatusCode,
 }
-#[cfg(any(
-    feature = "server",
-    feature = "retryable",
-    feature = "batching",
-    feature = "http"
-))]
+
 impl ApiError {
-    pub fn new(message: &str, status_code: StatusCode) -> Self {
-        Self {
-            err: anyhow::anyhow!("{}", message),
-            status_code,
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "http")] {
+        pub fn new(message: &str, status_code: StatusCode) -> Self {
+            Self {
+                err: anyhow::anyhow!("{}", message),
+                status_code,
+            }
+        }} else {
+            pub fn new(message: &str) -> Self {
+                Self {
+                    err: anyhow::anyhow!("{}", message),
+                }
+            }
         }
     }
 }
-#[cfg(any(
-    feature = "server",
-    feature = "retryable",
-    feature = "batching",
-    feature = "http"
-))]
+
 impl Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         Display::fmt(&self.err, f)
     }
 }
-#[cfg(any(
-    feature = "server",
-    feature = "retryable",
-    feature = "batching",
-    feature = "http"
-))]
+
 impl StdError for ApiError {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         self.err.source()
     }
 }
 
-#[cfg(any(
-    feature = "server",
-    feature = "retryable",
-    feature = "batching",
-    feature = "http"
-))]
-#[derive(Serialize)]
-struct ErrorResponse {
-    error: String,
+cfg_if::cfg_if! {
+    if #[cfg(feature = "server")] {
+        #[derive(Serialize)]
+        struct ErrorResponse {
+            error: String,
+        }
+    }
 }
-
-#[cfg(any(
-    feature = "server",
-    feature = "retryable",
-    feature = "batching",
-    feature = "http"
-))]
+#[cfg(feature = "server")]
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         tracing::debug!("Internal server error:\n{:?}", self.err);
@@ -731,66 +704,86 @@ impl IntoResponse for ApiError {
         (self.status_code, Json(error_response)).into_response()
     }
 }
-#[cfg(any(
-    feature = "server",
-    feature = "retryable",
-    feature = "batching",
-    feature = "http"
-))]
-impl From<anyhow::Error> for ApiError {
-    fn from(err: anyhow::Error) -> ApiError {
-        if err.is::<ApiError>() {
-            return err.downcast::<ApiError>().unwrap();
+cfg_if::cfg_if! {
+    if #[cfg(feature = "http")] {
+        impl From<anyhow::Error> for ApiError {
+            fn from(err: anyhow::Error) -> ApiError {
+                if err.is::<ApiError>() {
+                    return err.downcast::<ApiError>().unwrap();
+                }
+                Self {
+                    err,
+                    status_code: StatusCode::INTERNAL_SERVER_ERROR,
+                }
+            }
         }
-        Self {
-            err,
-            status_code: StatusCode::INTERNAL_SERVER_ERROR,
+    } else {
+        impl From<anyhow::Error> for ApiError {
+            fn from(err: anyhow::Error) -> ApiError {
+                if err.is::<ApiError>() {
+                    return err.downcast::<ApiError>().unwrap();
+                }
+                Self {
+                    err,
+                }
+            }
         }
     }
 }
-#[cfg(any(
-    feature = "server",
-    feature = "retryable",
-    feature = "batching",
-    feature = "http"
-))]
 impl From<Error> for ApiError {
     fn from(err: Error) -> ApiError {
-        let status_code = match err.without_contexts() {
-            Error::Client { .. } => StatusCode::BAD_REQUEST,
-            _ => StatusCode::INTERNAL_SERVER_ERROR,
-        };
-        ApiError {
-            err: anyhow::Error::from(err.std_error()),
-            status_code,
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "http")] {
+                let status_code = match err.without_contexts() {
+                    Error::Client { .. } => StatusCode::BAD_REQUEST,
+                    _ => StatusCode::INTERNAL_SERVER_ERROR,
+                };
+                ApiError {
+                    err: anyhow::Error::from(err.std_error()),
+                    status_code,
+                }
+            } else {
+                ApiError {
+                    err: anyhow::Error::from(err.std_error()),
+                }
+            }
+        }
+    }
+}
+cfg_if::cfg_if! {
+    if #[cfg(feature = "http")] {
+        #[macro_export]
+        macro_rules! api_bail {
+            ( $fmt:literal $(, $($arg:tt)*)?) => {
+                return Err($crate::error::ApiError::new(&format!($fmt $(, $($arg)*)?), $crate::error::StatusCode::BAD_REQUEST).into())
+            };
+        }
+    } else {
+        #[macro_export]
+        macro_rules! api_bail {
+            ( $fmt:literal $(, $($arg:tt)*)?) => {
+                return Err($crate::error::ApiError::new(&format!($fmt $(, $($arg)*)?)).into())
+            };
         }
     }
 }
 
-#[cfg(any(
-    feature = "server",
-    feature = "retryable",
-    feature = "batching",
-    feature = "http"
-))]
-#[macro_export]
-macro_rules! api_bail {
-    ( $fmt:literal $(, $($arg:tt)*)?) => {
-        return Err($crate::error::ApiError::new(&format!($fmt $(, $($arg)*)?), $crate::error::StatusCode::BAD_REQUEST).into())
-    };
-}
-
-#[cfg(any(
-    feature = "server",
-    feature = "retryable",
-    feature = "batching",
-    feature = "http"
-))]
-#[macro_export]
-macro_rules! api_error {
-    ( $fmt:literal $(, $($arg:tt)*)?) => {
-        $crate::error::ApiError::new(&format!($fmt $(, $($arg)*)?), $crate::error::StatusCode::BAD_REQUEST)
-    };
+cfg_if::cfg_if! {
+    if #[cfg(feature = "http")] {
+        #[macro_export]
+        macro_rules! api_error {
+            ( $fmt:literal $(, $($arg:tt)*)?) => {
+                $crate::error::ApiError::new(&format!($fmt $(, $($arg)*)?), $crate::error::StatusCode::BAD_REQUEST)
+            };
+        }
+    } else {
+        #[macro_export]
+        macro_rules! api_error {
+            ( $fmt:literal $(, $($arg:tt)*)?) => {
+                $crate::error::ApiError::new(&format!($fmt $(, $($arg)*)?))
+            };
+        }
+    }
 }
 
 #[cfg(test)]

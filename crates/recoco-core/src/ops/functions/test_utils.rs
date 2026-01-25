@@ -9,7 +9,7 @@
 //
 // Both the upstream CocoIndex code and the ReCoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
-
+#![allow(dead_code)]
 use crate::builder::plan::{
     AnalyzedFieldReference, AnalyzedLocalFieldReference, AnalyzedValueMapping,
 };

@@ -25,7 +25,7 @@ path = "src/lib.rs"
 [dependencies]
 anyhow = { workspace = true }
 async-openai = { workspace = true, optional = true }
-async-stream = { workspace = true }
+async-stream = { workspace = true, optional = true }
 async-trait = { workspace = true }  # compile time
 aws-config = { workspace = true, optional = true }
 aws-sdk-s3 = { workspace = true, optional = true }
@@ -47,22 +47,20 @@ globset = { workspace = true, optional = true }
 google-cloud-aiplatform-v1 = { workspace = true, optional = true }
 google-cloud-gax = { workspace = true, optional = true }
 google-drive3 = { workspace = true, optional = true }
-hex = { workspace = true }
 http-body-util = { workspace = true, optional = true }
 hyper-rustls = { workspace = true, optional = true }
 hyper-util = { workspace = true, optional = true }
 indenter = { workspace = true }
 indexmap = { workspace = true }
 indoc = { workspace = true }  # compile time
-infer = { workspace = true }
-itertools = { workspace = true }
+infer = { workspace = true, optional = true }
+itertools = { workspace = true, optional = true }
 json5 = { workspace = true, optional = true }
-log = { workspace = true }
+log = { workspace = true, optional = true }
 neo4rs = { workspace = true, optional = true }
 pgvector = { workspace = true, optional = true }
 phf = { workspace = true }  # compile time
 qdrant-client = { workspace = true, optional = true }
-rand = { workspace = true }
 recoco-splitters = { workspace = true, optional = true }
 recoco-utils = { workspace = true, features = [
   "chrono",
@@ -78,8 +76,7 @@ rustls = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-serde_path_to_error = { workspace = true }
-serde_with = { workspace = true }
+serde_with = { workspace = true, optional = true }
 sqlx = { workspace = true, optional = true }
 time = { workspace = true, optional = true }
 tokio = { workspace = true }
@@ -145,11 +142,13 @@ full = [
 function-detect-lang = ["dep:recoco-splitters"]
 function-embed = [
   "batching",
+  "dep:infer",
   "dep:reqwest",
   "json-schema",
   "recoco-utils/reqwest"
 ]
 function-extract-llm = [
+  "dep:infer",
   "dep:reqwest",
   "json-schema",
   "recoco-utils/reqwest",
@@ -165,6 +164,8 @@ json-schema = ["dep:schemars"]
 legacy-states-v0 = []
 # Core
 persistence = [
+  "dep:itertools",
+  "dep:log",
   "dep:sqlx",
   "dep:urlencoding",
   "dep:yaml-rust2",
@@ -194,7 +195,7 @@ provider-gemini = [
   "recoco-utils/retryable"
 ]
 provider-litellm = ["provider-openai"]
-provider-ollama = ["dep:reqwest", "recoco-utils/reqwest"]
+provider-ollama = ["dep:reqwest", "dep:serde_with", "recoco-utils/reqwest"]
 provider-openai = [
   "dep:async-openai",
   "dep:config",
@@ -220,6 +221,7 @@ server = [
 ]
 source-azure = [
   "batching",
+  "dep:async-stream",
   "dep:azure_core",
   "dep:azure_identity",
   "dep:azure_storage",
@@ -243,6 +245,7 @@ source-gdrive = [
 # Sources
 source-local-file = [
   "batching",
+  "dep:async-stream",
   "dep:globset",
   "recoco-utils/bytes_decode",
   "recoco-utils/local-file"
@@ -250,6 +253,7 @@ source-local-file = [
 source-postgres = ["batching", "dep:pgvector", "persistence"]
 source-s3 = [
   "batching",
+  "dep:async-stream",
   "dep:aws-config",
   "dep:aws-sdk-s3",
   "dep:aws-sdk-sqs",
@@ -291,5 +295,5 @@ splitter-language-yaml = ["recoco-splitters/yaml"]
 # Targets
 target-kuzu = ["dep:reqwest", "recoco-utils/reqwest", "target-neo4j"]
 target-neo4j = ["dep:neo4rs", "recoco-utils/neo4rs", "recoco-utils/retryable"]
-target-postgres = ["source-postgres"]
+target-postgres = ["dep:itertools", "source-postgres"]
 target-qdrant = ["dep:qdrant-client", "recoco-utils/qdrant"]

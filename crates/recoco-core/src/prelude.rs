@@ -21,6 +21,11 @@ pub use futures::{
     stream::BoxStream,
 };
 pub use indexmap::{IndexMap, IndexSet};
+#[cfg(any(
+    feature = "server",
+    feature = "persistence",
+    feature = "target-postgres"
+))]
 pub use itertools::Itertools;
 pub use serde::{Deserialize, Serialize, de::DeserializeOwned};
 pub use std::any::Any;
@@ -37,6 +42,17 @@ pub use crate::lib_context::{FlowContext, LibContext, get_lib_context, get_runti
 pub use crate::ops::interface;
 pub use crate::setup;
 pub use crate::setup::AuthRegistry;
+#[cfg(any(
+    feature = "source-azure",
+    feature = "source-local-file",
+    feature = "source-s3"
+))]
+pub use async_stream::{stream, try_stream};
+#[cfg(any(
+    feature = "source-azure",
+    feature = "source-local-file",
+    feature = "source-s3"
+))]
 pub use recoco_utils as utils;
 #[cfg(any(
     feature = "function-embed",
@@ -65,8 +81,6 @@ pub use recoco_utils::http;
 ))]
 pub use recoco_utils::retryable;
 pub use recoco_utils::{api_bail, api_error};
-
-pub use async_stream::{stream, try_stream};
 pub use tracing::{Span, debug, error, info, info_span, instrument, trace, warn};
 
 pub use utils::prelude::*;

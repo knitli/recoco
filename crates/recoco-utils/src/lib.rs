@@ -10,8 +10,6 @@
 // Both the upstream CocoIndex code and the ReCoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
-pub mod error;
-
 #[cfg(feature = "batching")]
 pub mod batching;
 #[cfg(feature = "concur_control")]
@@ -20,6 +18,7 @@ pub mod concur_control;
 pub mod db;
 #[cfg(feature = "deserialize")]
 pub mod deser;
+pub mod error;
 #[cfg(feature = "fingerprint")]
 pub mod fingerprint;
 #[cfg(feature = "immutable")]

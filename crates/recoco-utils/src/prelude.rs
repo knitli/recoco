@@ -9,12 +9,7 @@
 //
 // Both the upstream CocoIndex code and the ReCoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
-#[cfg(any(
-    feature = "server",
-    feature = "retryable",
-    feature = "batching",
-    feature = "http"
-))]
+
 pub use crate::error::ApiError;
 pub use crate::error::invariance_violation;
 pub use crate::error::{ContextExt, Error, Result};

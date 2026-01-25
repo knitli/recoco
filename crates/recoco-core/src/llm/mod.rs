@@ -14,6 +14,7 @@ use crate::prelude::*;
 
 #[cfg(feature = "json-schema")]
 use crate::base::json_schema::ToJsonSchemaOptions;
+
 use infer::Infer;
 #[cfg(feature = "json-schema")]
 use schemars::Schema;
