@@ -15,6 +15,12 @@ use axum::{
     Json,
     response::{IntoResponse, Response},
 };
+#[cfg(any(
+    feature = "server",
+    feature = "http",
+    feature = "reqwest",
+    feature = "retryable"
+))]
 pub use http::StatusCode;
 #[cfg(feature = "server")]
 use serde::Serialize;
@@ -173,25 +179,35 @@ impl From<std::io::Error> for Error {
         Error::Internal(e.into())
     }
 }
-
+#[cfg(any(
+    feature = "server",
+    feature = "concur_control",
+    feature = "retryable",
+    feature = "batching"
+))]
 impl From<tokio::task::JoinError> for Error {
     fn from(e: tokio::task::JoinError) -> Self {
         Error::Internal(e.into())
     }
 }
-
+#[cfg(any(
+    feature = "server",
+    feature = "concur_control",
+    feature = "retryable",
+    feature = "batching"
+))]
 impl From<tokio::sync::oneshot::error::RecvError> for Error {
     fn from(e: tokio::sync::oneshot::error::RecvError) -> Self {
         Error::Internal(e.into())
     }
 }
-
+#[cfg(feature = "fingerprint")]
 impl From<base64::DecodeError> for Error {
     fn from(e: base64::DecodeError) -> Self {
         Error::Internal(e.into())
     }
 }
-
+#[cfg(feature = "fingerprint")]
 impl From<hex::FromHexError> for Error {
     fn from(e: hex::FromHexError) -> Self {
         Error::Internal(e.into())
@@ -203,31 +219,41 @@ impl From<ResidualError> for Error {
         Error::Internal(anyhow::Error::from(e))
     }
 }
-
+#[cfg(feature = "fingerprint")]
 impl From<crate::fingerprint::FingerprinterError> for Error {
     fn from(e: crate::fingerprint::FingerprinterError) -> Self {
         Error::Internal(anyhow::Error::new(e))
     }
 }
-
+#[cfg(any(
+    feature = "server",
+    feature = "retryable",
+    feature = "batching",
+    feature = "http"
+))]
 impl From<ApiError> for Error {
     fn from(e: ApiError) -> Self {
         Error::Internal(e.err)
     }
 }
-
+#[cfg(feature = "deserialize")]
 impl From<serde_json::Error> for Error {
     fn from(e: serde_json::Error) -> Self {
         Error::Internal(e.into())
     }
 }
-#[cfg(any(feature = "local-file", feature = "google-drive", feature = "azure", feature = "s3"))]
+#[cfg(any(
+    feature = "local-file",
+    feature = "google-drive",
+    feature = "azure",
+    feature = "s3"
+))]
 impl From<globset::Error> for Error {
     fn from(e: globset::Error) -> Self {
         Error::Internal(e.into())
     }
 }
-
+#[cfg(feature = "regex")]
 impl From<regex::Error> for Error {
     fn from(e: regex::Error) -> Self {
         Error::Internal(e.into())
@@ -239,19 +265,19 @@ impl<T> From<std::sync::PoisonError<T>> for Error {
         Error::Internal(anyhow::anyhow!("Mutex poison error: {}", e))
     }
 }
-
+#[cfg(feature = "chrono")]
 impl From<chrono::ParseError> for Error {
     fn from(e: chrono::ParseError) -> Self {
         Error::Internal(e.into())
     }
 }
-
+#[cfg(feature = "uuid")]
 impl From<uuid::Error> for Error {
     fn from(e: uuid::Error) -> Self {
         Error::Internal(e.into())
     }
 }
-
+#[cfg(any(feature = "server", feature = "http", feature = "reqwest"))]
 impl From<http::header::InvalidHeaderValue> for Error {
     fn from(e: http::header::InvalidHeaderValue) -> Self {
         Error::Internal(e.into())
@@ -287,13 +313,23 @@ impl From<std::borrow::Cow<'_, str>> for Error {
         Error::Internal(anyhow::anyhow!("{}", e))
     }
 }
-
+#[cfg(any(
+    feature = "server",
+    feature = "concur_control",
+    feature = "retryable",
+    feature = "batching"
+))]
 impl From<tokio::sync::AcquireError> for Error {
     fn from(e: tokio::sync::AcquireError) -> Self {
         Error::Internal(e.into())
     }
 }
-
+#[cfg(any(
+    feature = "server",
+    feature = "concur_control",
+    feature = "retryable",
+    feature = "batching"
+))]
 impl From<tokio::sync::watch::error::RecvError> for Error {
     fn from(e: tokio::sync::watch::error::RecvError) -> Self {
         Error::Internal(e.into())
@@ -417,7 +453,7 @@ impl<T> ContextExt<T> for Option<T> {
     }
 }
 
-#[cfg(feature = "server")]
+#[cfg(any(feature = "server", feature = "retryable", feature = "batching"))]
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         tracing::debug!("Error response:\n{:?}", self);
@@ -621,12 +657,23 @@ pub fn invariance_violation() -> anyhow::Error {
     anyhow::anyhow!("Invariance violation")
 }
 
+#[cfg(any(
+    feature = "server",
+    feature = "retryable",
+    feature = "batching",
+    feature = "http"
+))]
 #[derive(Debug)]
 pub struct ApiError {
     pub err: anyhow::Error,
     pub status_code: StatusCode,
 }
-
+#[cfg(any(
+    feature = "server",
+    feature = "retryable",
+    feature = "batching",
+    feature = "http"
+))]
 impl ApiError {
     pub fn new(message: &str, status_code: StatusCode) -> Self {
         Self {
@@ -635,26 +682,46 @@ impl ApiError {
         }
     }
 }
-
+#[cfg(any(
+    feature = "server",
+    feature = "retryable",
+    feature = "batching",
+    feature = "http"
+))]
 impl Display for ApiError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         Display::fmt(&self.err, f)
     }
 }
-
+#[cfg(any(
+    feature = "server",
+    feature = "retryable",
+    feature = "batching",
+    feature = "http"
+))]
 impl StdError for ApiError {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         self.err.source()
     }
 }
 
-#[cfg(feature = "server")]
+#[cfg(any(
+    feature = "server",
+    feature = "retryable",
+    feature = "batching",
+    feature = "http"
+))]
 #[derive(Serialize)]
 struct ErrorResponse {
     error: String,
 }
 
-#[cfg(feature = "server")]
+#[cfg(any(
+    feature = "server",
+    feature = "retryable",
+    feature = "batching",
+    feature = "http"
+))]
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         tracing::debug!("Internal server error:\n{:?}", self.err);
@@ -664,7 +731,12 @@ impl IntoResponse for ApiError {
         (self.status_code, Json(error_response)).into_response()
     }
 }
-
+#[cfg(any(
+    feature = "server",
+    feature = "retryable",
+    feature = "batching",
+    feature = "http"
+))]
 impl From<anyhow::Error> for ApiError {
     fn from(err: anyhow::Error) -> ApiError {
         if err.is::<ApiError>() {
@@ -676,7 +748,12 @@ impl From<anyhow::Error> for ApiError {
         }
     }
 }
-
+#[cfg(any(
+    feature = "server",
+    feature = "retryable",
+    feature = "batching",
+    feature = "http"
+))]
 impl From<Error> for ApiError {
     fn from(err: Error) -> ApiError {
         let status_code = match err.without_contexts() {
@@ -690,6 +767,12 @@ impl From<Error> for ApiError {
     }
 }
 
+#[cfg(any(
+    feature = "server",
+    feature = "retryable",
+    feature = "batching",
+    feature = "http"
+))]
 #[macro_export]
 macro_rules! api_bail {
     ( $fmt:literal $(, $($arg:tt)*)?) => {
@@ -697,6 +780,12 @@ macro_rules! api_bail {
     };
 }
 
+#[cfg(any(
+    feature = "server",
+    feature = "retryable",
+    feature = "batching",
+    feature = "http"
+))]
 #[macro_export]
 macro_rules! api_error {
     ( $fmt:literal $(, $($arg:tt)*)?) => {

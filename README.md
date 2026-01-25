@@ -58,7 +58,7 @@ For [Knitli](https://knitli.com), I particularly needed dependency control. I wa
 
 2. **Every target, source, and function is independently feature-gated. Use only what you want.** 
 
-> The minimum install now uses ~220 crates from CocoIndex's ~970.
+> The minimum install now uses **600 fewer crates** (820 -> 620)
 
 We will regularly merge in upstream fixes and changes, particularly sources, targets, and functions.
 
@@ -86,7 +86,7 @@ We will regularly merge in upstream fixes and changes, particularly sources, tar
 - ⚡ **Incremental Processing**: Built on a dataflow engine that processes only changed data
 (SentenceTransformers), JSON parsing, language detection
 - 🚀 **Async API**: Fully async/await compatible API based on Tokio
-- 🔄 **Data Lineage Tracking**: Automatic tracking of data dependencies for smart incremental updates
+- 🔄 **Data Lineage Tracking**: Automatic tracking of data dependencies for smart incremental updates (requires `persistence` feature flag)
 
 ## 🎯 Use Cases
 
@@ -133,10 +133,47 @@ recoco = { version = "0.1.0", default-features = false, features = ["source-loca
 | Feature | Description | Dependencies |
 |---------|-------------|--------------|
 | `function-split` | Text splitting utilities (recursive, semantic) | ✅ Lightweight |
-| `function-embed` | Text embedding (OpenAI, Vertex AI) | 📦 LLM APIs |
-| `function-extract-llm` | Information extraction via LLM | 📦 LLM APIs |
+| `function-embed` | Text embedding (OpenAI, Vertex AI, Voyage) | 📦 LLM APIs |
+| `function-extract-llm` | Use LLM to extract data | 📦 LLM APIs |
 | `function-detect-lang` | Programming language detection | ✅ Lightweight |
 | `function-json` | JSON/JSON5 parsing and manipulation | ✅ Lightweight |
+
+#### 🤖 LLM Providers
+
+Required for `function-embed` and `function-extract-llm`.
+
+| Feature | Description | Dependencies |
+|---------|-------------|--------------|
+| `provider-anthropic` | Anthropic (Claude) | 📦 reqwest |
+| `provider-azure` | Azure OpenAI | 📦 async-openai |
+| `provider-bedrock` | AWS Bedrock | 📦 reqwest |
+| `provider-gemini` | Google Gemini | 📦 google-cloud-aiplatform |
+| `provider-litellm` | LiteLLM: Many agents/models | 📦 async-openai |
+| `provider-ollama` | Ollama (Local LLMs) | 📦 reqwest |
+| `provider-openai` | OpenAI (GPT-5, etc.) | 📦 async-openai |
+| `provider-openrouter` | OpenRouter: Many agents/models | 📦 async-openai |
+| `provider-voyage` | Voyage AI | 📦 reqwest |
+| `provider-vllm` | vLLM: Many agents | 📦 async-openai |
+
+#### 🔤 Splitter Languages
+
+When using `function-split`, you can enable specific Tree-sitter grammars to reduce binary size.
+
+| Feature | Description |
+|---------|-------------|
+| `splitter-language-rust` | Rust grammar |
+| `splitter-language-python` | Python grammar |
+| `splitter-language-javascript` | JavaScript grammar |
+| `splitter-language-markdown` | Markdown grammar |
+| ... and many more | See [`Cargo.toml`](crates/recoco-core/Cargo.toml) for full list (c, cpp, go, java, etc.) |
+
+#### 🏗️ Core Modules
+
+| Feature | Description | Dependencies |
+|---------|-------------|--------------|
+| `persistence` | SQLx-based state tracking & DB metadata | 📦 sqlx |
+| `server` | Axum-based HTTP server components | 📦 axum, tower |
+| `json-schema` | JSON Schema generation support | 📦 schemars |
 
 #### 📦 Feature Bundles
 
@@ -145,6 +182,8 @@ recoco = { version = "0.1.0", default-features = false, features = ["source-loca
 | `all-sources` | Enable all source connectors |
 | `all-targets` | Enable all target connectors |
 | `all-functions` | Enable all transform functions |
+| `all-llm-providers` | Enable all LLM providers |
+| `all-splitter-languages` | Enable all Tree-sitter grammars |
 | `full` | Enable everything (⚠️ heavy dependencies) |
 
 ## 🚀 Quick Start
@@ -162,7 +201,7 @@ use serde_json::json;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // 1. Initialize library context (loads operation registry)
-    recoco::lib_context::init_lib_context(None).await?;
+    recoco::lib_context::init_lib_context(Some(recoco::settings::Settings::default())).await?;
 
     // 2. Create a flow builder
     let mut builder = FlowBuilder::new("hello_world").await?;
@@ -246,6 +285,47 @@ let flow = builder.build_transient_flow().await?;
 let result = evaluate_transient_flow(&flow.0, &inputs).await?;
 ```
 
+## ⚙️ Configuration
+
+ReCoco is configured via the `Settings` struct passed to `init_lib_context`.
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `RUST_LOG` | Controls logging verbosity (e.g., `info`, `debug`, `recoco=trace`) | `info` |
+
+### Library Settings
+
+The `recoco::settings::Settings` struct controls global behavior:
+
+```rust
+use recoco::settings::{Settings, DatabaseConnectionSpec, GlobalExecutionOptions};
+
+let settings = Settings {
+    // Database configuration for persisted flows
+    database: Some(DatabaseConnectionSpec {
+        url: "postgres://user:pass@localhost:5432/recoco_db".to_string(),
+        user: Some("user".to_string()),
+        password: Some("pass".to_string()),
+        max_connections: 10,
+        min_connections: 1,
+    }),
+    
+    // Concurrency controls
+    global_execution_options: GlobalExecutionOptions {
+        source_max_inflight_rows: Some(1000),
+        source_max_inflight_bytes: Some(10 * 1024 * 1024), // 10MB
+    },
+    
+    // Other options
+    app_namespace: "my_app".to_string(),
+    ignore_target_drop_failures: false,
+};
+
+recoco::lib_context::init_lib_context(Some(settings)).await?;
+```
+
 ## Examples
 
 Check out the `examples/` directory for more usage patterns:
@@ -321,6 +401,14 @@ cargo clippy --all-features -- -D warnings
 # Run clippy for specific workspace member
 cargo clippy -p recoco --all-features
 ```
+
+## 🗺️ Roadmap
+
+- [ ] **WASM Support**: Compile core logic to WASM for edge deployment
+- [ ] **More Connectors**: Add support for Redis, ClickHouse, and more
+- [ ] **Python Bindings**: Re-introduce optional Python bindings for hybrid workflows
+- [ ] **UI Dashboard**: Simple web UI for monitoring flows
+- [ ] **Upstream Sync**: Regular merges from upstream CocoIndex
 
 ## 🏗️ Architecture
 

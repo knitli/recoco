@@ -253,7 +253,7 @@ mod tests {
                                     scope_value_ref.0.fields[0].as_str().unwrap_or_else(|_| {
                                         panic!("Chunk text not a string for key {key:?}")
                                     });
-                                assert_eq!(*chunk_text, expected_text.into());
+                                assert_eq!(*chunk_text, Arc::<str>::from(expected_text));
                             }
                             None => panic!("Expected row value for key {key:?}, not found"),
                         }
@@ -339,7 +339,7 @@ mod tests {
                         match table.get(&key) {
                             Some(scope_value_ref) => {
                                 let chunk_text = scope_value_ref.0.fields[0].as_str().unwrap();
-                                assert_eq!(*chunk_text, expected_text.into());
+                                assert_eq!(*chunk_text, Arc::<str>::from(expected_text));
                             }
                             None => panic!("Expected row value for key {key:?}, not found"),
                         }
@@ -374,7 +374,7 @@ mod tests {
                     match table.get(&key) {
                         Some(scope_value_ref) => {
                             let chunk_text = scope_value_ref.0.fields[0].as_str().unwrap();
-                            assert_eq!(*chunk_text, "A very very long".into());
+                            assert_eq!(*chunk_text, Arc::<str>::from("A very very long"));
                             assert!(chunk_text.len() <= 20);
                         }
                         None => panic!("Expected row value for key {key:?}, not found"),

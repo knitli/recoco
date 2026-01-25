@@ -12,6 +12,7 @@ version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
 description = "ReCoco is an all-Rust fork of CocoIndex with greater flexibility."
+readme = "../../README.md"
 repository = { workspace = true }
 license = { workspace = true }
 keywords = { workspace = true }
@@ -63,7 +64,14 @@ phf = { workspace = true }  # compile time
 qdrant-client = { workspace = true, optional = true }
 rand = { workspace = true }
 recoco-splitters = { workspace = true, optional = true }
-recoco-utils = { workspace = true }
+recoco-utils = { workspace = true, features = [
+  "chrono",
+  "concur_control",
+  "deserialize",
+  "fingerprint",
+  "immutable",
+  "uuid"
+] }
 redis = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
 rustls = { workspace = true, optional = true }
@@ -147,7 +155,11 @@ function-extract-llm = [
   "recoco-utils/reqwest",
 ]
 function-json = ["dep:json5", "dep:unicase"]
-function-split = ["dep:recoco-splitters"]
+function-split = [
+  "dep:recoco-splitters",
+  "recoco-utils/regex",
+  "recoco-utils/retryable"
+]
 json-schema = ["dep:schemars"]
 # Legacy
 legacy-states-v0 = []
@@ -156,8 +168,9 @@ persistence = [
   "dep:sqlx",
   "dep:urlencoding",
   "dep:yaml-rust2",
+  "recoco-utils/retryable",
   "recoco-utils/sqlx",
-  "recoco-utils/yaml"
+  "recoco-utils/yaml",
 ]
 # Specific providers for functions
 provider-anthropic = [
@@ -178,7 +191,9 @@ provider-gemini = [
   "dep:reqwest",
   "dep:urlencoding",
   "recoco-utils/reqwest",
+  "recoco-utils/retryable"
 ]
+provider-litellm = ["provider-openai"]
 provider-ollama = ["dep:reqwest", "recoco-utils/reqwest"]
 provider-openai = [
   "dep:async-openai",
@@ -186,7 +201,10 @@ provider-openai = [
   "dep:reqwest",
   "recoco-utils/openai",
   "recoco-utils/reqwest",
+  "recoco-utils/retryable"
 ]
+provider-openrouter = ["provider-openai"]
+provider-vllm = ["provider-openai"]
 provider-voyage = ["dep:reqwest", "recoco-utils/reqwest"]
 # Core server
 server = [
@@ -197,7 +215,8 @@ server = [
   "dep:tower-http",
   "json-schema",
   "persistence",
-  "recoco-utils/server",
+  "recoco-utils/retryable",
+  "recoco-utils/server"
 ]
 source-azure = [
   "batching",
@@ -271,6 +290,6 @@ splitter-language-xml = ["recoco-splitters/xml"]
 splitter-language-yaml = ["recoco-splitters/yaml"]
 # Targets
 target-kuzu = ["dep:reqwest", "recoco-utils/reqwest", "target-neo4j"]
-target-neo4j = ["dep:neo4rs", "recoco-utils/neo4rs"]
+target-neo4j = ["dep:neo4rs", "recoco-utils/neo4rs", "recoco-utils/retryable"]
 target-postgres = ["source-postgres"]
 target-qdrant = ["dep:qdrant-client", "recoco-utils/qdrant"]

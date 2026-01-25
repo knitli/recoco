@@ -47,14 +47,24 @@ pub use recoco_utils as utils;
     feature = "source-postgres"
 ))]
 pub use recoco_utils::batching;
+pub use recoco_utils::concur_control;
 #[cfg(any(
     feature = "target-kuzu",
     feature = "function-embed",
-    feature = "function-extract-llm"
+    feature = "function-extract-llm",
+    feature = "persistence"
 ))]
 pub use recoco_utils::http;
+#[cfg(any(
+    feature = "server",
+    feature = "provider-openai",
+    feature = "provider-gemini",
+    feature = "persistence",
+    feature = "function-split",
+    feature = "target-neo4j"
+))]
+pub use recoco_utils::retryable;
 pub use recoco_utils::{api_bail, api_error};
-pub use recoco_utils::{concur_control, retryable};
 
 pub use async_stream::{stream, try_stream};
 pub use tracing::{Span, debug, error, info, info_span, instrument, trace, warn};
