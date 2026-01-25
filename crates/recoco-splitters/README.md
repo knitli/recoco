@@ -26,10 +26,12 @@ recoco-splitters = { version = "...", features = ["python", "rust"] }
 
 | Feature | Language |
 |---------|----------|
+} `all` | **all languages** |
 | `c` | C |
 | `c-sharp` | C# |
 | `cpp` | C++ |
 | `css` | CSS |
+| `fortran`| Fortran |
 | `go` | Go |
 | `html` | HTML |
 | `java` | Java |
@@ -39,12 +41,17 @@ recoco-splitters = { version = "...", features = ["python", "rust"] }
 | `markdown` | Markdown |
 | `php` | PHP |
 | `python` | Python |
+| `r` | R |
 | `ruby` | Ruby |
 | `rust` | Rust |
+| `scala` | Scala |
+| `solidity` | Solidity |
 | `sql` | SQL |
+| `swift` | Swift |
+| `toml` | `TOML` |
 | `typescript` | TypeScript |
+| `xml` | XML |
 | `yaml` | YAML |
-| ... | (See `Cargo.toml` for full list) |
 
 ## 🧩 Splitter Strategies
 

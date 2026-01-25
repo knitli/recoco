@@ -167,7 +167,7 @@ When using `function-split`, you can enable specific Tree-sitter grammars to red
 | `splitter-language-markdown` | Markdown grammar |
 | ... and many more | See [`Cargo.toml`](crates/recoco-core/Cargo.toml) for full list (c, cpp, go, java, etc.) |
 
-#### 🏗️ Core Modules
+#### 🏗️ Capability-based Features
 
 | Feature | Description | Dependencies |
 |---------|-------------|--------------|

@@ -4016,6 +4016,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "recoco"
+version = "0.2.0"
+dependencies = [
+ "recoco-core",
+ "recoco-splitters",
+ "recoco-utils",
+]
+
+[[package]]
 name = "recoco-core"
 version = "0.2.0"
 dependencies = [

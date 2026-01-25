@@ -1,0 +1,84 @@
+# SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+# SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[package]
+name = "recoco"
+version = { workspace = true }
+edition = { workspace = true }
+rust-version = { workspace = true }
+description = { workspace = true }
+readme = "../../README.md"
+repository = { workspace = true }
+license = { workspace = true }
+keywords = { workspace = true }
+categories = { workspace = true }
+
+[dependencies]
+# Re-export all sub-crates
+recoco-core = { workspace = true }
+recoco-splitters = { workspace = true }
+recoco-utils = { workspace = true }
+
+[features]
+default = ["recoco-core/default"]
+all-functions = ["recoco-core/all-functions"]
+all-llm-providers = ["recoco-core/all-llm-providers"]
+all-sources = ["recoco-core/all-sources"]
+all-splitter-languages = ["recoco-core/all-splitter-languages"]
+all-targets = ["recoco-core/all-targets"]
+full = ["recoco-core/full"]
+function-detect-lang = ["recoco-core/function-detect-lang"]
+function-embed = ["recoco-core/function-embed"]
+function-extract-llm = ["recoco-core/function-extract-llm"]
+function-json = ["recoco-core/function-json"]
+function-split = ["recoco-core/function-split"]
+json-schema = ["recoco-core/json-schema"]
+persistence = ["recoco-core/persistence"]
+provider-anthropic = ["recoco-core/provider-anthropic"]
+provider-azure = ["recoco-core/provider-azure"]
+provider-bedrock = ["recoco-core/provider-bedrock"]
+provider-gemini = ["recoco-core/provider-gemini"]
+provider-litellm = ["recoco-core/provider-litellm"]
+provider-ollama = ["recoco-core/provider-ollama"]
+provider-openai = ["recoco-core/provider-openai"]
+provider-openrouter = ["recoco-core/provider-openrouter"]
+provider-vllm = ["recoco-core/provider-vllm"]
+provider-voyage = ["recoco-core/provider-voyage"]
+server = ["recoco-core/server"]
+source-azure = ["recoco-core/source-azure"]
+source-gdrive = ["recoco-core/source-gdrive"]
+source-local-file = ["recoco-core/source-local-file"]
+source-postgres = ["recoco-core/source-postgres"]
+source-s3 = ["recoco-core/source-s3"]
+splitter-language-c = ["recoco-core/splitter-language-c"]
+splitter-language-c-sharp = ["recoco-core/splitter-language-c-sharp"]
+splitter-language-cpp = ["recoco-core/splitter-language-cpp"]
+splitter-language-css = ["recoco-core/splitter-language-css"]
+splitter-language-fortran = ["recoco-core/splitter-language-fortran"]
+splitter-language-go = ["recoco-core/splitter-language-go"]
+splitter-language-html = ["recoco-core/splitter-language-html"]
+splitter-language-java = ["recoco-core/splitter-language-java"]
+splitter-language-javascript = ["recoco-core/splitter-language-javascript"]
+splitter-language-json = ["recoco-core/splitter-language-json"]
+splitter-language-kotlin = ["recoco-core/splitter-language-kotlin"]
+splitter-language-markdown = ["recoco-core/splitter-language-markdown"]
+splitter-language-pascal = ["recoco-core/splitter-language-pascal"]
+splitter-language-php = ["recoco-core/splitter-language-php"]
+splitter-language-python = ["recoco-core/splitter-language-python"]
+splitter-language-r = ["recoco-core/splitter-language-r"]
+splitter-language-ruby = ["recoco-core/splitter-language-ruby"]
+splitter-language-rust = ["recoco-core/splitter-language-rust"]
+splitter-language-scala = ["recoco-core/splitter-language-scala"]
+splitter-language-solidity = ["recoco-core/splitter-language-solidity"]
+splitter-language-sql = ["recoco-core/splitter-language-sql"]
+splitter-language-swift = ["recoco-core/splitter-language-swift"]
+splitter-language-toml = ["recoco-core/splitter-language-toml"]
+splitter-language-typescript = ["recoco-core/splitter-language-typescript"]
+splitter-language-xml = ["recoco-core/splitter-language-xml"]
+splitter-language-yaml = ["recoco-core/splitter-language-yaml"]
+target-kuzu = ["recoco-core/target-kuzu"]
+target-neo4j = ["recoco-core/target-neo4j"]
+target-postgres = ["recoco-core/target-postgres"]
+target-qdrant = ["recoco-core/target-qdrant"]

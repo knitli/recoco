@@ -11,7 +11,7 @@ name = "recoco-core"
 version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
-description = "ReCoco is an all-Rust fork of CocoIndex with greater flexibility."
+description = "Recoco-core is the core library of Recoco; it's nearly identical to the main ReCoco crate, which is a simple wrapper around recoco-core and other sub-crates."
 readme = "../../README.md"
 repository = { workspace = true }
 license = { workspace = true }
@@ -19,7 +19,7 @@ keywords = { workspace = true }
 categories = { workspace = true }
 
 [lib]
-name = "recoco"
+name = "recoco_core"
 path = "src/lib.rs"
 
 [dependencies]
