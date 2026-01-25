@@ -10,23 +10,10 @@
 // Both the upstream CocoIndex code and the ReCoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
-#[cfg(feature = "batching")]
-pub mod batching;
-pub mod concur_control;
-pub mod db;
-pub mod deser;
-pub mod error;
-pub mod fingerprint;
-pub mod immutable;
-pub mod retryable;
-
-pub mod prelude;
-
-#[cfg(feature = "bytes_decode")]
-pub mod bytes_decode;
-#[cfg(feature = "reqwest")]
-pub mod http;
-#[cfg(feature = "sqlx")]
-pub mod str_sanitize;
-#[cfg(feature = "yaml")]
-pub mod yaml_ser;
+pub mod duration;
+pub mod field_attrs;
+#[cfg(feature = "json-schema")]
+pub mod json_schema;
+pub mod schema;
+pub mod spec;
+pub mod value;

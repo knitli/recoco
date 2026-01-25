@@ -10,23 +10,23 @@
 // Both the upstream CocoIndex code and the ReCoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
-#[cfg(feature = "batching")]
-pub mod batching;
-pub mod concur_control;
-pub mod db;
-pub mod deser;
-pub mod error;
-pub mod fingerprint;
-pub mod immutable;
-pub mod retryable;
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::similar_names)]
+#![allow(clippy::many_single_char_names)]
+#![allow(clippy::collapsible_if)]
 
+pub mod base;
+pub mod builder;
+pub mod execution;
+pub mod lib_context;
+#[cfg(any(feature = "function-extract-llm", feature = "function-embed"))]
+pub mod llm;
+pub mod ops;
 pub mod prelude;
-
-#[cfg(feature = "bytes_decode")]
-pub mod bytes_decode;
-#[cfg(feature = "reqwest")]
-pub mod http;
-#[cfg(feature = "sqlx")]
-pub mod str_sanitize;
-#[cfg(feature = "yaml")]
-pub mod yaml_ser;
+#[cfg(feature = "server")]
+pub mod server;
+#[cfg(feature = "persistence")]
+pub mod service;
+pub mod settings;
+pub mod setup;

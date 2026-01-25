@@ -10,11 +10,13 @@
 // Both the upstream CocoIndex code and the ReCoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
+#[cfg(feature = "server")]
 use axum::{
     Json,
-    http::StatusCode,
     response::{IntoResponse, Response},
 };
+pub use http::StatusCode;
+#[cfg(feature = "server")]
 use serde::Serialize;
 use std::{
     any::Any,
@@ -219,7 +221,7 @@ impl From<serde_json::Error> for Error {
         Error::Internal(e.into())
     }
 }
-
+#[cfg(any(feature = "local-file", feature = "google-drive", feature = "azure", feature = "s3"))]
 impl From<globset::Error> for Error {
     fn from(e: globset::Error) -> Self {
         Error::Internal(e.into())
@@ -415,6 +417,7 @@ impl<T> ContextExt<T> for Option<T> {
     }
 }
 
+#[cfg(feature = "server")]
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         tracing::debug!("Error response:\n{:?}", self);
@@ -645,11 +648,13 @@ impl StdError for ApiError {
     }
 }
 
+#[cfg(feature = "server")]
 #[derive(Serialize)]
 struct ErrorResponse {
     error: String,
 }
 
+#[cfg(feature = "server")]
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         tracing::debug!("Internal server error:\n{:?}", self.err);
@@ -688,14 +693,14 @@ impl From<Error> for ApiError {
 #[macro_export]
 macro_rules! api_bail {
     ( $fmt:literal $(, $($arg:tt)*)?) => {
-        return Err($crate::error::ApiError::new(&format!($fmt $(, $($arg)*)?), axum::http::StatusCode::BAD_REQUEST).into())
+        return Err($crate::error::ApiError::new(&format!($fmt $(, $($arg)*)?), $crate::error::StatusCode::BAD_REQUEST).into())
     };
 }
 
 #[macro_export]
 macro_rules! api_error {
     ( $fmt:literal $(, $($arg:tt)*)?) => {
-        $crate::error::ApiError::new(&format!($fmt $(, $($arg)*)?), axum::http::StatusCode::BAD_REQUEST)
+        $crate::error::ApiError::new(&format!($fmt $(, $($arg)*)?), $crate::error::StatusCode::BAD_REQUEST)
     };
 }
 

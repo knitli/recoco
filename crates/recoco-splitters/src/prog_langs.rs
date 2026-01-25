@@ -23,6 +23,7 @@ pub struct TreeSitterLanguageInfo {
 }
 
 impl TreeSitterLanguageInfo {
+    #[allow(dead_code)]
     fn new(
         lang_fn: impl Into<tree_sitter::Language>,
         terminal_node_kinds: impl IntoIterator<Item = &'static str>,
@@ -93,11 +94,17 @@ static LANGUAGE_INFO_BY_NAME: LazyLock<
     add("bibtex", &[".bib", ".bibtex"], None);
     add("bicep", &[".bicep", ".bicepparam"], None);
     add("bitbake", &[".bb", ".bbappend", ".bbclass"], None);
-    add(
-        "c",
-        &[".c", ".cats", ".h.in", ".idc"],
-        Some(TreeSitterLanguageInfo::new(tree_sitter_c::LANGUAGE, [])),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "c")] {
+            add(
+                "c",
+                &[".c", ".cats", ".h.in", ".idc"],
+                Some(TreeSitterLanguageInfo::new(tree_sitter_c::LANGUAGE, [])),
+            );
+        } else {
+            add("c", &[".c", ".cats", ".h.in", ".idc"], None);
+        }
+    }
     add("cairo", &[".cairo"], None);
     add("capnp", &[".capnp"], None);
     add("chatito", &[".chatito"], None);
@@ -117,41 +124,76 @@ static LANGUAGE_INFO_BY_NAME: LazyLock<
         ],
         None,
     );
-    add(
-        "cpp",
-        &[
-            ".cpp", ".h", ".c++", ".cc", ".cp", ".cppm", ".cxx", ".h++", ".hh", ".hpp", ".hxx",
-            ".inl", ".ipp", ".ixx", ".tcc", ".tpp", ".txx", "c++",
-        ],
-        Some(TreeSitterLanguageInfo::new(tree_sitter_cpp::LANGUAGE, [])),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "cpp")] {
+            add(
+                "cpp",
+                &[
+                    ".cpp", ".h", ".c++", ".cc", ".cp", ".cppm", ".cxx", ".h++", ".hh", ".hpp", ".hxx",
+                    ".inl", ".ipp", ".ixx", ".tcc", ".tpp", ".txx", "c++",
+                ],
+                Some(TreeSitterLanguageInfo::new(tree_sitter_cpp::LANGUAGE, [])),
+            );
+        } else {
+            add(
+                "cpp",
+                &[
+                    ".cpp", ".h", ".c++", ".cc", ".cp", ".cppm", ".cxx", ".h++", ".hh", ".hpp", ".hxx",
+                    ".inl", ".ipp", ".ixx", ".tcc", ".tpp", ".txx", "c++",
+                ],
+                None,
+            );
+        }
+    }
     add("cpon", &[".cpon"], None);
-    add(
-        "csharp",
-        &[".cs", ".cake", ".cs.pp", ".csx", ".linq", "cs", "c#"],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_c_sharp::LANGUAGE,
-            [],
-        )),
-    );
-    add(
-        "css",
-        &[".css", ".scss"],
-        Some(TreeSitterLanguageInfo::new(tree_sitter_css::LANGUAGE, [])),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "c-sharp")] {
+            add(
+                "csharp",
+                &[".cs", ".cake", ".cs.pp", ".csx", ".linq", "cs", "c#"],
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_c_sharp::LANGUAGE,
+                    [],
+                )),
+            );
+        } else {
+            add(
+                "csharp",
+                &[".cs", ".cake", ".cs.pp", ".csx", ".linq", "cs", "c#"],
+                None,
+            );
+        }
+    }
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "css")] {
+            add(
+                "css",
+                &[".css", ".scss"],
+                Some(TreeSitterLanguageInfo::new(tree_sitter_css::LANGUAGE, [])),
+            );
+        } else {
+            add("css", &[".css", ".scss"], None);
+        }
+    }
     add("csv", &[".csv"], None);
     add("cuda", &[".cu", ".cuh"], None);
     add("d", &[".d", ".di"], None);
     add("dart", &[".dart"], None);
     add("dockerfile", &[".dockerfile", ".containerfile"], None);
-    add(
-        "dtd",
-        &[".dtd"],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_xml::LANGUAGE_DTD,
-            [],
-        )),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "xml")] {
+            add(
+                "dtd",
+                &[".dtd"],
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_xml::LANGUAGE_DTD,
+                    [],
+                )),
+            );
+        } else {
+            add("dtd", &[".dtd"], None);
+        }
+    }
     add("elisp", &[".el"], None);
     add("elixir", &[".ex", ".exs"], None);
     add("elm", &[".elm"], None);
@@ -166,14 +208,24 @@ static LANGUAGE_INFO_BY_NAME: LazyLock<
     add("fennel", &[".fnl"], None);
     add("firrtl", &[".fir"], None);
     add("fish", &[".fish"], None);
-    add(
-        "fortran",
-        &[".f", ".f90", ".f95", ".f03", "f", "f90", "f95", "f03"],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_fortran::LANGUAGE,
-            [],
-        )),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "fortran")] {
+            add(
+                "fortran",
+                &[".f", ".f90", ".f95", ".f03", "f", "f90", "f95", "f03"],
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_fortran::LANGUAGE,
+                    [],
+                )),
+            );
+        } else {
+            add(
+                "fortran",
+                &[".f", ".f90", ".f95", ".f03", "f", "f90", "f95", "f03"],
+                None,
+            );
+        }
+    }
     add("fsharp", &[".fs", ".fsi", ".fsx"], None);
     add("func", &[".func"], None);
     add("gdscript", &[".gd"], None);
@@ -182,11 +234,17 @@ static LANGUAGE_INFO_BY_NAME: LazyLock<
     add("gleam", &[".gleam"], None);
     add("glsl", &[".glsl", ".vert", ".frag"], None);
     add("gn", &[".gn", ".gni"], None);
-    add(
-        "go",
-        &[".go", "golang"],
-        Some(TreeSitterLanguageInfo::new(tree_sitter_go::LANGUAGE, [])),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "go")] {
+            add(
+                "go",
+                &[".go", "golang"],
+                Some(TreeSitterLanguageInfo::new(tree_sitter_go::LANGUAGE, [])),
+            );
+        } else {
+            add("go", &[".go", "golang"], None);
+        }
+    }
     add("gomod", &["go.mod"], None);
     add("gosum", &["go.sum"], None);
     add("graphql", &[".graphql", ".gql"], None);
@@ -202,22 +260,36 @@ static LANGUAGE_INFO_BY_NAME: LazyLock<
     add("hcl", &[".hcl", ".tf"], None);
     add("heex", &[".heex"], None);
     add("hlsl", &[".hlsl"], None);
-    add(
-        "html",
-        &[".html", ".htm", ".hta", ".html.hl", ".xht", ".xhtml"],
-        Some(TreeSitterLanguageInfo::new(tree_sitter_html::LANGUAGE, [])),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "html")] {
+            add(
+                "html",
+                &[".html", ".htm", ".hta", ".html.hl", ".xht", ".xhtml"],
+                Some(TreeSitterLanguageInfo::new(tree_sitter_html::LANGUAGE, [])),
+            );
+        } else {
+            add("html", &[".html", ".htm", ".hta", ".html.hl", ".xht", ".xhtml"], None);
+        }
+    }
     add("hyprlang", &[".hl"], None);
     add("ini", &[".ini", ".cfg"], None);
     add("ispc", &[".ispc"], None);
     add("janet", &[".janet"], None);
-    add(
-        "java",
-        &[".java", ".jav", ".jsh"],
-        Some(TreeSitterLanguageInfo::new(tree_sitter_java::LANGUAGE, [])),
-    );
-    add(
-        "javascript",
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "java")] {
+            add(
+                "java",
+                &[".java", ".jav", ".jsh"],
+                Some(TreeSitterLanguageInfo::new(tree_sitter_java::LANGUAGE, [])),
+            );
+        } else {
+            add("java", &[".java", ".jav", ".jsh"], None);
+        }
+    }
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "javascript")] {
+            add(
+                "javascript",
         &[
             ".js",
             "._js",
@@ -245,18 +317,50 @@ static LANGUAGE_INFO_BY_NAME: LazyLock<
             ".xsjslib",
             "js",
         ],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_javascript::LANGUAGE,
-            [],
-        )),
-    );
-    add(
-        "json",
-        &[
-            ".json",
-            ".4DForm",
-            ".4DProject",
-            ".avsc",
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_javascript::LANGUAGE,
+                    [],
+                )),
+            );
+        } else {
+            add("javascript", &[
+                ".js",
+                "._js",
+                ".bones",
+                ".cjs",
+                ".es",
+                ".es6",
+                ".gs",
+                ".jake",
+                ".javascript",
+                ".jsb",
+                ".jscad",
+                ".jsfl",
+                ".jslib",
+                ".jsm",
+                ".jspre",
+                ".jss",
+                ".jsx",
+                ".mjs",
+                ".njs",
+                ".pac",
+                ".sjs",
+                ".ssjs",
+                ".xsjs",
+                ".xsjslib",
+                "js",
+            ], None);
+        }
+    }
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "json")] {
+            add(
+                "json",
+                &[
+                    ".json",
+                    ".4DForm",
+                    ".4DProject",
+                    ".avsc",
             ".geojson",
             ".gltf",
             ".har",
@@ -275,19 +379,51 @@ static LANGUAGE_INFO_BY_NAME: LazyLock<
             ".yy",
             ".yyp",
         ],
-        Some(TreeSitterLanguageInfo::new(tree_sitter_json::LANGUAGE, [])),
+                Some(TreeSitterLanguageInfo::new(tree_sitter_json::LANGUAGE, [])),
     );
+        } else {
+            add("json", &[
+                ".json",
+                ".4DForm",
+                ".4DProject",
+                ".avsc",
+                ".geojson",
+                ".gltf",
+                ".har",
+                ".ice",
+                ".JSON-tmLanguage",
+                ".json.example",
+                ".jsonl",
+                ".mcmeta",
+                ".sarif",
+                ".tact",
+                ".tfstate",
+                ".tfstate.backup",
+                ".topojson",
+                ".webapp",
+                ".webmanifest",
+                ".yy",
+                ".yyp",
+            ], None);
+        }
+    }
     add("jsonnet", &[".jsonnet"], None);
     add("julia", &[".jl"], None);
     add("kdl", &[".kdl"], None);
-    add(
-        "kotlin",
-        &[".kt", ".ktm", ".kts"],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_kotlin_ng::LANGUAGE,
-            [],
-        )),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "kotlin")] {
+            add(
+                "kotlin",
+                &[".kt", ".ktm", ".kts"],
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_kotlin_ng::LANGUAGE,
+                    [],
+                )),
+            );
+        } else {
+            add("kotlin", &[".kt", ".ktm", ".kts"], None);
+        }
+    }
     add("latex", &[".tex"], None);
     add("linkerscript", &[".ld"], None);
     add("llvm", &[".ll"], None);
@@ -311,28 +447,34 @@ static LANGUAGE_INFO_BY_NAME: LazyLock<
         &[".mak", ".make", ".makefile", ".mk", ".mkfile"],
         None,
     );
-    add(
-        "markdown",
-        &[
-            ".md",
-            ".livemd",
-            ".markdown",
-            ".mdown",
-            ".mdwn",
-            ".mdx",
-            ".mkd",
-            ".mkdn",
-            ".mkdown",
-            ".ronn",
-            ".scd",
-            ".workbook",
-            "md",
-        ],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_md::LANGUAGE,
-            ["inline", "indented_code_block", "fenced_code_block"],
-        )),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "markdown")] {
+            add(
+                "markdown",
+                &[
+                    ".md",
+                    ".livemd",
+                    ".markdown",
+                    ".mdown",
+                    ".mdwn",
+                    ".mdx",
+                    ".mkd",
+                    ".mkdn",
+                    ".mkdown",
+                    ".ronn",
+                    ".scd",
+                    ".workbook",
+                    "md",
+                ],
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_md::LANGUAGE,
+                    ["inline", "indented_code_block", "fenced_code_block"],
+                )),
+            );
+        } else {
+            add("markdown", &[".md", ".livemd", ".markdown", ".mdown", ".mdwn", ".mdx", ".mkd", ".mkdn", ".mkdown", ".ronn", ".scd", ".workbook", "md"], None);
+        }
+    }
     add("mermaid", &[".mmd"], None);
     add("meson", &["meson.build"], None);
     add("netlinx", &[".axi"], None);
@@ -344,16 +486,22 @@ static LANGUAGE_INFO_BY_NAME: LazyLock<
     add("ninja", &[".ninja"], None);
     add("nix", &[".nix"], None);
     add("nqc", &[".nqc"], None);
-    add(
-        "pascal",
-        &[
-            ".pas", ".dfm", ".dpr", ".lpr", ".pascal", "pas", "dpr", "delphi",
-        ],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_pascal::LANGUAGE,
-            [],
-        )),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "pascal")] {
+            add(
+                "pascal",
+                &[
+                    ".pas", ".dfm", ".dpr", ".lpr", ".pascal", "pas", "dpr", "delphi",
+                ],
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_pascal::LANGUAGE,
+                    [],
+                )),
+            );
+            } else {
+                add("pascal", &[".pas", ".dfm", ".dpr", ".lpr", ".pascal", "pas", "dpr", "delphi"], None);
+            }
+        }
     add("pem", &[".pem"], None);
     add(
         "perl",
@@ -363,14 +511,20 @@ static LANGUAGE_INFO_BY_NAME: LazyLock<
         None,
     );
     add("pgn", &[".pgn"], None);
-    add(
-        "php",
-        &[".php"],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_php::LANGUAGE_PHP,
-            [],
-        )),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "php")] {
+            add(
+                "php",
+                &[".php"],
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_php::LANGUAGE_PHP,
+                    [],
+                )),
+            );
+        } else {
+            add("php", &[".php"], None);
+        }
+    }
     add("po", &[".po"], None);
     add("pony", &[".pony"], None);
     add("powershell", &[".ps1"], None);
@@ -380,20 +534,32 @@ static LANGUAGE_INFO_BY_NAME: LazyLock<
     add("psv", &[".psv"], None);
     add("puppet", &[".pp"], None);
     add("purescript", &[".purs"], None);
-    add(
-        "python",
-        &[".py", ".pyw", ".pyi", ".pyx", ".pxd", ".pxi"],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_python::LANGUAGE,
-            [],
-        )),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "python")] {
+            add(
+                "python",
+                &[".py", ".pyw", ".pyi", ".pyx", ".pxd", ".pxi"],
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_python::LANGUAGE,
+                    [],
+                )),
+            );
+        } else {
+            add("python", &[".py", ".pyw", ".pyi", ".pyx", ".pxd", ".pxi"], None);
+        }
+    }
     add("qmljs", &[".qml"], None);
-    add(
-        "r",
-        &[".r"],
-        Some(TreeSitterLanguageInfo::new(tree_sitter_r::LANGUAGE, [])),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "r")] {
+            add(
+                "r",
+                &[".r"],
+                Some(TreeSitterLanguageInfo::new(tree_sitter_r::LANGUAGE, [])),
+            );
+        } else {
+            add("r", &[".r"], None);
+        }
+    }
     add("racket", &[".rkt"], None);
     add("rbs", &[".rbs"], None);
     add("re2c", &[".re"], None);
@@ -401,79 +567,133 @@ static LANGUAGE_INFO_BY_NAME: LazyLock<
     add("requirements", &["requirements.txt"], None);
     add("ron", &[".ron"], None);
     add("rst", &[".rst"], None);
-    add(
-        "ruby",
-        &[".rb"],
-        Some(TreeSitterLanguageInfo::new(tree_sitter_ruby::LANGUAGE, [])),
-    );
-    add(
-        "rust",
-        &[".rs", "rs"],
-        Some(TreeSitterLanguageInfo::new(tree_sitter_rust::LANGUAGE, [])),
-    );
-    add(
-        "scala",
-        &[".scala"],
-        Some(TreeSitterLanguageInfo::new(tree_sitter_scala::LANGUAGE, [])),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "ruby")] {
+            add(
+                "ruby",
+                &[".rb"],
+                Some(TreeSitterLanguageInfo::new(tree_sitter_ruby::LANGUAGE, [])),
+            );
+        } else {
+            add("ruby", &[".rb"], None);
+        }
+    }
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "rust")] {
+            add(
+                "rust",
+                &[".rs", "rs"],
+                Some(TreeSitterLanguageInfo::new(tree_sitter_rust::LANGUAGE, [])),
+            );
+        } else {
+            add("rust", &[".rs", "rs"], None);
+        }
+    }
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "scala")] {
+            add(
+                "scala",
+                &[".scala"],
+                Some(TreeSitterLanguageInfo::new(tree_sitter_scala::LANGUAGE, [])),
+            );
+        } else {
+            add("scala", &[".scala"], None);
+        }
+    }
     add("scheme", &[".ss"], None);
     add("slang", &[".slang"], None);
     add("smali", &[".smali"], None);
     add("smithy", &[".smithy"], None);
-    add(
-        "solidity",
-        &[".sol"],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_solidity::LANGUAGE,
-            [],
-        )),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "solidity")] {
+            add(
+                "solidity",
+                &[".sol"],
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_solidity::LANGUAGE,
+                    [],
+                )),
+            );
+        } else {
+            add("solidity", &[".sol"], None);
+        }
+    }
     add("sparql", &[".sparql"], None);
-    add(
-        "sql",
-        &[".sql"],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_sequel::LANGUAGE,
-            [],
-        )),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "sql")] {
+            add(
+                "sql",
+                &[".sql"],
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_sequel::LANGUAGE,
+                    [],
+                )),
+            );
+        } else {
+            add("sql", &[".sql"], None);
+        }
+    }
     add("squirrel", &[".nut"], None);
     add("starlark", &[".star", ".bzl"], None);
     add("svelte", &[".svelte"], None);
-    add(
-        "swift",
-        &[".swift"],
-        Some(TreeSitterLanguageInfo::new(tree_sitter_swift::LANGUAGE, [])),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "swift")] {
+            add(
+                "swift",
+                &[".swift"],
+                Some(TreeSitterLanguageInfo::new(tree_sitter_swift::LANGUAGE, [])),
+            );
+        } else {
+            add("swift", &[".swift"], None);
+        }
+    }
     add("tablegen", &[".td"], None);
     add("tcl", &[".tcl"], None);
     add("thrift", &[".thrift"], None);
-    add(
-        "toml",
-        &[".toml"],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_toml_ng::LANGUAGE,
-            [],
-        )),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "toml")] {
+            add(
+                "toml",
+                &[".toml"],
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_toml_ng::LANGUAGE,
+                    [],
+                )),
+            );
+        } else {
+            add("toml", &[".toml"], None);
+        }
+    }
     add("tsv", &[".tsv"], None);
-    add(
-        "tsx",
-        &[".tsx"],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_typescript::LANGUAGE_TSX,
-            [],
-        )),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "typescript")] {
+            add(
+                "tsx",
+                &[".tsx"],
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_typescript::LANGUAGE_TSX,
+                    [],
+                )),
+            );
+        } else {
+            add("tsx", &[".tsx"], None);
+        }
+    }
     add("twig", &[".twig"], None);
-    add(
-        "typescript",
-        &[".ts", "ts"],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_typescript::LANGUAGE_TYPESCRIPT,
-            [],
-        )),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "typescript")] {
+            add(
+                "typescript",
+                &[".ts", "ts"],
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_typescript::LANGUAGE_TYPESCRIPT,
+                    [],
+                )),
+            );
+        } else {
+            add("typescript", &[".ts", "ts"], None);
+        }
+    }
     add("typst", &[".typ"], None);
     add("udev", &[".rules"], None);
     add("ungrammar", &[".ungram"], None);
@@ -486,19 +706,31 @@ static LANGUAGE_INFO_BY_NAME: LazyLock<
     add("wat", &[".wat"], None);
     add("wgsl", &[".wgsl"], None);
     add("xcompose", &[".xcompose"], None);
-    add(
-        "xml",
-        &[".xml"],
-        Some(TreeSitterLanguageInfo::new(
-            tree_sitter_xml::LANGUAGE_XML,
-            [],
-        )),
-    );
-    add(
-        "yaml",
-        &[".yaml", ".yml"],
-        Some(TreeSitterLanguageInfo::new(tree_sitter_yaml::LANGUAGE, [])),
-    );
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "xml")] {
+            add(
+                "xml",
+                &[".xml"],
+                Some(TreeSitterLanguageInfo::new(
+                    tree_sitter_xml::LANGUAGE_XML,
+                    [],
+                )),
+            );
+        } else {
+            add("xml", &[".xml"], None);
+        }
+    }
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "yaml")] {
+            add(
+                "yaml",
+                &[".yaml", ".yml"],
+                Some(TreeSitterLanguageInfo::new(tree_sitter_yaml::LANGUAGE, [])),
+            );
+        } else {
+            add("yaml", &[".yaml", ".yml"], None);
+        }
+    }
     add("yuck", &[".yuck"], None);
     add("zig", &[".zig"], None);
 

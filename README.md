@@ -56,9 +56,11 @@ For [Knitli](https://knitli.com), I particularly needed dependency control. I wa
 
 1. **ReCoco fully exposes a Rust API.** You can use ReCoco to support your rust ETL projects directly. **Build on it.**
 
-2. **Every target, source, and function is independently feature-gated. Use only what you want.**
+2. **Every target, source, and function is independently feature-gated. Use only what you want.** 
 
-We will regularly merge in upstream fixes and changes, particularly 
+> The minimum install now uses ~220 crates from CocoIndex's ~970.
+
+We will regularly merge in upstream fixes and changes, particularly sources, targets, and functions.
 
 ## ✨ Key Features
 

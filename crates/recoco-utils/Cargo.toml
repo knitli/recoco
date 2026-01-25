@@ -18,14 +18,14 @@ license = { workspace = true }
 anyhow = { workspace = true }
 async-openai = { workspace = true, optional = true }
 async-trait = { workspace = true }
-axum = { workspace = true }
+axum = { workspace = true, optional = true }
 azure_storage = { workspace = true, optional = true }
 base64 = { workspace = true }
 blake3 = { workspace = true }
 chrono = { workspace = true }
 encoding_rs = { workspace = true, optional = true }
 futures = { workspace = true }
-globset = { workspace = true }
+globset = { workspace = true, optional = true }
 google-drive3 = { workspace = true, optional = true }
 hex = { workspace = true }
 http = { workspace = true }
@@ -42,21 +42,26 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 serde_path_to_error = { workspace = true }
 sqlx = { workspace = true, optional = true }
+time = { workspace = true }
 tokio = { workspace = true }
-tokio-util = { workspace = true }
+tokio-util = { workspace = true, optional = true }
 tracing = { workspace = true }
 uuid = { workspace = true }
 yaml-rust2 = { workspace = true, optional = true }
 
 [features]
 default = []
-azure = ["dep:azure_storage"]
+azure = ["dep:azure_storage", "dep:globset"]
+batching = ["dep:tokio-util"]
 bytes_decode = ["dep:encoding_rs"]
-google-drive = ["dep:google-drive3"]
+google-drive = ["dep:globset", "dep:google-drive3"]
+local-file = ["dep:globset"]
 neo4rs = ["dep:neo4rs"]
 openai = ["dep:async-openai", "reqwest"]
 qdrant = ["dep:qdrant-client"]
 redis = ["dep:redis"]
 reqwest = ["dep:reqwest"]
+s3 = ["dep:globset"]
+server = ["dep:axum"]
 sqlx = ["dep:sqlx"]
 yaml = ["dep:yaml-rust2"]

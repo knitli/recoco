@@ -4016,7 +4016,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "recoco"
+name = "recoco-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -4038,7 +4038,6 @@ dependencies = [
  "config",
  "const_format",
  "derive-where",
- "encoding_rs",
  "expect-test",
  "futures",
  "globset",
@@ -4064,7 +4063,6 @@ dependencies = [
  "recoco-splitters",
  "recoco-utils",
  "redis",
- "regex",
  "reqwest",
  "rustls 0.23.36",
  "schemars 1.2.0",
@@ -4073,10 +4071,7 @@ dependencies = [
  "serde_path_to_error",
  "serde_with",
  "sqlx",
- "time",
  "tokio",
- "tokio-stream",
- "tokio-util",
  "tower 0.5.3",
  "tower-http",
  "tracing",
@@ -4092,6 +4087,7 @@ dependencies = [
 name = "recoco-splitters"
 version = "0.1.0"
 dependencies = [
+ "cfg-if",
  "regex",
  "tree-sitter",
  "tree-sitter-c",
@@ -4155,6 +4151,7 @@ dependencies = [
  "serde_json",
  "serde_path_to_error",
  "sqlx",
+ "time",
  "tokio",
  "tokio-util",
  "tracing",

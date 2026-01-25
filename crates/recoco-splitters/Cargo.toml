@@ -17,37 +17,95 @@ license = { workspace = true }
 categories = ["parser-implementations", "parsing", "text-processing"]
 
 [dependencies]
+cfg-if = { workspace = true }  # compile time
 regex = { workspace = true }
 tree-sitter = "0.25.10"
 # Per language tree-sitter parsers
-tree-sitter-c = "0.24.1"
-tree-sitter-c-sharp = "0.23.1"
-tree-sitter-cpp = "0.23.4"
-tree-sitter-css = "0.23.2"
-tree-sitter-fortran = "0.5.1"
-tree-sitter-go = "0.23.4"
-tree-sitter-html = "0.23.2"
-tree-sitter-java = "0.23.5"
-tree-sitter-javascript = "0.23.1"
-tree-sitter-json = "0.24.8"
+tree-sitter-c = { version = "0.24.1", optional = true }
+tree-sitter-c-sharp = { version = "0.23.1", optional = true }
+tree-sitter-cpp = { version = "0.23.4", optional = true }
+tree-sitter-css = { version = "0.23.2", optional = true }
+tree-sitter-fortran = { version = "0.5.1", optional = true }
+tree-sitter-go = { version = "0.23.4", optional = true }
+tree-sitter-html = { version = "0.23.2", optional = true }
+tree-sitter-java = { version = "0.23.5", optional = true }
+tree-sitter-javascript = { version = "0.23.1", optional = true }
+tree-sitter-json = { version = "0.24.8", optional = true }
 # The other more popular crate tree-sitter-kotlin requires tree-sitter < 0.23 for now
-tree-sitter-kotlin-ng = "1.1.0"
-tree-sitter-language = "0.1.5"
-tree-sitter-md = "0.5.1"
-tree-sitter-pascal = "0.10.0"
-tree-sitter-php = "0.23.11"
-tree-sitter-python = "0.23.6"
-tree-sitter-r = "1.2.0"
-tree-sitter-ruby = "0.23.1"
-tree-sitter-rust = "0.24.0"
-tree-sitter-scala = "0.24.0"
-tree-sitter-sequel = "0.3.11"
-tree-sitter-solidity = "1.2.13"
-tree-sitter-swift = "0.7.1"
-tree-sitter-toml-ng = "0.7.0"
-tree-sitter-typescript = "0.23.2"
-tree-sitter-xml = "0.7.0"
-tree-sitter-yaml = "0.7.2"
+tree-sitter-kotlin-ng = { version = "1.1.0", optional = true }
+tree-sitter-language = { version = "0.1.5" }
+tree-sitter-md = { version = "0.5.1", optional = true }
+tree-sitter-pascal = { version = "0.10.0", optional = true }
+tree-sitter-php = { version = "0.23.11", optional = true }
+tree-sitter-python = { version = "0.23.6", optional = true }
+tree-sitter-r = { version = "1.2.0", optional = true }
+tree-sitter-ruby = { version = "0.23.1", optional = true }
+tree-sitter-rust = { version = "0.24.0", optional = true }
+tree-sitter-scala = { version = "0.24.0", optional = true }
+tree-sitter-sequel = { version = "0.3.11", optional = true }
+tree-sitter-solidity = { version = "1.2.13", optional = true }
+tree-sitter-swift = { version = "0.7.1", optional = true }
+tree-sitter-toml-ng = { version = "0.7.0", optional = true }
+tree-sitter-typescript = { version = "0.23.2", optional = true }
+tree-sitter-xml = { version = "0.7.0", optional = true }
+tree-sitter-yaml = { version = "0.7.2", optional = true }
 unicase = { workspace = true }
 
 [dev-dependencies]
+
+[features]
+default = []
+all = [
+  "c",
+  "c-sharp",
+  "cpp",
+  "css",
+  "fortran",
+  "go",
+  "html",
+  "java",
+  "javascript",
+  "json",
+  "kotlin",
+  "markdown",
+  "pascal",
+  "php",
+  "python",
+  "r",
+  "ruby",
+  "rust",
+  "scala",
+  "solidity",
+  "sql",
+  "swift",
+  "toml",
+  "typescript",
+  "xml",
+  "yaml"
+]
+c = ["dep:tree-sitter-c"]
+c-sharp = ["dep:tree-sitter-c-sharp"]
+cpp = ["dep:tree-sitter-cpp"]
+css = ["dep:tree-sitter-css"]
+fortran = ["dep:tree-sitter-fortran"]
+go = ["dep:tree-sitter-go"]
+html = ["dep:tree-sitter-html"]
+java = ["dep:tree-sitter-java"]
+javascript = ["dep:tree-sitter-javascript"]
+json = ["dep:tree-sitter-json"]
+kotlin = ["dep:tree-sitter-kotlin-ng"]
+markdown = ["dep:tree-sitter-md"]
+pascal = ["dep:tree-sitter-pascal"]
+php = ["dep:tree-sitter-php"]
+python = ["dep:tree-sitter-python"]
+r = ["dep:tree-sitter-r"]
+ruby = ["dep:tree-sitter-ruby"]
+rust = ["dep:tree-sitter-rust"]
+scala = ["dep:tree-sitter-scala"]
+solidity = ["dep:tree-sitter-solidity"]
+sql = ["dep:tree-sitter-sequel"]
+swift = ["dep:tree-sitter-swift"]
+toml = ["dep:tree-sitter-toml-ng"]
+typescript = ["dep:tree-sitter-typescript"]
+xml = ["dep:tree-sitter-xml"]
+yaml = ["dep:tree-sitter-yaml"]
