@@ -11,7 +11,7 @@ name = "recoco-splitters"
 version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
-description = "Text splitters/parsers for ReCoco."
+description = "Text splitters/parsers for ReCoco, an all-Rust fork of CocoIndex with greater flexibility."
 repository = { workspace = true }
 license = { workspace = true }
 categories = ["parser-implementations", "parsing", "text-processing"]

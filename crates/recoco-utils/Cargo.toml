@@ -10,7 +10,7 @@ name = "recoco-utils"
 version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
-description = "Common utilities for ReCoco."
+description = "Common utilities for ReCoco, an all-Rust fork of CocoIndex with greater flexibility."
 repository = { workspace = true }
 license = { workspace = true }
 

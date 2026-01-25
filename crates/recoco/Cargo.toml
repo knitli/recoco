@@ -7,11 +7,11 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [package]
-name = "ReCoco"
+name = "recoco"
 version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
-description = { workspace = true }
+description = "ReCoco is an all-Rust fork of CocoIndex with greater flexibility."
 repository = { workspace = true }
 license = { workspace = true }
 keywords = { workspace = true }
