@@ -21,6 +21,7 @@ use crate::prelude::*;
 use std::sync::Arc;
 
 // This function builds an argument schema for a flow function.
+#[cfg(feature = "persistence")]
 pub fn build_arg_schema(
     name: &str,
     value_type: BasicValueType,
@@ -29,6 +30,7 @@ pub fn build_arg_schema(
 }
 
 // This function tests a flow function by providing a spec, input argument schemas, and values.
+#[cfg(feature = "persistence")]
 pub async fn test_flow_function(
     factory: &Arc<impl SimpleFunctionFactory>,
     spec: &impl Serialize,

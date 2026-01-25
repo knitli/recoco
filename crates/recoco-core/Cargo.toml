@@ -73,6 +73,7 @@ serde_json = { workspace = true }
 serde_path_to_error = { workspace = true }
 serde_with = { workspace = true }
 sqlx = { workspace = true, optional = true }
+time = { workspace = true, optional = true }
 tokio = { workspace = true }
 tower = { workspace = true, optional = true }
 tower-http = { workspace = true, optional = true }
@@ -121,6 +122,8 @@ all-targets = [
   "target-postgres",
   "target-qdrant",
 ]
+# Core
+batching = ["recoco-utils/batching"]
 full = [
   "all-functions",
   "all-llm-providers",
@@ -133,9 +136,9 @@ full = [
 # Functions
 function-detect-lang = ["dep:recoco-splitters"]
 function-embed = [
+  "batching",
   "dep:reqwest",
   "json-schema",
-  "recoco-utils/batching",
   "recoco-utils/reqwest"
 ]
 function-extract-llm = [
@@ -145,7 +148,6 @@ function-extract-llm = [
 ]
 function-json = ["dep:json5", "dep:unicase"]
 function-split = ["dep:recoco-splitters"]
-# Core
 json-schema = ["dep:schemars"]
 # Legacy
 legacy-states-v0 = []
@@ -166,6 +168,7 @@ provider-anthropic = [
 ]
 provider-azure = [
   "dep:async-openai",
+  "dep:time",
   "recoco-utils/openai",
 ]
 provider-bedrock = ["dep:reqwest", "dep:urlencoding", "recoco-utils/reqwest"]
@@ -197,16 +200,17 @@ server = [
   "recoco-utils/server",
 ]
 source-azure = [
+  "batching",
   "dep:azure_core",
   "dep:azure_identity",
   "dep:azure_storage",
   "dep:azure_storage_blobs",
   "dep:globset",
   "recoco-utils/azure",
-  "recoco-utils/batching",
   "recoco-utils/bytes_decode"
 ]
 source-gdrive = [
+  "batching",
   "dep:globset",
   "dep:google-drive3",
   "dep:http-body-util",
@@ -214,19 +218,19 @@ source-gdrive = [
   "dep:hyper-util",
   "dep:rustls",
   "dep:yup-oauth2",
-  "recoco-utils/batching",
   "recoco-utils/bytes_decode",
   "recoco-utils/google-drive"
 ]
 # Sources
 source-local-file = [
+  "batching",
   "dep:globset",
-  "recoco-utils/batching",
   "recoco-utils/bytes_decode",
   "recoco-utils/local-file"
 ]
-source-postgres = ["dep:pgvector", "persistence", "recoco-utils/batching"]
+source-postgres = ["batching", "dep:pgvector", "persistence"]
 source-s3 = [
+  "batching",
   "dep:aws-config",
   "dep:aws-sdk-s3",
   "dep:aws-sdk-sqs",
@@ -234,7 +238,6 @@ source-s3 = [
   "dep:redis",
   "dep:rustls",
   "dep:urlencoding",
-  "recoco-utils/batching",
   "recoco-utils/bytes_decode",
   "recoco-utils/redis",
   "recoco-utils/s3"

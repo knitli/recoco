@@ -10,11 +10,8 @@
 // Both the upstream CocoIndex code and the ReCoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    ops::sdk::SetupStateCompatibility,
-    prelude::*,
-};
 use crate::setup::{CombinedState, SetupChangeType};
+use crate::{ops::sdk::SetupStateCompatibility, prelude::*};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TableColumnsSchema<T: Serialize + DeserializeOwned> {

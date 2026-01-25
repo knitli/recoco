@@ -17,7 +17,14 @@ use crate::{
     prelude::*,
 };
 
-#[cfg(any(feature = "function-embed", feature = "source-azure", feature = "source-gdrive", feature = "source-s3", feature = "source-local-file", feature = "source-postgres"))]
+#[cfg(any(
+    feature = "function-embed",
+    feature = "source-azure",
+    feature = "source-gdrive",
+    feature = "source-s3",
+    feature = "source-local-file",
+    feature = "source-postgres"
+))]
 use utils::batching;
 
 use futures::future::Ready;
@@ -79,7 +86,14 @@ pub struct SourceIndexingContext {
     state: Mutex<SourceIndexingState>,
     setup_execution_ctx: Arc<exec_ctx::FlowSetupExecutionContext>,
     needs_to_track_rows_to_retry: bool,
-    #[cfg(any(feature = "function-embed", feature = "source-azure", feature = "source-gdrive", feature = "source-s3", feature = "source-local-file", feature = "source-postgres"))]
+    #[cfg(any(
+        feature = "function-embed",
+        feature = "source-azure",
+        feature = "source-gdrive",
+        feature = "source-s3",
+        feature = "source-local-file",
+        feature = "source-postgres"
+    ))]
     update_once_batcher: batching::Batcher<UpdateOnceRunner>,
     source_logic_fp: SourceLogicFingerprint,
 }
@@ -343,7 +357,14 @@ impl SourceIndexingContext {
                 rows_to_retry,
             }),
             setup_execution_ctx,
-            #[cfg(any(feature = "function-embed", feature = "source-azure", feature = "source-gdrive", feature = "source-s3", feature = "source-local-file", feature = "source-postgres"))]
+            #[cfg(any(
+                feature = "function-embed",
+                feature = "source-azure",
+                feature = "source-gdrive",
+                feature = "source-s3",
+                feature = "source-local-file",
+                feature = "source-postgres"
+            ))]
             update_once_batcher: batching::Batcher::new(
                 UpdateOnceRunner,
                 batching::BatchingOptions::default(),
@@ -708,7 +729,14 @@ struct UpdateOnceInput {
 
 struct UpdateOnceRunner;
 
-#[cfg(any(feature = "function-embed", feature = "source-azure", feature = "source-gdrive", feature = "source-s3", feature = "source-local-file", feature = "source-postgres"))]
+#[cfg(any(
+    feature = "function-embed",
+    feature = "source-azure",
+    feature = "source-gdrive",
+    feature = "source-s3",
+    feature = "source-local-file",
+    feature = "source-postgres"
+))]
 #[async_trait]
 impl batching::Runner for UpdateOnceRunner {
     type Input = UpdateOnceInput;

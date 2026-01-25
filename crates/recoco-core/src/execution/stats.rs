@@ -29,6 +29,7 @@ impl Counter {
         self.0.load(Relaxed)
     }
 
+    #[cfg(feature = "persistence")]
     pub fn delta(&self, base: &Self) -> Counter {
         Counter(AtomicI64::new(self.get() - base.get()))
     }
@@ -37,6 +38,7 @@ impl Counter {
         self.0.into_inner()
     }
 
+    #[cfg(feature = "persistence")]
     pub fn merge(&self, delta: &Self) {
         self.0.fetch_add(delta.get(), Relaxed);
     }
@@ -93,6 +95,7 @@ impl ProcessingCounters {
     }
 
     /// Calculate the delta between this and a base ProcessingCounters.
+    #[cfg(feature = "persistence")]
     pub fn delta(&self, base: &Self) -> Self {
         ProcessingCounters {
             num_starts: self.num_starts.delta(&base.num_starts),
@@ -101,6 +104,7 @@ impl ProcessingCounters {
     }
 
     /// Merge a delta into this ProcessingCounters.
+    #[cfg(feature = "persistence")]
     pub fn merge(&self, delta: &Self) {
         self.num_starts.merge(&delta.num_starts);
         self.num_ends.merge(&delta.num_ends);
@@ -108,6 +112,7 @@ impl ProcessingCounters {
 }
 
 #[derive(Debug, Serialize, Default, Clone)]
+#[cfg(feature = "persistence")]
 pub struct UpdateStats {
     pub num_no_change: Counter,
     pub num_insertions: Counter,
@@ -121,6 +126,7 @@ pub struct UpdateStats {
     pub processing: ProcessingCounters,
 }
 
+#[cfg(feature = "persistence")]
 impl UpdateStats {
     pub fn delta(&self, base: &Self) -> Self {
         UpdateStats {
@@ -203,19 +209,23 @@ impl OperationInProcessStats {
     }
 }
 
+#[cfg(feature = "persistence")]
 struct UpdateStatsSegment {
     count: i64,
     label: &'static str,
 }
 
+#[cfg(feature = "persistence")]
 impl UpdateStatsSegment {
     pub fn new(count: i64, label: &'static str) -> Self {
         Self { count, label }
     }
 }
 
+#[cfg(feature = "persistence")]
 const BAR_WIDTH: u64 = 40;
 
+#[cfg(feature = "persistence")]
 impl std::fmt::Display for UpdateStats {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let segments: [UpdateStatsSegment; _] = [
@@ -265,11 +275,13 @@ impl std::fmt::Display for UpdateStats {
 }
 
 #[derive(Debug, Serialize)]
+#[cfg(feature = "persistence")]
 pub struct SourceUpdateInfo {
     pub source_name: String,
     pub stats: UpdateStats,
 }
 
+#[cfg(feature = "persistence")]
 impl std::fmt::Display for SourceUpdateInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}: {}", self.source_name, self.stats)
@@ -277,10 +289,12 @@ impl std::fmt::Display for SourceUpdateInfo {
 }
 
 #[derive(Debug, Serialize)]
+#[cfg(feature = "persistence")]
 pub struct IndexUpdateInfo {
     pub sources: Vec<SourceUpdateInfo>,
 }
 
+#[cfg(feature = "persistence")]
 impl std::fmt::Display for IndexUpdateInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for source in self.sources.iter() {

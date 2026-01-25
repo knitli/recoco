@@ -46,6 +46,7 @@ impl BatchedFunctionExecutor for Executor {
         true
     }
 
+    #[cfg(feature = "batching")]
     fn batching_options(&self) -> batching::BatchingOptions {
         // A safe default for most embeddings providers.
         // May tune it for specific providers later.

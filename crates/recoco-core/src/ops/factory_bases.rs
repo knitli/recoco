@@ -397,13 +397,15 @@ pub trait BatchedFunctionExecutor: Send + Sync + Sized + 'static {
     fn into_fn_executor(self) -> impl SimpleFunctionExecutor {
         BatchedFunctionExecutorWrapper::new(self)
     }
-    #[cfg(any(feature = "function-embed", feature = "source-azure", feature = "source-gdrive", feature = "source-s3", feature = "source-local-file", feature = "source-postgres"))]
+
+    #[cfg(feature = "batching")]
     fn batching_options(&self) -> batching::BatchingOptions;
 }
 
+#[cfg(feature = "batching")]
 struct BatchedFunctionExecutorRunner<E: BatchedFunctionExecutor>(E);
 
-#[cfg(any(feature = "function-embed", feature = "source-azure", feature = "source-gdrive", feature = "source-s3", feature = "source-local-file", feature = "source-postgres"))]
+#[cfg(feature = "batching")]
 #[async_trait]
 impl<E: BatchedFunctionExecutor> batching::Runner for BatchedFunctionExecutorRunner<E> {
     type Input = Vec<value::Value>;
@@ -418,34 +420,56 @@ impl<E: BatchedFunctionExecutor> batching::Runner for BatchedFunctionExecutorRun
 }
 
 struct BatchedFunctionExecutorWrapper<E: BatchedFunctionExecutor> {
-    #[cfg(any(feature = "function-embed", feature = "source-azure", feature = "source-gdrive", feature = "source-s3", feature = "source-local-file", feature = "source-postgres"))]
+    #[cfg(feature = "batching")]
     batcher: batching::Batcher<BatchedFunctionExecutorRunner<E>>,
+    #[cfg(not(feature = "batching"))]
+    executor: E,
     enable_cache: bool,
     timeout: Option<std::time::Duration>,
 }
 
-#[cfg(any(feature = "function-embed", feature = "source-azure", feature = "source-gdrive", feature = "source-s3", feature = "source-local-file", feature = "source-postgres"))]
 impl<E: BatchedFunctionExecutor> BatchedFunctionExecutorWrapper<E> {
     fn new(executor: E) -> Self {
-        let batching_options = executor.batching_options();
         let enable_cache = executor.enable_cache();
         let timeout = executor.timeout();
-        Self {
-            enable_cache,
-            timeout,
-            batcher: batching::Batcher::new(
-                BatchedFunctionExecutorRunner(executor),
-                batching_options,
-            ),
+        #[cfg(feature = "batching")]
+        {
+            let batching_options = executor.batching_options();
+            Self {
+                enable_cache,
+                timeout,
+                batcher: batching::Batcher::new(
+                    BatchedFunctionExecutorRunner(executor),
+                    batching_options,
+                ),
+            }
+        }
+        #[cfg(not(feature = "batching"))]
+        {
+            Self {
+                enable_cache,
+                timeout,
+                executor,
+            }
         }
     }
 }
 
-#[cfg(any(feature = "function-embed", feature = "source-azure", feature = "source-gdrive", feature = "source-s3", feature = "source-local-file", feature = "source-postgres"))]
 #[async_trait]
 impl<E: BatchedFunctionExecutor> SimpleFunctionExecutor for BatchedFunctionExecutorWrapper<E> {
     async fn evaluate(&self, args: Vec<value::Value>) -> Result<value::Value> {
-        self.batcher.run(args).await
+        #[cfg(feature = "batching")]
+        {
+            self.batcher.run(args).await
+        }
+        #[cfg(not(feature = "batching"))]
+        {
+            let results = self.executor.evaluate_batch(vec![args]).await?;
+            results
+                .into_iter()
+                .next()
+                .ok_or_else(|| internal_error!("Expected exactly one result from evaluate_batch"))
+        }
     }
 
     fn enable_cache(&self) -> bool {

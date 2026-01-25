@@ -10,14 +10,14 @@
 // Both the upstream CocoIndex code and the ReCoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::{
-    base::schema::EnrichedValueType, builder::plan::FieldDefFingerprint, prelude::*,
-};
 #[cfg(feature = "persistence")]
 use crate::setup::ObjectSetupChange;
+use crate::{base::schema::EnrichedValueType, builder::plan::FieldDefFingerprint, prelude::*};
 
 use recoco_utils::fingerprint::Fingerprinter;
-use std::{collections::btree_map, ops::Deref};
+#[cfg(feature = "persistence")]
+use std::collections::btree_map;
+use std::ops::Deref;
 
 use super::analyzer::{
     AnalyzerContext, CollectorBuilder, DataScopeBuilder, OpScope, ValueTypeBuilder,

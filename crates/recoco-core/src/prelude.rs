@@ -39,14 +39,21 @@ pub use crate::setup;
 pub use crate::setup::AuthRegistry;
 pub use recoco_utils as utils;
 #[cfg(any(
+    feature = "function-embed",
+    feature = "source-azure",
+    feature = "source-gdrive",
+    feature = "source-s3",
+    feature = "source-local-file",
+    feature = "source-postgres"
+))]
+pub use recoco_utils::batching;
+#[cfg(any(
     feature = "target-kuzu",
     feature = "function-embed",
     feature = "function-extract-llm"
 ))]
 pub use recoco_utils::http;
 pub use recoco_utils::{api_bail, api_error};
-#[cfg(any(feature = "function-embed", feature = "source-azure", feature = "source-gdrive", feature = "source-s3", feature = "source-local-file", feature = "source-postgres"))]
-pub use recoco_utils::batching;
 pub use recoco_utils::{concur_control, retryable};
 
 pub use async_stream::{stream, try_stream};

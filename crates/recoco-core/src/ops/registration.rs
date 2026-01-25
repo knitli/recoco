@@ -19,13 +19,6 @@
 ))]
 use super::functions;
 #[cfg(any(
-    feature = "target-kuzu",
-    feature = "target-neo4j",
-    feature = "target-postgres",
-    feature = "target-qdrant"
-))]
-use super::targets;
-#[cfg(any(
     feature = "source-azure",
     feature = "source-gdrive",
     feature = "source-local-file",
@@ -33,12 +26,22 @@ use super::targets;
     feature = "source-s3"
 ))]
 use super::sources;
+#[cfg(any(
+    feature = "target-kuzu",
+    feature = "target-neo4j",
+    feature = "target-postgres",
+    feature = "target-qdrant"
+))]
+use super::targets;
+#[allow(unused_imports)]
 use super::{factory_bases::*, registry::ExecutorFactoryRegistry, sdk::ExecutorFactory};
 use crate::prelude::*;
 use recoco_utils::client_error;
 use std::sync::{LazyLock, RwLock};
 
-fn register_executor_factories(registry: &mut ExecutorFactoryRegistry) -> Result<()> {
+fn register_executor_factories(
+    #[allow(unused_variables)] registry: &mut ExecutorFactoryRegistry,
+) -> Result<()> {
     #[cfg(feature = "target-kuzu")]
     let reqwest_client = reqwest::Client::new();
 

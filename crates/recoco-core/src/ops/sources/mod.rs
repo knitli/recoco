@@ -9,7 +9,12 @@
 //
 // Both the upstream CocoIndex code and the ReCoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
-#[cfg(any(feature = "source-s3", feature = "source-azure", feature = "source-gdrive", feature = "source-local-file"))]
+#[cfg(any(
+    feature = "source-s3",
+    feature = "source-azure",
+    feature = "source-gdrive",
+    feature = "source-local-file"
+))]
 pub mod shared;
 
 #[cfg(feature = "source-s3")]

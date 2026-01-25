@@ -203,6 +203,7 @@ pub fn get_auth_registry() -> &'static Arc<AuthRegistry> {
     &AUTH_REGISTRY
 }
 
+#[cfg(feature = "persistence")]
 type PoolKey = (String, Option<String>);
 #[cfg(feature = "persistence")]
 type PoolValue = Arc<tokio::sync::OnceCell<PgPool>>;

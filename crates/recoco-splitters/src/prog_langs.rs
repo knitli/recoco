@@ -487,21 +487,21 @@ static LANGUAGE_INFO_BY_NAME: LazyLock<
     add("nix", &[".nix"], None);
     add("nqc", &[".nqc"], None);
     cfg_if::cfg_if! {
-        if #[cfg(feature = "pascal")] {
-            add(
-                "pascal",
-                &[
-                    ".pas", ".dfm", ".dpr", ".lpr", ".pascal", "pas", "dpr", "delphi",
-                ],
-                Some(TreeSitterLanguageInfo::new(
-                    tree_sitter_pascal::LANGUAGE,
-                    [],
-                )),
-            );
-            } else {
-                add("pascal", &[".pas", ".dfm", ".dpr", ".lpr", ".pascal", "pas", "dpr", "delphi"], None);
-            }
+    if #[cfg(feature = "pascal")] {
+        add(
+            "pascal",
+            &[
+                ".pas", ".dfm", ".dpr", ".lpr", ".pascal", "pas", "dpr", "delphi",
+            ],
+            Some(TreeSitterLanguageInfo::new(
+                tree_sitter_pascal::LANGUAGE,
+                [],
+            )),
+        );
+        } else {
+            add("pascal", &[".pas", ".dfm", ".dpr", ".lpr", ".pascal", "pas", "dpr", "delphi"], None);
         }
+    }
     add("pem", &[".pem"], None);
     add(
         "perl",
@@ -760,6 +760,35 @@ pub fn detect_language(filename: &str) -> Option<&str> {
 mod tests {
     use super::*;
 
+    #[cfg(any(
+        feature = "all",
+        feature = "c",
+        feature = "c-sharp",
+        feature = "cpp",
+        feature = "css",
+        feature = "fortran",
+        feature = "go",
+        feature = "html",
+        feature = "java",
+        feature = "javascript",
+        feature = "json",
+        feature = "kotlin",
+        feature = "markdown",
+        feature = "pascal",
+        feature = "php",
+        feature = "python",
+        feature = "r",
+        feature = "ruby",
+        feature = "rust",
+        feature = "scala",
+        feature = "solidity",
+        feature = "sql",
+        feature = "swift",
+        feature = "toml",
+        feature = "typescript",
+        feature = "xml",
+        feature = "yaml"
+    ))]
     #[test]
     fn test_get_language_info() {
         let rust_info = get_language_info(".rs").unwrap();

@@ -14,7 +14,9 @@ use crate::prelude::*;
 
 #[cfg(feature = "persistence")]
 use crate::execution::db_tracking_setup;
+#[cfg(feature = "persistence")]
 use crate::ops::get_target_factory;
+#[cfg(feature = "persistence")]
 use crate::ops::interface::SetupStateCompatibility;
 
 pub struct ImportOpExecutionContext {

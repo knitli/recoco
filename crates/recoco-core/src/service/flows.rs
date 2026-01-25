@@ -205,11 +205,6 @@ impl<'a> SourceRowKeyContextHolder<'a> {
             .transpose()?
             .unwrap_or_default();
         Ok(Self {
-            plan,
-            import_op_idx,
-            schema,
-            key,
-            key_aux_info,
             #[cfg(feature = "persistence")]
             source_logic_fp: SourceLogicFingerprint::new(
                 &plan,
@@ -217,6 +212,11 @@ impl<'a> SourceRowKeyContextHolder<'a> {
                 &execution_ctx.setup_execution_context.export_ops,
                 plan.legacy_fingerprint.clone(),
             )?,
+            plan,
+            import_op_idx,
+            schema,
+            key,
+            key_aux_info,
         })
     }
 

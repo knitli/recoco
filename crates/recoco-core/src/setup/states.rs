@@ -35,9 +35,7 @@ use std::hash::Hash;
 #[cfg(feature = "persistence")]
 use super::db_metadata;
 #[cfg(feature = "persistence")]
-use crate::execution::db_tracking_setup::{
-    self, TrackingTableSetupChange, TrackingTableSetupState,
-};
+use crate::execution::db_tracking_setup::{TrackingTableSetupChange, TrackingTableSetupState};
 
 const INDENT: &str = "    ";
 
@@ -501,6 +499,7 @@ impl ObjectSetupChange for FlowSetupChange {
     }
 
     fn has_internal_changes(&self) -> bool {
+        #[allow(unused_mut)]
         let mut changes = self.metadata_change.is_some();
         #[cfg(feature = "persistence")]
         {
@@ -510,10 +509,15 @@ impl ObjectSetupChange for FlowSetupChange {
                     .as_ref()
                     .is_some_and(|t| t.has_tracked_state_change);
         }
-        changes || self.target_resources.iter().any(|target| target.has_tracked_state_change)
+        changes
+            || self
+                .target_resources
+                .iter()
+                .any(|target| target.has_tracked_state_change)
     }
 
     fn has_external_changes(&self) -> bool {
+        #[allow(unused_mut)]
         let mut changes = false;
         #[cfg(feature = "persistence")]
         {
@@ -538,11 +542,11 @@ pub struct GlobalSetupChange {
 }
 
 impl GlobalSetupChange {
-    pub fn from_setup_states(setup_states: &AllSetupStates<ExistingMode>) -> Self {
+    pub fn from_setup_states(_setup_states: &AllSetupStates<ExistingMode>) -> Self {
         Self {
             #[cfg(feature = "persistence")]
             metadata_table: db_metadata::MetadataTableSetup {
-                metadata_table_missing: !setup_states.has_metadata_table,
+                metadata_table_missing: !_setup_states.has_metadata_table,
             }
             .into_setup_info(),
         }
@@ -585,10 +589,10 @@ impl<Status: ObjectSetupChange> std::fmt::Display for ObjectSetupChangeCode<'_, 
 }
 
 impl std::fmt::Display for GlobalSetupChange {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[cfg(feature = "persistence")]
         {
-            writeln!(f, "{}", self.metadata_table)
+            writeln!(_f, "{}", self.metadata_table)
         }
         #[cfg(not(feature = "persistence"))]
         {
