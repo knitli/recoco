@@ -180,7 +180,9 @@ This document describes the HTTP API provided by the ReCoco library when the `se
 **Parameters**:
 - `flowInstName` (Path): Flow name.
 - `queryHandlerName` (Path): Name of the query handler (e.g., "search").
+
 **Query Parameters**:
+
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | query | string | Yes | The query string (e.g., search keywords). |
