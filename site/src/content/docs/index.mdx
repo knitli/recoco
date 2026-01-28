@@ -1,0 +1,45 @@
+---
+title: ReCoco
+description: A modular, feature-gated incremental ETL and data processing framework in Rust.
+template: splash
+hero:
+  tagline: Incremental ETL and Data Processing in Pure Rust.
+  image:
+    file: ../../assets/recoco.webp
+  actions:
+    - text: Get Started
+      link: /guides/architecture/
+      icon: right-arrow
+    - text: API Reference
+      link: /reference/http-api/
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Key Features
+
+<CardGrid stagger>
+	<Card title="Pure Rust" icon="rocket">
+		A pure Rust fork of CocoIndex with no Python dependencies. Published to crates.io as `recoco`.
+	</Card>
+	<Card title="Feature Gated" icon="puzzle">
+		Modular architecture. Bring only what you need: `source-postgres`, `target-qdrant`, `function-embed`, etc.
+	</Card>
+	<Card title="Incremental Dataflow" icon="random">
+		Tracks data lineage. When source data changes, only affected downstream computations are re-executed.
+	</Card>
+	<Card title="Persistent or Transient" icon="document">
+		Run in-memory for quick tasks or backed by a database for long-running, stateful pipelines.
+	</Card>
+</CardGrid>
+
+## Quick Start
+
+Add `recoco` to your `Cargo.toml`:
+
+```toml
+[dependencies]
+recoco = { version = "0.2", features = ["function-split", "source-postgres"] }
+```

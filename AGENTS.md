@@ -86,6 +86,29 @@ cargo run -p recoco --example custom_op
 cargo run -p recoco --example detect_lang --features function-detect-lang
 ```
 
+## Documentation
+
+The project documentation is built with [Astro Starlight](https://starlight.astro.build/) and located in the `site/` directory.
+
+### Running Documentation Locally
+```bash
+cd site
+npm install
+npm run dev
+```
+
+### Building Documentation
+```bash
+cd site
+npm run build
+```
+The build output will be in `site/dist/`.
+
+### Documentation Structure
+- **Guides**: Located in `site/src/content/docs/guides/` (e.g., Architecture, Contributing).
+- **Reference**: Located in `site/src/content/docs/reference/` (generated from crate READMEs and API docs).
+- **API Docs**: The HTTP API documentation is generated to `docs/API.md` and then copied to the site during build/setup.
+
 ## Architecture
 
 ### Core Dataflow Model
@@ -119,7 +142,7 @@ The engine tracks **data lineage** - when source data changes, only affected dow
 - **`base/`** - Core data types (schema, value, spec, json_schema)
 - **`builder/`** - Flow construction API (`FlowBuilder`, analysis, planning)
 - **`execution/`** - Runtime engine (evaluator, memoization, indexing, tracking)
-- **`ops/`** - Operation implementationsgit 
+- **`ops/`** - Operation implementations
   - `sources/` - Data ingestion (local-file, postgres, s3, azure, gdrive)
   - `functions/` - Transforms (split, embed, json, detect-lang, extract-llm)
   - `targets/` - Data persistence (postgres, qdrant, neo4j, kuzu)

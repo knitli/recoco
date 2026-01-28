@@ -12,7 +12,7 @@ version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
 description = "Recoco-core is the core library of Recoco; it's nearly identical to the main ReCoco crate, which is a simple wrapper around recoco-core and other sub-crates."
-readme = "../../README.md"
+readme = "README.md"
 repository = { workspace = true }
 license = { workspace = true }
 keywords = { workspace = true }

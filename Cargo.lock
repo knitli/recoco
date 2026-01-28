@@ -4017,7 +4017,7 @@ dependencies = [
 
 [[package]]
 name = "recoco"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "recoco-core",
  "recoco-splitters",
@@ -4026,7 +4026,7 @@ dependencies = [
 
 [[package]]
 name = "recoco-core"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -4092,7 +4092,7 @@ dependencies = [
 
 [[package]]
 name = "recoco-splitters"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "cfg-if",
  "regex",
@@ -4129,7 +4129,7 @@ dependencies = [
 
 [[package]]
 name = "recoco-utils"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "async-openai",
