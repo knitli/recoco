@@ -1,6 +1,28 @@
 {
-	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "recoco-docs",
-	"compatibility_date": "2025-01-21",
-	"pages_build_output_dir": "./dist"
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "recoco-docs",
+  "compatibility_date": "2025-01-21",
+  "pages_build_output_dir": "./dist",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "workers_dev": true,
+  "preview_urls": true,
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "routes": [
+    {
+      "pattern": "docs.knitli.com/ReCoco",
+      "zone_name": "knitli.com"
+    }
+  ],
+  "placement": {
+    "mode": "smart"
+  }
 }
