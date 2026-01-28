@@ -160,7 +160,13 @@ This document describes the HTTP API provided by the ReCoco library when the `se
 **Path**: `/cocoindex/api/flows/{flowInstName}/rowStatus`
 **Description**: Checks the indexing status of a specific source row (e.g., is it fully processed, pending, or failed?).
 **Query Parameters**:
-- Same as `Evaluate Data` (`field`, `key`, `key_aux`).
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| field | string | Yes | The name of the source field. |
+| key | string (multi) | Yes | The primary key components. Use multiple times for composite keys. |
+| key_aux | string | No | JSON string containing auxiliary key info (optional). |
+
 **Response**:
 ```json
 {

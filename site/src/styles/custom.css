@@ -1,0 +1,22 @@
+/* Custom styles for ReCoco documentation */
+
+:root {
+	--sl-color-accent-low: #1a2332;
+	--sl-color-accent: #4a9eff;
+	--sl-color-accent-high: #b3d9ff;
+}
+
+/* Improve code block readability */
+pre {
+	border-radius: 8px;
+}
+
+/* Better spacing for tables */
+table {
+	margin: 1.5rem 0;
+}
+
+/* Enhance card styling on homepage */
+.card-grid {
+	gap: 1rem;
+}

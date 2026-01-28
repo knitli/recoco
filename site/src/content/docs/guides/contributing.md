@@ -10,6 +10,14 @@ SPDX-License-Identifier: Apache-2.0
 
 We love contributions! Here is how to get started.
 
+## Quick Links
+
+- 📝 **[Open an Issue](https://github.com/knitli/recoco/issues/new)** - Report bugs or request features
+- 💬 **[Discussions](https://github.com/knitli/recoco/discussions)** - Ask questions and share ideas
+- 🔀 **[Pull Requests](https://github.com/knitli/recoco/pulls)** - View open PRs
+- 📋 **[Issue Tracker](https://github.com/knitli/recoco/issues)** - Browse existing issues
+- 📖 **[README](https://github.com/knitli/recoco/blob/main/README.md)** - Project overview
+
 ## Should I Submit My Issue Here or Upstream at CocoIndex?
 
 That depends.
