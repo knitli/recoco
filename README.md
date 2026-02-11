@@ -58,7 +58,7 @@ For [Knitli](https://knitli.com), I particularly needed dependency control. I wa
 
 2. **Every target, source, and function is independently feature-gated. Use only what you want.** 
 
-> The minimum install now uses **600 fewer crates** (820 -> 620)
+> The minimum install now uses **600 fewer crates** (820 -> 220) -- a 75% reduction from CocoIndex.
 
 We will regularly merge in upstream fixes and changes, particularly sources, targets, and functions.
 
