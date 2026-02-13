@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "recoco-docs",
   "compatibility_date": "2025-01-21",
-  "pages_build_output_dir": "./dist",
+  "main": "./dist/_worker.js",
   "compatibility_flags": [
     "nodejs_compat",
     "global_fetch_strictly_public"

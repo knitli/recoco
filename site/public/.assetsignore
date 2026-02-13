@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: Dedicated to the public domain by Knitli Inc.
+# SPDX-License-Identifier: Unlicense
+
+_worker.js
+_routes.json
+_headers.json
+_redirects.json
+*.license
