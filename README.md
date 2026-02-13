@@ -23,7 +23,7 @@ SPDX-License-Identifier: Apache-2.0
 
 ---
 
-**[ReCoco](https://github.com/knitli/recoco)** is a pure Rust fork of the excellent [CocoIndex](https://github.com/cocoindex-io/cocoindex), a high-performance, incremental ETL and data processing framework.
+**[ReCoco](https://github.com/knitli/recoco)** is a **pure Rust fork** of the excellent **[CocoIndex](https://github.com/cocoindex-io/cocoindex)**, a high-performance, incremental ETL and data processing framework.
 
 ## 📑 Table of Contents
 
@@ -46,25 +46,26 @@ I decided to create a Rust-only fork of CocoIndex for a couple reasons:
 
 1. **CocoIndex is not a Rust library.**  CocoIndex is written in Rust, but it does not expose a Rust API and its packaging, documentation, and examples are only focused on *Python*. It exposes a more limited API through its Rust extensions. It's not even released on crates.io.
 
-2. **CocoIndex is heavy.** CocoIndex has several very heavy dependencies that you probably don't need all of, including Google/AWS/Azure components, Qdrant/Postgres/Neo4j, and more. 
+2. **CocoIndex is heavy.** CocoIndex has several very heavy dependencies and unless you are actually GOogle, you probably don't need all of them. These include large packages like Google/AWS/Azure components, Qdrant/Postgres/Neo4j, and more. 
 
-For [Knitli](https://knitli.com), I particularly needed dependency control. I wanted to use CocoIndex as an ETL engine for [Thread](https://github.com/knitli/thread/), but Thread needs to be edge-deployable. The dependencies were way too heavy and would never compile to WASM. Thread, of course, is also a Rust project, so pulling in a lot of Python dependencies didn't make sense for me.
+For [Knitli](https://knitli.com), **I needed dependency control**. I wanted to use CocoIndex as an ETL engine for [Thread](https://github.com/knitli/thread/), but Thread needs to be edge-deployable. The dependencies were way too heavy and would never compile to WASM. Thread, of course, is also a Rust project, so pulling in a lot of Python dependencies didn't make sense for me.
 
-> [!NOTE] Knitli and ReCoco have no official relationship with CocoIndex and this project is not endorsed by them. **We will contribute as much as we can upstream**, our [contribution guidelines](CONTRIBUTING.md) encourage you to submit PRs and issues affecting shared code upstream to help both projects.
+> [!NOTE]
+> Knitli and ReCoco have no official relationship with CocoIndex and this project is not endorsed by them. **We will contribute as much as we can upstream**, our [contribution guidelines](CONTRIBUTING.md) encourage you to submit PRs and issues affecting shared code upstream to help both projects.
 
 ## How ReCoco is Different from CocoIndex
 
 1. **ReCoco fully exposes a Rust API.** You can use ReCoco to support your rust ETL projects directly. **Build on it.**
 
-2. **Every target, source, and function is independently feature-gated. Use only what you want.** 
+2. **Every target, source, and function (i.e. transform) is independently feature-gated. Use only what you want.** 
 
-> The minimum install now uses **600 fewer crates** (820 -> 220) -- a 75% reduction from CocoIndex.
+> The minimum install now uses **600 fewer crates** (820 -> 220) -- a <ins>75% reduction from CocoIndex</ins>.
 
 We will regularly merge in upstream fixes and changes, particularly sources, targets, and functions.
 
 ## ✨ Key Features
 
-### Unique to ReCoco
+### Unique to ReCoco 🥇
 
 - 🦀 **Pure Rust**: No Python dependencies, interpreters, or build tools required
 - 🚀 **Additional optimizations**: We add additional compile-time optimizations and use some faster alternatives (i.e. `blake2` -> `blake3`) to make ReCoco as fast as possible
@@ -81,7 +82,7 @@ We will regularly merge in upstream fixes and changes, particularly sources, tar
 
 [^1]: In-memory operations aren't quite as feature rich; you lose incremental indexing, for example. At least, for now.
 
-### CocoIndex and ReCoco
+### CocoIndex and ReCoco 💪
 
 - ⚡ **Incremental Processing**: Built on a dataflow engine that processes only changed data
 (SentenceTransformers), JSON parsing, language detection
@@ -406,7 +407,6 @@ cargo clippy -p recoco --all-features
 
 - [ ] **WASM Support**: Compile core logic to WASM for edge deployment
 - [ ] **More Connectors**: Add support for Redis, ClickHouse, and more
-- [ ] **Python Bindings**: Re-introduce optional Python bindings for hybrid workflows
 - [ ] **UI Dashboard**: Simple web UI for monitoring flows
 - [ ] **Upstream Sync**: Regular merges from upstream CocoIndex
 
