@@ -21,6 +21,12 @@ recoco-core = { workspace = true }
 recoco-splitters = { workspace = true }
 recoco-utils = { workspace = true }
 
+[dev-dependencies]
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+
 [features]
 default = ["recoco-core/default"]
 all-functions = ["recoco-core/all-functions"]

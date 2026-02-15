@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "recoco-docs",
   "compatibility_date": "2025-01-21",
-  "main": "./dist/_worker.js",
+  "main": "./dist/_worker.js/index.js",
   "compatibility_flags": [
     "nodejs_compat",
     "global_fetch_strictly_public"
@@ -18,7 +18,7 @@
   },
   "routes": [
     {
-      "pattern": "docs.knitli.com/ReCoco",
+      "pattern": "docs.knitli.com/ReCoco/*",
       "zone_name": "knitli.com"
     }
   ],
