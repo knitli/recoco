@@ -19,6 +19,9 @@ export default defineConfig({
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/knitli/recoco' }
       ],
+      components: {
+        Header: '@knitli/docs-components/DocsHeader.astro',
+      },
       customCss: [
         './src/styles/custom.css',
       ],

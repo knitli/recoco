@@ -2,6 +2,7 @@
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.5",
     "@astrojs/starlight": "^0.37.6",
+    "@knitli/docs-components": "^1.0.3",
     "astro": "^5.17.0",
     "sharp": "^0.34.2"
   },
