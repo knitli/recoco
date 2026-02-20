@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Knitli Inc.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "recoco-docs",
@@ -7,6 +11,9 @@
     "nodejs_compat",
     "global_fetch_strictly_public"
   ],
+  "vars": {
+    "PUBLIC_DOCS_PRODUCT": "Recoco"
+  },
   "workers_dev": true,
   "preview_urls": true,
   "observability": {

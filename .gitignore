@@ -7,6 +7,15 @@
 
 /target
 
+**/*.local.*
+
+.playwright-mcp/
+**/*.tsbuildinfo
+site/dist
+site/.wrangler
+site/.astro
+site/node_modules
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 .pytest_cache/

@@ -1,0 +1,8 @@
+
+
+/* Fix an issue where the TOC nav is underneath the header */
+@media (min-width: 72rem) {
+    .lg\:sl-block  {
+        margin-top: 2.25rem;
+    }
+}

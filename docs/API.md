@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Knitli Inc.
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # Recoco HTTP API Documentation
 
 This document describes the HTTP API provided by the Recoco library when the `server` feature is enabled. This API is primarily used for inspecting, monitoring, and querying running data flows.

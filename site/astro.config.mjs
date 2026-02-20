@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2026 Knitli Inc.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // @ts-check
 
 import cloudflare from "@astrojs/cloudflare";
@@ -121,7 +125,7 @@ export default defineConfig({
         Footer: '@knitli/docs-components/Footer.astro',
         PageFrame: '@knitli/docs-components/PageFrame.astro',
       },
-      customCss: [variables, docsStyle],
+      customCss: [variables, docsStyle, "./src/styles/recoco.css"],
       head: [
         {
           tag: "meta",

@@ -1,0 +1,13 @@
+version = 1
+
+[[annotations]]
+path = "site/src/**"
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Knitli Inc."
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = "site/public/**"
+precedence = "override"
+SPDX-FileCopyrightText = "2026 Knitli Inc."
+SPDX-License-Identifier = "Apache-2.0"
