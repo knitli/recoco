@@ -12,7 +12,7 @@ SPDX-License-Identifier: Apache-2.0
 - move ./rust/core/ to ./crates/recoco
 - move ./rust/extra_text/ to ./crates/recoco0splitters
 - move ./rust/utils/ to ./crates/recoco-utils
-- in ReCoco repo:
+- in Recoco repo:
   - delete ./crates, but preserve any sources/functions/targets not in the CocoIndex pull
   - Retain the `builder` module and files, moving them to a temporary location
   - copy over the new ./crates
@@ -20,12 +20,12 @@ SPDX-License-Identifier: Apache-2.0
 
 ### Reintegrate Builder
 
-- ReCoco's flow builder implementation has some significant differences to best align it with a rust-only API. This is the main "heavy lift" -- you need to identify what has changed about this module, compare the changes with the current ReCoco implementation, and either update the new crate to incorporate the Recoco functionality/considerations or vice versa. 
+- Recoco's flow builder implementation has some significant differences to best align it with a rust-only API. This is the main "heavy lift" -- you need to identify what has changed about this module, compare the changes with the current Recoco implementation, and either update the new crate to incorporate the Recoco functionality/considerations or vice versa. 
 
-## Update to Align with ReCoco
+## Update to Align with Recoco
 
 - Updates:
-  - Copy over any sources/functions/targets from ReCoco that aren't in the current repository
+  - Copy over any sources/functions/targets from Recoco that aren't in the current repository
   - Add feature gates to all crates aligned with the Cargo.tomls you just copied over
   - Replace use of `blake2` with `blake3`, replace use of `derivative` with `derive_where`, migrate `schemars` < 1.0 to `schemars` 1.2+
      - Blake3 has a simpler API and is **much** faster than Blake2; you can usually just replace the construction, the update logic is the same but make sure to use references if not already that way; currently the only use is in `recoco_utils::fingerprint`
@@ -36,7 +36,7 @@ SPDX-License-Identifier: Apache-2.0
   - Update references in the crates to reflect the new structure and dependencies
   - Identify any new dependencies not already in the current repository and add them to the appropriate Cargo.toml files; be sure to evaluate their necessity and impact on the project and feature-gate if appropriate
   - Update any changed/different paths in CI/CD or references in docs/examples to reflect the new structure and dependencies (if the crates' internal structure changed)
-  - Run `reuse annotate --year 2026 -r --fallback-dot-license -c 'CocoIndex (upstream)' -c 'Knitli Inc. (ReCoco)' -l Apache-2.0`
+  - Run `reuse annotate --year 2026 -r --fallback-dot-license -c 'CocoIndex (upstream)' -c 'Knitli Inc. (Recoco)' -l Apache-2.0`
   - Specifically make sure `dev/sync_upstream_ops.py` is updated to reflect path changes.
 
 ## Final Checks and QA

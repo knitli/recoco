@@ -11,7 +11,7 @@ This file provides guidance to Agents like Claude, Gemini, or ChatGPT.
 
 ## Project Overview
 
-ReCoco is a pure Rust fork of CocoIndex, an incremental ETL and data processing framework. The project exposes a full Rust API with a modular, feature-gated architecture for sources, targets, and functions.
+Recoco is a pure Rust fork of CocoIndex, an incremental ETL and data processing framework. The project exposes a full Rust API with a modular, feature-gated architecture for sources, targets, and functions.
 
 **Key Differentiators:**
 - Pure Rust library (no Python dependencies)
@@ -113,7 +113,7 @@ The build output will be in `site/dist/`.
 
 ### Core Dataflow Model
 
-ReCoco implements an **incremental dataflow engine** where data flows through **Flows**:
+Recoco implements an **incremental dataflow engine** where data flows through **Flows**:
 
 ```
 Sources → Transforms → Targets
@@ -238,8 +238,8 @@ This is required for changelog generation via `git cliff`.
 
 ## Relationship to Upstream
 
-ReCoco is a **fork** of CocoIndex (https://github.com/cocoindex/cocoindex):
+Recoco is a **fork** of CocoIndex (https://github.com/cocoindex/cocoindex):
 - **Upstream**: Python-focused with private Rust core, not on crates.io
-- **ReCoco**: Rust-focused public API, published to crates.io, feature-gated architecture
+- **Recoco**: Rust-focused public API, published to crates.io, feature-gated architecture
 
-Code headers maintain dual copyright (CocoIndex upstream, Knitli Inc. for ReCoco modifications) under Apache-2.0.
+Code headers maintain dual copyright (CocoIndex upstream, Knitli Inc. for Recoco modifications) under Apache-2.0.

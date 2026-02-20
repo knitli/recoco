@@ -3,6 +3,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+experimental_monorepo_root = true
+
+[monorepo]
+config_roots = ["site/*", "crates/*"]
+
 [tools]
 actionlint = "latest"
 git-cliff = "latest"

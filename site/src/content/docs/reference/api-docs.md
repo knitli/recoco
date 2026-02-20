@@ -1,13 +1,13 @@
 ---
 title: API Documentation
-description: Comprehensive API documentation for ReCoco crates.
+description: Comprehensive API documentation for Recoco crates.
 ---
 
-ReCoco provides detailed API documentation generated from source code comments. The documentation is hosted on docs.rs and covers all public APIs, traits, and types.
+Recoco provides detailed API documentation generated from source code comments. The documentation is hosted on docs.rs and covers all public APIs, traits, and types.
 
 ## Main Crate Documentation
 
-### ReCoco Core
+### Recoco Core
 
 The main `recoco` crate contains the core functionality:
 
@@ -23,13 +23,13 @@ Includes:
 
 ## Utility Crates
 
-### ReCoco Utils
+### Recoco Utils
 
 Helper utilities and shared functionality:
 
 **[docs.rs/recoco-utils](https://docs.rs/recoco-utils)** - Utility functions and types
 
-### ReCoco Splitters
+### Recoco Splitters
 
 Text splitting and parsing with Tree-sitter:
 
@@ -37,20 +37,20 @@ Text splitting and parsing with Tree-sitter:
 
 ## Quick Links
 
-- **[Browse all ReCoco crates](https://docs.rs/releases/search?query=recoco)** - All published versions
+- **[Browse all Recoco crates](https://docs.rs/releases/search?query=recoco)** - All published versions
 - **[GitHub Repository](https://github.com/knitli/recoco)** - Source code and examples
 - **[crates.io](https://crates.io/crates/recoco)** - Package information
 
 ## Usage
 
-To use ReCoco in your project:
+To use Recoco in your project:
 
 ```toml
 [dependencies]
 recoco = "0.2"
 ```
 
-See the [Getting Started](/ReCoco/guides/getting-started/) guide for a complete walkthrough.
+See the [Getting Started](/Recoco/guides/getting-started/) guide for a complete walkthrough.
 
 ## Features Documentation
 
@@ -60,4 +60,4 @@ Each feature is documented in the API docs with examples:
 - **Targets**: `target-postgres`, `target-qdrant`, `target-neo4j`, `target-kuzu`
 - **Functions**: `function-split`, `function-embed`, `function-extract-llm`, `function-detect-lang`, `function-json`
 
-Check the [Core Crate](/ReCoco/reference/core-crate/) reference for a complete list of features.
+Check the [Core Crate](/Recoco/reference/core-crate/) reference for a complete list of features.

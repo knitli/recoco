@@ -3,14 +3,14 @@ title: File Processing
 description: Process files line-by-line using transient flows.
 ---
 
-This example demonstrates how to process a file line-by-line using ReCoco as a transformation engine, while your application controls the I/O.
+This example demonstrates how to process a file line-by-line using Recoco as a transformation engine, while your application controls the I/O.
 
 ## Overview
 
 This pattern is useful for:
 - Processing large files incrementally
 - Applying transformations to each line independently
-- Combining ReCoco with custom I/O logic
+- Combining Recoco with custom I/O logic
 - Tokenizing or analyzing text files
 
 ## Complete Example
@@ -260,17 +260,17 @@ let fields = builder.transform(
 ## Key Takeaways
 
 - ✅ **Reuse flow for efficiency** - Build once, execute many times
-- ✅ **You control I/O** - ReCoco handles transformation logic
+- ✅ **You control I/O** - Recoco handles transformation logic
 - ✅ **Async I/O friendly** - Works seamlessly with Tokio
 - ✅ **Memory efficient** - Process one line at a time
 
 ## Next Steps
 
-- Explore **[Custom Operations](/ReCoco/examples/custom-operation/)** to add domain-specific logic
-- Learn about **[Language Detection](/ReCoco/examples/language-detection/)** for code files
-- Try **[Transient Flow](/ReCoco/examples/transient-flow/)** for simpler examples
+- Explore **[Custom Operations](/Recoco/examples/custom-operation/)** to add domain-specific logic
+- Learn about **[Language Detection](/Recoco/examples/language-detection/)** for code files
+- Try **[Transient Flow](/Recoco/examples/transient-flow/)** for simpler examples
 
 ## Source Code
 
-The complete source code for this example is available in the ReCoco repository:
+The complete source code for this example is available in the Recoco repository:
 [`crates/recoco-core/examples/file_processing.rs`](https://github.com/knitli/recoco/blob/main/crates/recoco-core/examples/file_processing.rs)

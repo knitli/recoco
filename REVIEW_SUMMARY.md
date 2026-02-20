@@ -2,7 +2,7 @@
 
 ## What Was Done
 
-A comprehensive design review of the ReCoco documentation site (`/site` directory) was conducted, including:
+A comprehensive design review of the Recoco documentation site (`/site` directory) was conducted, including:
 
 1. ✅ **Testing all links** - Found and fixed broken homepage navigation links
 2. ✅ **Checking formatting** - Fixed table rendering and duplicate headers
@@ -14,7 +14,7 @@ A comprehensive design review of the ReCoco documentation site (`/site` director
 
 ### 1. Homepage Navigation Links (404 Errors)
 - **Issue:** "Get Started" and "API Reference" buttons led to 404 pages
-- **Cause:** Missing `/ReCoco` base path in URLs
+- **Cause:** Missing `/Recoco` base path in URLs
 - **Fixed:** ✅ Both links now work correctly
 
 ### 2. Broken GitHub Link in Contributing
@@ -78,7 +78,7 @@ npm install
 npm run dev
 ```
 
-Then open http://localhost:4321/ReCoco
+Then open http://localhost:4321/Recoco
 
 ## How to Build for Production
 

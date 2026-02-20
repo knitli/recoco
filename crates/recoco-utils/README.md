@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
 SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 
 SPDX-License-Identifier: Apache-2.0
@@ -7,9 +7,9 @@ SPDX-License-Identifier: Apache-2.0
 
 # recoco-utils
 
-**Common utilities for the [ReCoco](https://github.com/knitli/recoco) ecosystem.**
+**Common utilities for the [Recoco](https://github.com/knitli/recoco) ecosystem.**
 
-This crate provides shared building blocks used across ReCoco's core and operation modules. While primarily intended for internal use within ReCoco, these utilities can be useful for developing custom ReCoco operations or for standalone use in Rust projects.
+This crate provides shared building blocks used across Recoco's core and operation modules. While primarily intended for internal use within Recoco, these utilities can be useful for developing custom Recoco operations or for standalone use in Rust projects.
 
 ## Installation
 
@@ -171,7 +171,7 @@ recoco-utils = { version = "0.2", features = ["openai", "batching", "retryable"]
 
 ## 🔧 Development
 
-This crate is part of the ReCoco workspace. See the [main repository](https://github.com/knitli/recoco) for development guidelines.
+This crate is part of the Recoco workspace. See the [main repository](https://github.com/knitli/recoco) for development guidelines.
 
 ## 📄 License
 

@@ -1,9 +1,9 @@
 ---
 title: HTTP API
 ---
-# ReCoco HTTP API Documentation
+# Recoco HTTP API Documentation
 
-This document describes the HTTP API provided by the ReCoco library when the `server` feature is enabled. This API is primarily used for inspecting, monitoring, and querying running data flows.
+This document describes the HTTP API provided by the Recoco library when the `server` feature is enabled. This API is primarily used for inspecting, monitoring, and querying running data flows.
 
 ## 1. Overview
 
@@ -224,3 +224,4 @@ The API uses standard HTTP status codes:
 }
 ```
 *(Note: The exact JSON structure for errors depends on the `ApiError` serialization, typically a simple message or object).*
+

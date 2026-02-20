@@ -64,7 +64,7 @@ async fn main() -> anyhow::Result<()> {
     let flow = builder.build_transient_flow().await?;
 
     // 7. Execute
-    let input_text = "Hello World ReCoco";
+    let input_text = "Hello World Recoco";
     let input_value = value::Value::Basic(
         value::BasicValue::Str(input_text.into())
     );
@@ -174,11 +174,11 @@ let result = evaluate_transient_flow(&flow.0, &vec![input_value]).await?;
 
 ```
 Building transient flow...
-Executing flow with input: 'Hello World ReCoco'
+Executing flow with input: 'Hello World Recoco'
 Result: KTable([
     (Key([0]), Chunk { text: "Hello", ... }),
     (Key([1]), Chunk { text: "World", ... }),
-    (Key([2]), Chunk { text: "ReCoco", ... })
+    (Key([2]), Chunk { text: "Recoco", ... })
 ])
 ```
 
@@ -193,11 +193,11 @@ The result is a `KTable` (keyed table) where each entry represents a word from t
 
 ## Next Steps
 
-- Try **[File Processing](/ReCoco/examples/file-processing/)** to process files line-by-line
-- Learn about **[Custom Operations](/ReCoco/examples/custom-operation/)** to extend ReCoco
-- Explore **[Persisted Flows](/ReCoco/guides/architecture/#two-flow-execution-modes)** for incremental processing
+- Try **[File Processing](/Recoco/examples/file-processing/)** to process files line-by-line
+- Learn about **[Custom Operations](/Recoco/examples/custom-operation/)** to extend Recoco
+- Explore **[Persisted Flows](/Recoco/guides/architecture/#two-flow-execution-modes)** for incremental processing
 
 ## Source Code
 
-The complete source code for this example is available in the ReCoco repository:
+The complete source code for this example is available in the Recoco repository:
 [`crates/recoco-core/examples/transient.rs`](https://github.com/knitli/recoco/blob/main/crates/recoco-core/examples/transient.rs)

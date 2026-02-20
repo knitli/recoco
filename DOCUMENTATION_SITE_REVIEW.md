@@ -1,4 +1,4 @@
-# ReCoco Documentation Site Design Review
+# Recoco Documentation Site Design Review
 
 **Date:** 2026-01-28  
 **Reviewer:** GitHub Copilot Agent  
@@ -7,19 +7,19 @@
 
 ## Executive Summary
 
-The ReCoco documentation site is well-structured and uses the professional Starlight theme. A thorough review revealed several critical issues that have been fixed, along with recommendations for future improvements. The site is now functional with all critical links working and content properly formatted.
+The Recoco documentation site is well-structured and uses the professional Starlight theme. A thorough review revealed several critical issues that have been fixed, along with recommendations for future improvements. The site is now functional with all critical links working and content properly formatted.
 
 ## Issues Found and Fixed
 
 ### 1. ✅ Broken Homepage Links (CRITICAL - FIXED)
-**Problem:** The hero section buttons "Get Started" and "API Reference" were missing the `/ReCoco` base path, resulting in 404 errors.
+**Problem:** The hero section buttons "Get Started" and "API Reference" were missing the `/Recoco` base path, resulting in 404 errors.
 
 **Files Affected:**
 - `site/src/content/docs/index.mdx`
 
 **Fix Applied:**
-- Changed `/guides/architecture/` to `/ReCoco/guides/architecture/`
-- Changed `/reference/http-api/` to `/ReCoco/reference/http-api/`
+- Changed `/guides/architecture/` to `/Recoco/guides/architecture/`
+- Changed `/reference/http-api/` to `/Recoco/reference/http-api/`
 
 **Impact:** High - These are primary navigation entry points from the homepage.
 
@@ -167,7 +167,7 @@ The ReCoco documentation site is well-structured and uses the professional Starl
 
 ### Site Configuration
 - **Base URL:** `https://docs.knitli.com`
-- **Base Path:** `/ReCoco`
+- **Base Path:** `/Recoco`
 - **Adapter:** Cloudflare
 - **Framework:** Astro 5.6.1
 - **Theme:** Starlight 0.37.4
@@ -177,7 +177,7 @@ The ReCoco documentation site is well-structured and uses the professional Starl
 # Development
 cd site
 npm install
-npm run dev  # Runs on http://localhost:4321/ReCoco
+npm run dev  # Runs on http://localhost:4321/Recoco
 
 # Production
 npm run build  # Outputs to dist/
@@ -225,7 +225,7 @@ site/src/content/docs/
 
 ## Conclusion
 
-The ReCoco documentation site is well-designed and functional after the applied fixes. All critical navigation issues have been resolved, and the documentation content is comprehensive and well-organized. The recommended improvements would enhance usability and completeness but are not blockers for deployment.
+The Recoco documentation site is well-designed and functional after the applied fixes. All critical navigation issues have been resolved, and the documentation content is comprehensive and well-organized. The recommended improvements would enhance usability and completeness but are not blockers for deployment.
 
 ### Priority Summary
 - **Critical Issues:** 0 remaining (4 fixed)

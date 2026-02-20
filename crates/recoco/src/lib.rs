@@ -1,14 +1,14 @@
-// SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+// SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
 // SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 //
 // SPDX-License-Identifier: Apache-2.0
 
-//! # ReCoco - Rust ETL and Data Transformation Library
+//! # Recoco - Rust ETL and Data Transformation Library
 //!
-//! ReCoco is an all-Rust fork of CocoIndex providing modular, feature-gated
+//! Recoco is an all-Rust fork of CocoIndex providing modular, feature-gated
 //! data processing capabilities.
 //!
-//! This is the main unified crate that re-exports all ReCoco sub-crates:
+//! This is the main unified crate that re-exports all Recoco sub-crates:
 //! - `recoco-core`: Core dataflow engine and operations
 //! - `recoco-utils`: Shared utilities
 //! - `recoco-splitters`: Text splitting and language detection

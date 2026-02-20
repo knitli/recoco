@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+# SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
 # SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -9,12 +9,12 @@
 # REUSE-IgnoreStart
 header = """
 <!-- 
-SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
 
 SPDX-License-Identifier: Apache-2.0
 -->
 # Changelog\n\n
-We document all important changes to ReCoco here.\n
+We document all important changes to Recoco here.\n
 """
 # REUSE-IgnoreEnd
 # template for the changelog body

@@ -1,13 +1,13 @@
 ---
 title: Getting Started
-description: A step-by-step guide to building your first data flow with ReCoco.
+description: A step-by-step guide to building your first data flow with Recoco.
 ---
 
-Welcome to ReCoco! This guide will walk you through installing ReCoco, understanding core concepts, and building your first data processing flow.
+Welcome to Recoco! This guide will walk you through installing Recoco, understanding core concepts, and building your first data processing flow.
 
 ## Installation
 
-Add ReCoco to your `Cargo.toml`:
+Add Recoco to your `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -17,7 +17,7 @@ serde_json = "1"
 anyhow = "1"
 ```
 
-The `function-split` feature enables text splitting functionality. See the [Core Crate](/ReCoco/reference/core-crate/) documentation for a complete list of available features.
+The `function-split` feature enables text splitting functionality. See the [Core Crate](/Recoco/reference/core-crate/) documentation for a complete list of available features.
 
 ## Core Concepts
 
@@ -37,7 +37,7 @@ Sources → Functions → Targets
 
 ### Execution Modes
 
-ReCoco supports two execution modes:
+Recoco supports two execution modes:
 
 1. **Transient Flows**: In-memory processing without state persistence
    - Fast and simple
@@ -57,7 +57,7 @@ Let's build a simple flow that splits text into words.
 
 ### Step 1: Initialize Library Context
 
-Every ReCoco application must initialize the library context first:
+Every Recoco application must initialize the library context first:
 
 ```rust
 use recoco::builder::FlowBuilder;
@@ -139,7 +139,7 @@ Build the flow and run it:
 let flow = builder.build_transient_flow().await?;
 
 // Prepare input
-let input_text = "Hello World from ReCoco";
+let input_text = "Hello World from Recoco";
 let input_value = value::Value::Basic(
     value::BasicValue::Str(input_text.into())
 );
@@ -196,7 +196,7 @@ async fn main() -> anyhow::Result<()> {
     // 6. Build and execute
     let flow = builder.build_transient_flow().await?;
     
-    let input_text = "Hello World from ReCoco";
+    let input_text = "Hello World from Recoco";
     let input_value = value::Value::Basic(
         value::BasicValue::Str(input_text.into())
     );
@@ -297,9 +297,9 @@ Ensure input/output types match between operations. Use the correct `BasicValueT
 
 Now that you've built your first flow, explore:
 
-- **[Examples](/ReCoco/examples/transient-flow/)** - More complex examples
-- **[Architecture](/ReCoco/guides/architecture/)** - Deep dive into ReCoco's design
-- **[Core Crate](/ReCoco/reference/core-crate/)** - Available features and operations
-- **[Contributing](/ReCoco/guides/contributing/)** - Help improve ReCoco
+- **[Examples](/Recoco/examples/transient-flow/)** - More complex examples
+- **[Architecture](/Recoco/guides/architecture/)** - Deep dive into Recoco's design
+- **[Core Crate](/Recoco/reference/core-crate/)** - Available features and operations
+- **[Contributing](/Recoco/guides/contributing/)** - Help improve Recoco
 
 Happy coding! 🚀

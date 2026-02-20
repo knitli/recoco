@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2025-2026 CocoIndex (upstream)
 # SPDX-FileContributor: CocoIndex Contributors
 #
-# SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+# SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
 # SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -11,7 +11,7 @@ name = "recoco-splitters"
 version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
-description = "Text splitters/parsers for ReCoco, an all-Rust fork of CocoIndex with greater flexibility."
+description = "Text splitters/parsers for Recoco, an all-Rust fork of CocoIndex with greater flexibility."
 readme = "README.md"
 repository = { workspace = true }
 license = { workspace = true }

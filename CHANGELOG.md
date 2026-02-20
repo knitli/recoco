@@ -1,12 +1,12 @@
 <!--
-SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
 
 SPDX-License-Identifier: Apache-2.0
 -->
 # Changelog
 
 
-We document all important changes to ReCoco here.
+We document all important changes to Recoco here.
 
 ## [0.2.1] - 2026-01-25
 
@@ -33,7 +33,7 @@ We document all important changes to ReCoco here.
   - Rewrote CI/CD for rust-only and to publish to crates.io \
 - Add output position computation and recursive text chunking
 - Add CLAUDE.md for project guidance and enhance README.md with key features and usage instructions
-- Update README to better separate differences and similarities between CocoIndex and ReCoco
+- Update README to better separate differences and similarities between CocoIndex and Recoco
 - *(infra)* Add Knitli CLA and CLI actions.
 - Significantly improved feature-gating, reducing default library size by ~half from v0.1.0
 - Fully feature-gated `recoco-utils`. We still need some core dependencies for broader Recoco operations, but anyone wanting to use just one or two utilities for a project can now do just that.
@@ -67,7 +67,7 @@ We document all important changes to ReCoco here.
 - Removed CLI-focused dependencies and unused helper scripts
 - Cleaned up all remaining loose ends; crate now compiles with no warnings or errors
 - Update CONTRIBUTING.md, SECURITY.md, CLAUDE.md for the fork.
-- Implemented reuse specification compliance. ReCoco is now Reuse 3.3 compliant
+- Implemented reuse specification compliance. Recoco is now Reuse 3.3 compliant
 - Add migration guide in prep for v1, more corrections to CocoIndex org name
 - Update mise.toml
 - Symlink readme to main recoco crate

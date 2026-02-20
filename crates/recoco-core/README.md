@@ -7,13 +7,13 @@ SPDX-License-Identifier: Apache-2.0
 
 # recoco
 
-This is the core package for [ReCoco](https://github.com/knitli/recoco), core provides direct access to ReCoco's complete functionality. ReCoco is a rust-only fork of [`CocoIndex`](https://cocoindex.io)
+This is the core package for [Recoco](https://github.com/knitli/recoco), core provides direct access to Recoco's complete functionality. Recoco is a rust-only fork of [`CocoIndex`](https://cocoindex.io)
 
 ## When to use this crate
 
 **Use `recoco`** when you want:
-- ✅ To use multiple ReCoco components together
-- ✅ Feature parity with the full ReCoco ecosystem
+- ✅ To use multiple Recoco components together
+- ✅ Feature parity with the full Recoco ecosystem
 - ✅ Easy dependency management
 
 **Use individual crates** (`recoco-core`, `recoco-utils`, `recoco-splitters`) when you want:
@@ -191,7 +191,7 @@ recoco = { version = "0.2", default-features = false, features = [
 
 ## 🔧 Development
 
-This crate is part of the ReCoco workspace:
+This crate is part of the Recoco workspace:
 
 ```bash
 # Build with specific features

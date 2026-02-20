@@ -1,0 +1,106 @@
+// SPDX-FileCopyrightText: 2025 Knitli Inc.
+// SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+//
+// SPDX-License-Identifier: LicenseRef-KnitliProprietary
+
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.0/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!!/**/dist",
+      "!!/**/node_modules",
+      "!!/**/.astro",
+      "!!/**/worker-configuration.d.ts"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "lineEnding": "lf"
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true
+    },
+    "domains": {
+      "react": "recommended"
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  },
+  "css": {
+    "linter": {
+      "enabled": true
+    },
+    "formatter": {
+      "enabled": true
+    },
+    "parser": {
+      "cssModules": true
+    }
+  },
+  "json": {
+    "linter": {
+      "enabled": true
+    },
+    "formatter": {
+      "enabled": true
+    }
+  },
+  "graphql": {
+    "linter": {
+      "enabled": true
+    },
+    "formatter": {
+      "enabled": true
+    }
+  },
+  "html": {
+    "linter": {
+      "enabled": true
+    },
+    "experimentalFullSupportEnabled": true,
+    "formatter": {
+      "enabled": true
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.svelte", "**/*.astro", "**/*.vue"],
+
+      "linter": {
+        "rules": {
+          "style": {
+            "useConst": "off",
+
+            "useImportType": "off"
+          },
+
+          "correctness": {
+            "noUnusedVariables": "off",
+
+            "noUnusedImports": "off"
+          }
+        }
+      }
+    }
+  ]
+}

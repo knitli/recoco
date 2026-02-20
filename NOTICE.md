@@ -1,9 +1,9 @@
 <!--
-SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
 SPDX-License-Identifier: Apache-2.0
 -->
 
-ReCoco
+Recoco
 Copyright 2026 Knitli Inc
 
 This project is a fork of CocoIndex

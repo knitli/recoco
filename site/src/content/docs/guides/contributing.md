@@ -2,7 +2,7 @@
 title: Contributing
 ---
 <!--
-SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
 SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 
 SPDX-License-Identifier: Apache-2.0
@@ -24,7 +24,7 @@ That depends.
 
 ### Submit your issue to CocoIndex when it...
 
-- Directly touches any file in the [`ops` module](https://github.com/knitli/recoco/blob/main/crates/recoco/src/ops/mod.rs). We regularly merge changes to this module into ReCoco, so please help everyone by submitting upstream.
+- Directly touches any file in the [`ops` module](https://github.com/knitli/recoco/blob/main/crates/recoco/src/ops/mod.rs). We regularly merge changes to this module into Recoco, so please help everyone by submitting upstream.
 - If you want to add a new function, source, or target.  Minimally submit a feature request upstream. If they reject it, you can resubmit it here for consideration, but we'll only consider new functions/targets/sources once they've been rejected by CocoIndex. (We're likely to accept new additions here because we feature gate them -- there's no extra weight to adding it).
 
 **Submitting to CocoIndex**: First, please read and follow their contribution guidelines
@@ -62,4 +62,5 @@ cargo fmt
 - **Keep it small**: Focus on one logical change per pull request.
 - **Test your changes**: Run the tests above before submitting.
 
-Thank you for helping improve ReCoco!
+Thank you for helping improve Recoco!
+

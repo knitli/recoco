@@ -2,15 +2,15 @@
 title: Splitters Crate
 ---
 <!--
-SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
 SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# ReCoco Splitters
+# Recoco Splitters
 
-**Intelligent text splitting and parsing for [ReCoco](https://github.com/knitli/recoco).**
+**Intelligent text splitting and parsing for [Recoco](https://github.com/knitli/recoco).**
 
 This crate implements sophisticated text splitting strategies, primarily leveraging **[Tree-sitter](https://tree-sitter.github.io/tree-sitter/)** to perform syntax-aware chunking of source code and structured documents.
 
@@ -64,3 +64,4 @@ recoco-splitters = { version = "...", features = ["python", "rust"] }
 ## 📄 License
 
 Apache-2.0. See [main repository](https://github.com/knitli/recoco) for details.
+

@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2025-2026 CocoIndex (upstream)
 # SPDX-FileContributor: CocoIndex Contributors
 #
-# SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+# SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
 # SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 #
 # SPDX-License-Identifier: Apache-2.0
@@ -11,7 +11,7 @@ name = "recoco-core"
 version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
-description = "Recoco-core is the core library of Recoco; it's nearly identical to the main ReCoco crate, which is a simple wrapper around recoco-core and other sub-crates."
+description = "Recoco-core is the core library of Recoco; it's nearly identical to the main Recoco crate, which is a simple wrapper around recoco-core and other sub-crates."
 readme = "README.md"
 repository = { workspace = true }
 license = { workspace = true }

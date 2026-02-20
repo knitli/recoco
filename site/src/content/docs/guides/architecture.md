@@ -1,11 +1,11 @@
 ---
 title: Architecture
-description: Overview of ReCoco's architecture and design.
+description: Overview of Recoco's architecture and design.
 ---
 
 ## Core Dataflow Model
 
-ReCoco implements an **incremental dataflow engine** where data flows through **Flows**:
+Recoco implements an **incremental dataflow engine** where data flows through **Flows**:
 
 ```
 Sources → Transforms → Targets

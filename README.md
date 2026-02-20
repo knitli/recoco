@@ -1,14 +1,14 @@
 <!--
-SPDX-FileCopyrightText: 2026 Knitli Inc. (ReCoco)
+SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
 SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 
 SPDX-License-Identifier: Apache-2.0
 -->
 
 <div align="center">
-  <img src="assets/recoco.webp" alt="ReCoco Logo" width="200"/>
+  <img src="assets/recoco.webp" alt="Recoco Logo" width="200"/>
 
-  # ReCoco
+  # Recoco
 
   **Incremental ETL and Data Processing Framework for Rust**
 
@@ -23,12 +23,12 @@ SPDX-License-Identifier: Apache-2.0
 
 ---
 
-**[ReCoco](https://github.com/knitli/recoco)** is a **pure Rust fork** of the excellent **[CocoIndex](https://github.com/cocoindex-io/cocoindex)**, a high-performance, incremental ETL and data processing framework.
+**[Recoco](https://github.com/knitli/recoco)** is a **pure Rust fork** of the excellent **[CocoIndex](https://github.com/cocoindex-io/cocoindex)**, a high-performance, incremental ETL and data processing framework.
 
 ## 📑 Table of Contents
 
 - [Why Fork?](#why-fork)
-- [How ReCoco is Different](#how-recoco-is-different)
+- [How Recoco is Different](#how-recoco-is-different)
 - [Key Features](#-key-features)
 - [Use Cases](#-use-cases)
 - [Installation](#installation)
@@ -51,11 +51,11 @@ I decided to create a Rust-only fork of CocoIndex for a couple reasons:
 For [Knitli](https://knitli.com), **I needed dependency control**. I wanted to use CocoIndex as an ETL engine for [Thread](https://github.com/knitli/thread/), but Thread needs to be edge-deployable. The dependencies were way too heavy and would never compile to WASM. Thread, of course, is also a Rust project, so pulling in a lot of Python dependencies didn't make sense for me.
 
 > [!NOTE]
-> Knitli and ReCoco have no official relationship with CocoIndex and this project is not endorsed by them. **We will contribute as much as we can upstream**, our [contribution guidelines](CONTRIBUTING.md) encourage you to submit PRs and issues affecting shared code upstream to help both projects.
+> Knitli and Recoco have no official relationship with CocoIndex and this project is not endorsed by them. **We will contribute as much as we can upstream**, our [contribution guidelines](CONTRIBUTING.md) encourage you to submit PRs and issues affecting shared code upstream to help both projects.
 
-## How ReCoco is Different from CocoIndex
+## How Recoco is Different from CocoIndex
 
-1. **ReCoco fully exposes a Rust API.** You can use ReCoco to support your rust ETL projects directly. **Build on it.**
+1. **Recoco fully exposes a Rust API.** You can use Recoco to support your rust ETL projects directly. **Build on it.**
 
 2. **Every target, source, and function (i.e. transform) is independently feature-gated. Use only what you want.** 
 
@@ -65,10 +65,10 @@ We will regularly merge in upstream fixes and changes, particularly sources, tar
 
 ## ✨ Key Features
 
-### Unique to ReCoco 🥇
+### Unique to Recoco 🥇
 
 - 🦀 **Pure Rust**: No Python dependencies, interpreters, or build tools required
-- 🚀 **Additional optimizations**: We add additional compile-time optimizations and use some faster alternatives (i.e. `blake2` -> `blake3`) to make ReCoco as fast as possible
+- 🚀 **Additional optimizations**: We add additional compile-time optimizations and use some faster alternatives (i.e. `blake2` -> `blake3`) to make Recoco as fast as possible
 - 📦 **Workspace Structure**: Clean separation into `recoco`, `recoco-utils`, and `recoco-splitters` crates
 - 🎯 **Modular Architecture**: Feature-gated sources, targets, and functions - use only what you need
 - 🔌 **Rich Connector Ecosystem**:
@@ -76,13 +76,13 @@ We will regularly merge in upstream fixes and changes, particularly sources, tar
   - **Targets**: PostgreSQL, Qdrant, Neo4j, Kùzu
   - **Functions**: Text splitting, LLM embedding and calling, Embedding generation 
   - **Individual splitter languages, or none at all**: Choose which grammars to install for the tree-sitter based text splitter. Or, keep them all disabled if you don't need text splitting.
-  - **Run without Server or persistence-related dependencies**: If you just want to run local tasks, or integrate ReCoco into an existing server, you can keep it turned off. 
-    - You can also run ReCoco as a memory-only pipeline for use with lightweight tasks.[^1] 
+  - **Run without Server or persistence-related dependencies**: If you just want to run local tasks, or integrate Recoco into an existing server, you can keep it turned off. 
+    - You can also run Recoco as a memory-only pipeline for use with lightweight tasks.[^1] 
     - If you don't need these features, you get a very lightweight library without dependencies like axum, tower, or postgres.
 
 [^1]: In-memory operations aren't quite as feature rich; you lose incremental indexing, for example. At least, for now.
 
-### CocoIndex and ReCoco 💪
+### CocoIndex and Recoco 💪
 
 - ⚡ **Incremental Processing**: Built on a dataflow engine that processes only changed data
 (SentenceTransformers), JSON parsing, language detection
@@ -91,7 +91,7 @@ We will regularly merge in upstream fixes and changes, particularly sources, tar
 
 ## 🎯 Use Cases
 
-ReCoco, like CocoIndex, enables scalable data pipelines with intelligent incremental processing for many use cases, including:
+Recoco, like CocoIndex, enables scalable data pipelines with intelligent incremental processing for many use cases, including:
 
 - **RAG (Retrieval-Augmented Generation) Pipelines**: Ingest documents, split them intelligently, generate embeddings, and store in vector databases
 - **ETL Workflows**: Extract data from various sources, transform it, and load into databases or data warehouses
@@ -101,7 +101,7 @@ ReCoco, like CocoIndex, enables scalable data pipelines with intelligent increme
 
 ## Installation
 
-Add `recoco` to your `Cargo.toml`. Since ReCoco uses a modular feature system, you should enable only the features you need.
+Add `recoco` to your `Cargo.toml`. Since Recoco uses a modular feature system, you should enable only the features you need.
 
 ```toml
 [dependencies]
@@ -229,7 +229,7 @@ async fn main() -> anyhow::Result<()> {
     let flow = builder.build_transient_flow().await?;
     let result = evaluate_transient_flow(
         &flow.0,
-        &vec![value::Value::Basic("Hello ReCoco".into())]
+        &vec![value::Value::Basic("Hello Recoco".into())]
     ).await?;
 
     println!("Result: {:?}", result);
@@ -288,7 +288,7 @@ let result = evaluate_transient_flow(&flow.0, &inputs).await?;
 
 ## ⚙️ Configuration
 
-ReCoco is configured via the `Settings` struct passed to `init_lib_context`.
+Recoco is configured via the `Settings` struct passed to `init_lib_context`.
 
 ### Environment Variables
 
@@ -414,7 +414,7 @@ cargo clippy -p recoco --all-features
 
 ### Core Dataflow Model
 
-ReCoco implements an **incremental dataflow engine** where data flows through **Flows**:
+Recoco implements an **incremental dataflow engine** where data flows through **Flows**:
 
 ```
 Sources → Transforms → Targets
@@ -424,7 +424,7 @@ Sources → Transforms → Targets
 - **Transforms**: Process data (split, embed, map, filter, extract)
 - **Targets**: Persist results (vector databases, graph databases, relational databases)
 
-The engine tracks **data lineage** - when source data changes, only affected downstream computations are re-executed. This makes ReCoco highly efficient for processing large datasets that change incrementally.
+The engine tracks **data lineage** - when source data changes, only affected downstream computations are re-executed. This makes Recoco highly efficient for processing large datasets that change incrementally.
 
 ### Two Flow Execution Modes
 
@@ -487,9 +487,9 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ## 🔗 Relationship to CocoIndex
 
-ReCoco is a fork of [CocoIndex](https://github.com/cocoindex/cocoindex):
+Recoco is a fork of [CocoIndex](https://github.com/cocoindex/cocoindex):
 
-| Aspect | CocoIndex (Upstream) | ReCoco (Fork) |
+| Aspect | CocoIndex (Upstream) | Recoco (Fork) |
 |--------|---------------------|---------------|
 | **Primary Language** | Python with Rust core | Pure Rust |
 | **API Surface** | Python-only | Full Rust API |
@@ -500,7 +500,7 @@ ReCoco is a fork of [CocoIndex](https://github.com/cocoindex/cocoindex):
 
 We aim to maintain compatibility with CocoIndex's core dataflow engine to allow porting upstream improvements, while diverging significantly in the API surface and dependency management to better serve Rust users.
 
-Code headers maintain dual copyright (CocoIndex upstream, Knitli Inc. for ReCoco modifications) under Apache-2.0.
+Code headers maintain dual copyright (CocoIndex upstream, Knitli Inc. for Recoco modifications) under Apache-2.0.
 
 ## 📄 License
 
@@ -510,7 +510,7 @@ This project is [REUSE 3.3 compliant](https://reuse.software/).
 
 ## 🙏 Acknowledgments
 
-ReCoco is built on the excellent foundation provided by [CocoIndex](https://github.com/cocoindex/cocoindex). We're grateful to the CocoIndex team for creating such a powerful and well-designed dataflow engine.
+Recoco is built on the excellent foundation provided by [CocoIndex](https://github.com/cocoindex/cocoindex). We're grateful to the CocoIndex team for creating such a powerful and well-designed dataflow engine.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: Custom Operation
-description: Extend ReCoco by creating custom operations.
+description: Extend Recoco by creating custom operations.
 ---
 
 This example demonstrates how to create a custom operation that you can use in your flows. You'll build a simple `ReverseString` function that reverses text.
@@ -10,7 +10,7 @@ This example demonstrates how to create a custom operation that you can use in y
 Custom operations allow you to:
 - Implement domain-specific logic
 - Integrate with external services
-- Extend ReCoco's functionality
+- Extend Recoco's functionality
 - Reuse complex transformations across flows
 
 ## Complete Example
@@ -118,7 +118,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Execute
     let flow = builder.build_transient_flow().await?;
-    let input_text = "Hello ReCoco!";
+    let input_text = "Hello Recoco!";
     let input_value = value::Value::Basic(
         value::BasicValue::Str(input_text.into())
     );
@@ -260,7 +260,7 @@ let reversed = builder.transform(
 ## Expected Output
 
 ```
-Input: Hello ReCoco!
+Input: Hello Recoco!
 Output: Basic(Str("!ocoCeR olleH"))
 ```
 
@@ -355,11 +355,11 @@ let repeated = builder.transform(
 
 ## Next Steps
 
-- Review **[Architecture](/ReCoco/guides/architecture/#custom-operation-pattern)** for design patterns
-- Explore **[SDK Documentation](/ReCoco/reference/core-crate/)** for available traits
-- Try **[File Processing](/ReCoco/examples/file-processing/)** to combine custom ops with I/O
+- Review **[Architecture](/Recoco/guides/architecture/#custom-operation-pattern)** for design patterns
+- Explore **[SDK Documentation](/Recoco/reference/core-crate/)** for available traits
+- Try **[File Processing](/Recoco/examples/file-processing/)** to combine custom ops with I/O
 
 ## Source Code
 
-The complete source code for this example is available in the ReCoco repository:
+The complete source code for this example is available in the Recoco repository:
 [`crates/recoco-core/examples/custom_op.rs`](https://github.com/knitli/recoco/blob/main/crates/recoco-core/examples/custom_op.rs)
