@@ -50,7 +50,7 @@ To use Recoco in your project:
 recoco = "0.2"
 ```
 
-See the [Getting Started](/Recoco/guides/getting-started/) guide for a complete walkthrough.
+See the [Getting Started](/recoco/guides/getting-started/) guide for a complete walkthrough.
 
 ## Features Documentation
 
@@ -60,4 +60,4 @@ Each feature is documented in the API docs with examples:
 - **Targets**: `target-postgres`, `target-qdrant`, `target-neo4j`, `target-kuzu`
 - **Functions**: `function-split`, `function-embed`, `function-extract-llm`, `function-detect-lang`, `function-json`
 
-Check the [Core Crate](/Recoco/reference/core-crate/) reference for a complete list of features.
+Check the [Core Crate](/recoco/reference/core-crate/) reference for a complete list of features.

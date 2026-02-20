@@ -20,6 +20,10 @@
     {
       "pattern": "docs.knitli.com/recoco/*",
       "zone_name": "knitli.com"
+    },
+    {
+      "pattern": "recoco.knitli.com",
+      "custom_domain": true
     }
   ],
   "placement": {

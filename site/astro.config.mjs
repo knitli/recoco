@@ -8,7 +8,7 @@ import { defineConfig } from "astro/config";
 import favicons from "astro-favicons";
 import { DocsAssets } from "@knitli/docs-components";
 
-const { headlineLogoDark, headlinelogoLight, recocoLogoMed, knitliWordmark, Favicon } = DocsAssets;
+const { headlineLogoDark, headlineLogoLight, variables, docsStyle, faviconIco, faviconSvg } = DocsAssets;
 
 // https://astro.build/config
 export default defineConfig({
@@ -18,6 +18,7 @@ export default defineConfig({
     imageService: "compile",
     environment: process.env.NODE_ENV === "development" ? "local" : undefined,
   }),
+  favicon: faviconIco,
   // Image optimization
   image: {
     service: {
@@ -30,6 +31,9 @@ export default defineConfig({
       "raw.githubusercontent.com",
       "docs.knitli.com",
       "knitli.com",
+      "avatars.githubusercontent.com",
+      "ui-avatars.com",
+      "recoco.knitli.com",
     ],
   },
 
@@ -101,7 +105,8 @@ export default defineConfig({
       title: "Recoco Docs",
       logo: {
         dark: headlineLogoDark,
-        light: headlinelogoLight,
+        light: headlineLogoLight,
+        replacesTitle: true
       },
       description:
         "Incremental ETL and data processing framework in pure Rust. Feature-gated, modular architecture for sources, targets, and functions.",
@@ -116,7 +121,7 @@ export default defineConfig({
         Footer: '@knitli/docs-components/Footer.astro',
         PageFrame: '@knitli/docs-components/PageFrame.astro',
       },
-      customCss: [],
+      customCss: [variables, docsStyle],
       head: [
         {
           tag: "meta",
@@ -149,11 +154,17 @@ export default defineConfig({
       ],
     }),
     mdx(),
-    favicons(),
+    favicons({
+      name: "Recoco Docs by Knitli",
+      short_name: "Recoco Docs",
+      input: {
+        favicons: [faviconSvg],
+      },
+    }),
     sitemap({
       filter: (page) => !/\^\/(?!cdn-cgi\/)/.test(page),
       changefreq: "weekly",
-      priority: 0.7,
+      priority: 0.4,
       lastmod: new Date(),
       namespaces: {
         image: false,

@@ -76,4 +76,4 @@ Recoco uses [git-cliff](https://git-cliff.org/) to automatically generate change
 
 ## Contributing
 
-See our [Contributing Guide](/Recoco/guides/contributing/) for information on how to submit changes and follow our commit message conventions.
+See our [Contributing Guide](/recoco/guides/contributing/) for information on how to submit changes and follow our commit message conventions.

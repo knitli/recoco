@@ -17,7 +17,7 @@ serde_json = "1"
 anyhow = "1"
 ```
 
-The `function-split` feature enables text splitting functionality. See the [Core Crate](/Recoco/reference/core-crate/) documentation for a complete list of available features.
+The `function-split` feature enables text splitting functionality. See the [Core Crate](/recoco/reference/core-crate/) documentation for a complete list of available features.
 
 ## Core Concepts
 
@@ -297,9 +297,9 @@ Ensure input/output types match between operations. Use the correct `BasicValueT
 
 Now that you've built your first flow, explore:
 
-- **[Examples](/Recoco/examples/transient-flow/)** - More complex examples
-- **[Architecture](/Recoco/guides/architecture/)** - Deep dive into Recoco's design
-- **[Core Crate](/Recoco/reference/core-crate/)** - Available features and operations
-- **[Contributing](/Recoco/guides/contributing/)** - Help improve Recoco
+- **[Examples](/recoco/examples/transient-flow/)** - More complex examples
+- **[Architecture](/recoco/guides/architecture/)** - Deep dive into Recoco's design
+- **[Core Crate](/recoco/reference/core-crate/)** - Available features and operations
+- **[Contributing](/recoco/guides/contributing/)** - Help improve Recoco
 
 Happy coding! 🚀

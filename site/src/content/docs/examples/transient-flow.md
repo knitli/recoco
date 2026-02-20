@@ -193,9 +193,9 @@ The result is a `KTable` (keyed table) where each entry represents a word from t
 
 ## Next Steps
 
-- Try **[File Processing](/Recoco/examples/file-processing/)** to process files line-by-line
-- Learn about **[Custom Operations](/Recoco/examples/custom-operation/)** to extend Recoco
-- Explore **[Persisted Flows](/Recoco/guides/architecture/#two-flow-execution-modes)** for incremental processing
+- Try **[File Processing](/recoco/examples/file-processing/)** to process files line-by-line
+- Learn about **[Custom Operations](/recoco/examples/custom-operation/)** to extend Recoco
+- Explore **[Persisted Flows](/recoco/guides/architecture/#two-flow-execution-modes)** for incremental processing
 
 ## Source Code
 

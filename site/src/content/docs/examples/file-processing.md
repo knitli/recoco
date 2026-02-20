@@ -266,9 +266,9 @@ let fields = builder.transform(
 
 ## Next Steps
 
-- Explore **[Custom Operations](/Recoco/examples/custom-operation/)** to add domain-specific logic
-- Learn about **[Language Detection](/Recoco/examples/language-detection/)** for code files
-- Try **[Transient Flow](/Recoco/examples/transient-flow/)** for simpler examples
+- Explore **[Custom Operations](/recoco/examples/custom-operation/)** to add domain-specific logic
+- Learn about **[Language Detection](/recoco/examples/language-detection/)** for code files
+- Try **[Transient Flow](/recoco/examples/transient-flow/)** for simpler examples
 
 ## Source Code
 

@@ -355,9 +355,9 @@ let repeated = builder.transform(
 
 ## Next Steps
 
-- Review **[Architecture](/Recoco/guides/architecture/#custom-operation-pattern)** for design patterns
-- Explore **[SDK Documentation](/Recoco/reference/core-crate/)** for available traits
-- Try **[File Processing](/Recoco/examples/file-processing/)** to combine custom ops with I/O
+- Review **[Architecture](/recoco/guides/architecture/#custom-operation-pattern)** for design patterns
+- Explore **[SDK Documentation](/recoco/reference/core-crate/)** for available traits
+- Try **[File Processing](/recoco/examples/file-processing/)** to combine custom ops with I/O
 
 ## Source Code
 
