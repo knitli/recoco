@@ -187,7 +187,7 @@ jobs:
             **c) Upcoming release branches** (especially major version branches):
             ```bash
             gh api repos/cocoindex-io/cocoindex/branches --paginate \
-              --jq '[.[] | select(.name | test("^v[0-9].*")) | .name]'
+              --jq '[.[] | select(.name | test("^v[1-9].*")) | .name]'
             ```
 
             **d) Recently merged PRs with significant scope:**
@@ -214,6 +214,23 @@ jobs:
 
             An upstream change is already tracked if any existing issue's title or body
             contains the upstream release tag, PR number, or commit SHA.
+
+            ### IF THERE ARE NO EXISTING ISSUES AND 2026-01-25T00:00:00Z IS THE SINCE DATE
+
+            In this case, we are bootstrapping from the first complete release of Recoco. You can skip the rest of the steps here because you won't have time to cover them all in this round.
+
+            Instead:
+
+            1. create a single issue that covers all changes since that date, using the guidelines below to summarize and categorize them. 
+               - We will use this to further investigate and create more granular issues later.
+               - You do not need to conduct in-depth analysis for these changes at this time.
+               - A quick assessment based on files affected is fine.
+
+            2. When you create the single issue, *do not assign the claude label*, but do assign the upstream-sync label.
+
+            3. You should try to triage and group changes into categories (e.g., bug fixes, new features, architectural changes) to help prioritize future work.
+
+            4. After you submit the issue, provide your after-action review (Step 6).
 
             ### Step 4: Analyze and filter changes
 
