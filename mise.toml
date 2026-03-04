@@ -9,11 +9,9 @@ experimental_monorepo_root = true
 config_roots = ["site/*", "crates/*"]
 
 [tools]
-actionlint = "latest"
-git-cliff = "latest"
 hk = "latest"
 pkl = "latest"
-tombi = "latest"
+rust = "nightly"
 
 [env]
 RUST_BACKTRACE = "1"
@@ -99,9 +97,15 @@ run = "cargo clippy --all-features -- -D warnings"
 description = "Run clippy and apply fixes"
 run = "cargo clippy --all-features --fix --allow-dirty --allow-staged"
 
-[tasks.lint]
-description = "Run all linting (fmt check + clippy)"
-depends = ["fmt:check", "clippy"]
+[tasks."fmt:toml"]
+description = "Format TOML files"
+sources = ["**/*.toml"]
+run = "tombi format"
+tools.tombi = "latest"
+
+[tasks.fix]
+description = "Fix and format everything."
+depends = ["fmt", "fmt:toml", "clippy:fix"]
 
 # =============================================================================
 # DOCUMENTATION TASKS
@@ -155,13 +159,26 @@ run = "cargo check --features full"
 description = "Check all workspace members with all features"
 run = "cargo check --workspace --all-features"
 
+[tasks."check:toml"]
+tools.tombi = "latest"
+description = "check TOML files"
+sources = ["**/*.toml"]
+run = "tombi lint"
+
+[tasks."check:actions"]
+tools.actionlint = "latest"
+description = "Check GitHub Actions workflows"
+sources = [".github/**/*.yml", ".github/**/*.yaml"]
+run = "actionlint"
+
 [tasks.ci]
 description = "Run full CI checks (fmt, clippy, test)"
-depends = ["fmt:check", "clippy", "test:full"]
+depends = ["fmt:check", "clippy", "test:full", "check:full", "check:toml"]
+alias = "lint"
 
 [tasks."ci:quick"]
 description = "Quick CI checks (fmt, clippy, check)"
-depends = ["fmt:check", "clippy", "check:full"]
+depends = ["fmt:check", "clippy", "check"]
 
 # =============================================================================
 # CLEAN & MAINTENANCE TASKS
@@ -287,31 +304,38 @@ ls -lh target/release/librecoco* 2>/dev/null || echo "No library files yet"
 # =============================================================================
 
 [tasks.changelog]
+tools.git-cliff = "latest"
 description = "Generate full changelog"
 run = "git cliff -o CHANGELOG.md"
 
 [tasks."changelog:unreleased"]
+tools.git-cliff = "latest"
 description = "Generate changelog for unreleased changes"
 run = "git cliff --unreleased"
 
 [tasks."changelog:preview"]
+tools.git-cliff = "latest"
 description = "Preview changelog without writing to file"
 run = "git cliff"
 
 [tasks."changelog:latest"]
 description = "Show changelog for latest tag only"
+tools.git-cliff = "latest"
 run = "git cliff --latest"
 
 [tasks."changelog:bump"]
 description = "Generate changelog and bump version"
+tools.git-cliff = "latest"
 run = "git cliff --bump -o CHANGELOG.md"
 
 [tasks."changelog:tag"]
 description = "Generate changelog for specific tag range (use: mise run changelog:tag -- v0.1.0..v0.2.0)"
+tools.git-cliff = "latest"
 run = "git cliff"
 
 [tasks."changelog:init"]
 description = "Initialize git-cliff config (if needed)"
+tools.git-cliff = "latest"
 run = "git cliff --init"
 
 # =============================================================================

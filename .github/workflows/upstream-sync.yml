@@ -7,7 +7,7 @@ name: 🔄 Upstream Sync Monitor
 
 on:
   schedule:
-    - cron: '0 9 * * 1' # Every Monday at 9:00 AM UTC
+    - cron: "0 9 * * 1" # Every Monday at 9:00 AM UTC
   workflow_dispatch:
 
 concurrency:
@@ -18,18 +18,26 @@ jobs:
   monitor:
     name: Check Upstream for Relevant Changes
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     permissions:
-      contents: read
+      contents: write
       issues: write
+      pull-requests: write
       id-token: write
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 1
-
+      - name: Setup Mise Environment
+        uses: ./.github/actions/setup-mise-env
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          profile: minimal
+          skip-checkout: "true"
+          upstream-agent: "true"
+        id: setup-mise
       - name: Ensure 'claude' label exists
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # ratchet:actions/github-script@v8.0.0
         with:
@@ -81,13 +89,37 @@ jobs:
                 throw e;
               }
             }
+      - name: Create MCP Config
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cat > /tmp/mcp_config.json << 'EOF'
+            {
+              "mcpServers": {
+                "github": {
+                  "type": "http",
+                  "url": "https://api.githubcopilot.com/mcp/",
+                  "headers": {
+                    "X-MCP-Toolsets": "actions,copilot,dependabot,discussions,git,issues,labels,repos",
+                    "X-MCP-Insiders": "true",
+                    "Authorization": "Bearer $GITHUB_TOKEN"
+                  }
+                }
+              }
+            }
+            EOF
 
       - name: Run Claude Upstream Sync Analysis
         uses: anthropics/claude-code-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: |
+            --max-turns 200
+            --allowedTools 
+            --allowedTools Bash,TaskOutput,Edit,ExitPlanMode,Glob,Grep,KillShell,MCPSearch,Read,Skill,Agent,TaskCreate,TaskGet,TaskList,TaskUpdate,WebFetch,WebSearch,Write,mcp__github_*
           prompt: |
             You are a code synchronization engineer monitoring the upstream repository
             `cocoindex-io/cocoindex` for changes that are relevant to `knitli/recoco`.
@@ -102,12 +134,13 @@ jobs:
             2. **No Python**: Recoco has zero Python bindings, Python components, or
                Python-related code. Python-only upstream changes are irrelevant.
             3. **Performance focus**: Recoco uses blake3 hashing and generally prioritizes
-               performance. Upstream performance improvements are highly relevant.
+               performance. Upstream performance improvements are highly relevant. Ports of
+               Rust from upstream must be optimized in-line with recoco's performance goals.
             4. **Modern dependencies**: Recoco uses the most recent versions of dependencies
                possible, often at a major version newer than upstream.
             5. **Pure Rust library**: Recoco is published on crates.io as a pure Rust
-               library with a public API. Changes to the public Rust API surface are
-               especially important.
+               library with a public API. The upstream does not expose a significant Rust API surface.
+               Any changes must translate to Recoco's public API where applicable.
 
             ## Your Task
 
@@ -126,7 +159,7 @@ jobs:
               --jq '.[0].createdAt // empty'
             ```
 
-            If no previous issues exist, use a 30-day lookback window. Otherwise use
+            If no previous issues exist, use 2026-01-25T00:00:00Z (Recoco's first complete release). Otherwise use
             14 days (i.e., two weekly cycles). This provides a ~7-day overlap with
             the previous run, ensuring no changes are missed if the workflow is delayed
             or skipped for a cycle. Store this as SINCE_DATE in ISO 8601 format
@@ -137,6 +170,8 @@ jobs:
             Collect the following from `cocoindex-io/cocoindex`:
 
             **a) New releases:**
+            ** Note:**
+              The following examples use the github CLI. You should have it in your environment. You also should have access to the Github MCP tools, which should be your first choice for gathering information.
             ```bash
             gh release list --repo cocoindex-io/cocoindex --limit 20 --json tagName,publishedAt,name,body
             ```
@@ -151,7 +186,7 @@ jobs:
             **c) Upcoming release branches** (especially major version branches):
             ```bash
             gh api repos/cocoindex-io/cocoindex/branches --paginate \
-              --jq '[.[] | select(.name | test("^(v[0-9]|release/|main|master|develop)")) | .name]'
+              --jq '[.[] | select(.name | test("^v[0-9].*")) | .name]'
             ```
 
             **d) Recently merged PRs with significant scope:**
@@ -184,16 +219,16 @@ jobs:
             For each upstream change gathered in Step 2, determine:
 
             - **Skip entirely** if:
-              - It is Python-only (no Rust code changes)
+              - It is Python-only (no Rust code changes) - currently these are in `./python/cocoindex` and `./rust/py_utils`
               - It only affects Python bindings, Python tests, or Python docs
               - It is already tracked by an existing issue (from Step 3)
-              - It is a trivial change (typo fixes, minor doc updates with no API impact)
+              - It is a trivial change (typo fixes, doc updates with no API impact)
 
             - **Prioritize highly** if:
               - It is a new data source, target, or transform function (directly maps to recoco ops)
               - It is a bug fix in core Rust logic
               - It is a security fix
-              - It changes the public Rust API or core data types
+              - It changes the Rust API, core data types, or structure
               - It is an architectural change to the execution engine or flow builder
               - It is a performance improvement
 
@@ -201,6 +236,13 @@ jobs:
               - It updates a dependency version
               - It is a new feature in an area that already diverges significantly
               - It improves documentation in ways applicable to recoco's docs
+
+            - **Mapping changes to Recoco**:
+              - Cocoindex's `./rust/cocoindex` crate maps to Recoco's `crates/recoco-core` crate
+              - Cocoindex's `./rust/utils` crate maps to Recoco's `crates/recoco-utils` crate
+              - Cocoindex's `./rust/ops_text` crate maps to Recoco's `crates/recoco-splitters` crate
+              - Most other file changes are less likely to be relevant. Recoco uses a different docs structure/framework, different versioning and release process.
+              - Many CI actions do map closely or directly to Recoco.
 
             For each change that is not skipped, assess:
             - **Type**: `bug-fix` | `new-feature` | `architectural-change` | `dependency-update` | `security-fix` | `performance` | `api-change`
@@ -252,8 +294,8 @@ jobs:
             - Feature-gating requirements (if a new operation is added)
             - Python-related code to exclude
             - Version/dependency considerations
-            - Any blake3 or performance-related opportunities
-            - API surface changes that affect `recoco`'s public crate API
+            - Any blake3 or opportunities to improve performance on cocoindex's implementation
+            - API surface changes that affect `recoco`'s public crate API, or recommended changes to Recoco's public API surface
 
             ## Integration Notes
 
@@ -274,7 +316,7 @@ jobs:
             - Do NOT create issues for Python-only changes.
             - Be conservative: it is better to create fewer, higher-quality issues than
               to flood the tracker with noise.
-            - Each issue must have BOTH the `claude` and `upstream-sync` labels.
+            - Each issue you create must have BOTH the `claude` and `upstream-sync` labels.
             - Issue titles must use the format `[upstream-sync] <description>` (note
               the space after the closing bracket — this is intentional and required
               for consistent title formatting).

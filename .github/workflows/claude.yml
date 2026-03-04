@@ -1,70 +1,205 @@
 # SPDX-FileCopyrightText: 2026 Knitli Inc.
 # SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 #
-# SPDX-License-Identifier: Apache-2.0
-name: Claude Code
+# SPDX-License-Identifier: MIT OR Apache-2.0
 
+name: Claude Assistant
 on:
   issue_comment:
-    types: [created]
+    types:
+      - created
   pull_request_review_comment:
-    types: [created]
+    types:
+      - created
   issues:
-    types: [opened, assigned]
+    types:
+      - opened
+      - assigned
+      - labeled
   pull_request_review:
-    types: [submitted]
+    types:
+      - submitted
 
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  discussions: read
+  id-token: write
+  issues: write
+  pull-requests: write
+
+env:
+  MISE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  MISE_ENV: "dev"
+  MISE_YES: 1
+  # Limit CodeQL memory usage to prevent OOM kills on standard runners (7GB total RAM)
+  # Note: Standard runners have ~7GB, so limit to 3GB to leave headroom for system
+  CODEQL_RAM: 3072
+  CODEQL_THREADS: 2
+  # Additional limits for CodeQL extractor and evaluator
+  CODEQL_EXTRACTOR_RUST_RAM: 2048
+  CODEQL_EVALUATOR_RAM: 2048
 jobs:
-  claude:
-    if: |
-      (github.event_name == 'issue_comment' &&
-       contains(github.event.comment.body, '@claude') &&
-       (github.event.comment.author_association == 'OWNER' ||
-        github.event.comment.author_association == 'MEMBER' ||
-        github.event.comment.author_association == 'COLLABORATOR')) ||
-      (github.event_name == 'pull_request_review_comment' &&
-       contains(github.event.comment.body, '@claude') &&
-       (github.event.comment.author_association == 'OWNER' ||
-        github.event.comment.author_association == 'MEMBER' ||
-        github.event.comment.author_association == 'COLLABORATOR')) ||
-      (github.event_name == 'pull_request_review' &&
-       contains(github.event.review.body, '@claude') &&
-       (github.event.review.author_association == 'OWNER' ||
-        github.event.review.author_association == 'MEMBER' ||
-        github.event.review.author_association == 'COLLABORATOR')) ||
-      (github.event_name == 'issues' &&
-       (contains(github.event.issue.body, '@claude') ||
-        contains(github.event.issue.title, '@claude')) &&
-       (github.event.issue.author_association == 'OWNER' ||
-        github.event.issue.author_association == 'MEMBER' ||
-        github.event.issue.author_association == 'COLLABORATOR'))
+  claude-response:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
-      issues: read
-      id-token: write
-      actions: read # Required for Claude to read CI results on PRs
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
-          fetch-depth: 1
+          fetch-depth: 2
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Environment for Review
+        if: github.event_name == 'pull_request_review'
+        uses: ./.github/actions/setup-mise-env
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          profile: reviewer
+          skip-checkout: "true"
 
-      - name: Run Claude Code
-        id: claude
-        uses: anthropics/claude-code-action@v1
+      - name: PR Review
+        if: github.event_name == 'pull_request_review'
+        uses: anthropics/claude-code-action@e8bad572273ce919ba15fec95aef0ce974464753
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          allowed_non_write_users: Copilot
+          allowed_bots: "github-actions[bot],copilot[bot],dependabot[bot],copilot,github-actions,gemini[bot],claude[bot]"
+          trigger_phrase: "@claude"
+          assignee_trigger: claude[bot]
+          label_trigger: claude
+          base_branch: main
+          use_commit_signing: true
+          claude_args: |
+            --max-turns 100
+            --allowedTools Bash,TaskOutput,Batch,Glob,Grep,MCPSearch,Read,Skill,TaskCreate,TaskGet,TaskList,TaskUpdate,WebFetch,WebSearch,mcp__context7__get-library-docs,mcp__context7__resolve-library-id,mcp__sequential-thinking__sequentialthinking,mcp__github_ci__get_workflow_run_details,mcp__codeweaver__find_code,
+            --mcp-config .mcp.json
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
 
-          # This is an optional setting that allows Claude to read CI results on PRs
-          additional_permissions: |
-            actions: read
+            Please review this pull request and identify:
+              - bugs
+              - security issues and potential vulnerabilities
+              - performance issues
+            If you identify issues, briefly describe them. Provide a recommended fix with example implementation.
 
-          # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
-          # prompt: 'Update the pull request description to include a summary of changes.'
-
-          # Optional: Add claude_args to customize behavior and configuration
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://code.claude.com/docs/en/cli-reference for available options
-          # claude_args: '--allowed-tools Bash(gh pr:*)'
+            Keep your feedback focused, actionable, and concise.
+      - name: Setup Environment for Issues
+        if: github.event_name == 'issues' || github.event.action == 'opened'
+        uses: ./.github/actions/setup-mise-env
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          profile: dev
+          skip-checkout: "true"
+      - name: Issue Opened
+        if: github.event_name == 'issues' && github.event.action == 'opened'
+        uses: anthropics/claude-code-action@e8bad572273ce919ba15fec95aef0ce974464753
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          trigger_phrase: "@claude"
+          assignee_trigger: claude
+          label_trigger: claude
+          track_progress: true
+          use_commit_signing: true
+          base_branch: main
+          claude_args: |
+            --max-turns 100
+            --allowedTools Bash,TaskOutput,Edit,Glob,Grep,KillShell,MCPSearch,Read,Skill,Agent,TaskCreate,TaskGet,TaskList,TaskUpdate,WebFetch,WebSearch,Write,mcp__context7__get-library-docs,mcp__context7__resolve-library-id,mcp__sequential-thinking__sequentialthinking,mcp__github_ci__get_workflow_run_details,mcp__codeweaver__find_code,WebFetch,WebSearch
+            --mcp-config .mcp.json
+          prompt: |
+            REPO: ${{ github.repository }}
+            ISSUE NUMBER: ${{ github.event.issue.number }}
+            When a new issue is opened:
+              - Review and summarize the issue.
+              - Include any relevant context or background.
+              - Look for related issues or discussions and link to them.
+              - Assign relevant labels, or if you can't assign them, suggest them.
+              - If the issue covers the same topic as an existing open or closed issue, recommend closing the issue and linking to the relevant PR or issue.
+              - Identify potential fixes and briefly describe them with links to relevant code.
+              - If it's a feature request, estimate the difficulty of implementing the feature and potential impact on existing functionality and API.
+      - name: Setup Environment for PR Review Comments
+        if: github.event_name == 'pull_request_review_comment'
+        uses: ./.github/actions/setup-mise-env
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          profile: minimal
+          skip-checkout: "true"
+      - name: PR Review Comment
+        if: github.event_name == 'pull_request_review_comment'
+        uses: anthropics/claude-code-action@e8bad572273ce919ba15fec95aef0ce974464753
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          trigger_phrase: "@claude"
+          assignee_trigger: claude
+          label_trigger: claude
+          use_commit_signing: true
+          base_branch: main
+          claude_args: |
+            --max-turns 50
+            --allowedTools Bash,TaskOutput,Glob,Grep,KillShell,MCPSearch,Read,Skill,Agent,TaskCreate,TaskGet,TaskList,TaskUpdate,WebFetch,WebSearch,mcp__context7__get-library-docs,mcp__context7__resolve-library-id,mcp__sequential-thinking__sequentialthinking,mcp__github_ci__get_workflow_run_details,mcp__codeweaver__find_code,WebFetch,WebSearch
+            --mcp-config .mcp.json
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+            COMMENT ID: ${{ github.event.comment.id }}
+            When you are asked to review a pull request:
+              - Review the changes made in the PR.
+              - Provide feedback on the code quality, functionality, and adherence to best practices.
+              - Consider the library's existing code style and whether the code aligns with it.
+              - Consider possible security or performance effects.
+              - If the code does not follow APIs as you would expect, remember that you have access to the context7 tool to look up library documentation. APIs may have changed since your training data.
+              - Suggest improvements or alternatives where applicable.
+              - If the changes are satisfactory and the code passes checks, approve the PR with a comment.
+      - name: Setup Environment for Assigned or Labeled Issues/PRs
+        if: |
+          (github.event_name == 'issues' && github.event.action == 'assigned') || (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'claude') || (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'claude')
+        uses: ./.github/actions/setup-mise-env
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          profile: dev
+          skip-checkout: "true"
+      - name: Issue Assigned or Labeled Claude
+        if: |
+          (
+          (github.event_name == 'issues' && github.event.action == 'assigned') || 
+           (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'claude') ||
+           (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'claude')
+           )
+        uses: anthropics/claude-code-action@e8bad572273ce919ba15fec95aef0ce974464753
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          trigger_phrase: "@claude"
+          assignee_trigger: claude
+          label_trigger: claude
+          track_progress: true
+          use_commit_signing: true
+          base_branch: main
+          claude_args: |
+            --max-turns 200
+            --allowedTools Bash,TaskOutput,Edit,ExitPlanMode,Glob,Grep,KillShell,MCPSearch,Read,Skill,Agent,TaskCreate,TaskGet,TaskList,TaskUpdate,WebFetch,WebSearch,Write,mcp__context7__get-library-docs,mcp__context7__resolve-library-id,mcp__sequential-thinking__sequentialthinking,mcp__github_ci__get_workflow_run_details,mcp__codeweaver__find_code,WebFetch,WebSearch
+            --mcp-config .mcp.json
+          prompt: |
+            REPO: ${{ github.repository }}
+            ISSUE/PR NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+            When you are assigned an issue or it's labeled 'claude':
+              - Your job is to resolve it.
+              - Gather all necessary information about the issue from discussions and comments and the codebase.
+              - If the issue involves external libraries, use the context7 tool to get the latest information on the API.
+              - Pay attention to external API versions--they may have changed since your training data, or even since the sources you research. When in doubt, use the tavily tool or web search to find the current documentation.
+              - Research similar issues in this repository and others to inform your approach.
+              - Communicate with the issue reporter for clarification if needed.
+              - Create an issue branch.
+              - Develop a detailed plan to fix the problem.
+              - Create tasks using the tasks tool to plan and track your progress.
+              - Implement the fix and test it thoroughly.
+              - If the fix might affect core functionality, update or add tests focused on that functionality.
+              - Run all pre-commit lint checks and ensure everything is formatted correctly ('hk check', 'hk fix').
+              - Use conventional commits format.
+              - Submit your changes in a pull request:
+                - Document your changes and the reasoning behind them.
+                - Provide your markdown file with the plan and research information.
+              - Submit your solution for review.

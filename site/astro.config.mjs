@@ -11,6 +11,11 @@ import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
 import favicons from "astro-favicons";
 import { DocsAssets } from "@knitli/docs-components";
+import { searchForWorkspaceRoot } from "vite";
+import starlightHeadingBadges from "starlight-heading-badges";
+import starlightContextualMenu from "starlight-contextual-menu";
+import starlightTags from "starlight-tags";
+import starlightLlmsText from "starlight-llms-txt";
 
 const { headlineLogoDark, headlineLogoLight, variables, docsStyle, faviconIco, faviconSvg } = DocsAssets;
 
@@ -51,6 +56,13 @@ export default defineConfig({
   },
   // Vite configuration for better bundling
   vite: {
+     server: {
+    fs: {
+      allow: [
+        searchForWorkspaceRoot(process.cwd())
+      ],
+    },
+  },
     assetsInclude: [
       "src/*.webp",
       "src/*.png",
@@ -112,6 +124,24 @@ export default defineConfig({
         light: headlineLogoLight,
         replacesTitle: true
       },
+      plugins: [starlightHeadingBadges(), starlightContextualMenu({
+        actions: ["copy", "view", "claude", "chatgpt"]
+      }), 
+      // We need to configure starlight-tags with a tags.yml.
+      //starlightTags(), 
+       starlightLlmsText({
+        projectName: "Recoco",
+        description: `Recoco is a pure-Rust fork of the popular data processing and ETL framework, [CocoIndex](https://cocoindex.io). Recoco features a highly modular architecture, with all sources, targets, and functions (i.e. transforms) implemented as feature-gated plugins. This allows users to easily customize and extend the framework to fit their specific data processing needs, while keeping the core lightweight and efficient.
+        Like CocoIndex, Recoco is fast, efficient, and works on data incrementally. Both libraries are built using a *dataflow architecture*, allowing you to easily define complex data processing pipelines with multiple sources, targets, and transforms in only a few lines of code. CocoIndex is built in Rust, but its entire API is only in Python, and does not allow for choosing integrations. Recoco exposes a robust Rust API that allows you to choose exactly which sources, targets, and transforms you want to use.
+        `,
+        promote: ["getting-started*", "architecture*", "file-processing*", "transient-flow*"],
+        demote: ["contributing*", "changelog*"],
+        minify: {
+          whitespace: true,
+          note: true,
+          details: true,
+        }
+      })],
       description:
         "Incremental ETL and data processing framework in pure Rust. Feature-gated, modular architecture for sources, targets, and functions.",
       social: [

@@ -1,0 +1,132 @@
+# SPDX-FileCopyrightText: 2025 Knitli Inc.
+# SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+#
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+name: Setup Mise Environment
+description: Complete Python development environment setup with mise and UV caching
+inputs:
+  fetch-depth:
+    description: Git fetch depth for checkout
+    required: false
+    default: "1"
+  skip-checkout:
+    description: Skip checkout step (if already checked out by calling workflow)
+    required: false
+    default: "false"
+  github-token:
+    description: GitHub token for mise installation (to avoid rate limits)
+    required: false
+    default: ""
+  profile:
+    description: Task profile to use for mise setup one of 'minimal', 'reviewer', 'dev'
+    required: true
+    default: "minimal"
+  mise-debug:
+    description: Enable debug output for mise commands
+    required: false
+    default: "false"
+  upstream-agent:
+    description: Whether this is for the upstream sync agent
+    required: false
+    default: "false"
+
+outputs:
+  # MISE_PATH is typically in uppercase and may be case sensitive in some environments
+  MISE_PATH:
+    description: Path to mise executable
+    value: ${{ steps.mise-outputs.outputs.MISE_PATH }}
+  PROFILE:
+    description: Profile used for setup
+    value: ${{ steps.mise-outputs.outputs.PROFILE }}
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout code
+      if: inputs.skip-checkout != 'true'
+      uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      with:
+        fetch-depth: ${{ inputs.fetch-depth }}
+
+    - name: Setup Mise for Minimal Profile
+      if: inputs.profile == 'minimal'
+      uses: jdx/mise-action@eb508e65f0eb73d4fc9fc9505569833136217cc9
+      env:
+        MISE_YES: 1
+        MISE_EXPERIMENTAL: 1
+        MISE_VERBOSE: ${{ inputs.mise-debug }}
+      with:
+        github_token: ${{ inputs.github-token }}
+        experimental: true
+        install: false
+        cache: true
+        cache_key_prefix: ${{ inputs.profile }}
+        env: false
+      id: mise-setup-minimal
+    - name: Setup Mise for Reviewer Profile
+      if: inputs.profile == 'reviewer'
+      uses: jdx/mise-action@eb508e65f0eb73d4fc9fc9505569833136217cc9
+      env:
+        MISE_YES: 1
+        MISE_EXPERIMENTAL: 1
+        MISE_VERBOSE: ${{ inputs.mise-debug }}
+      with:
+        github_token: ${{ inputs.github-token }}
+        experimental: true
+        install: true
+        cache: true
+        cache_key_prefix: ${{ inputs.profile }}
+        env: false
+    - name: Setup Mise for Dev Profile
+      if: inputs.profile == 'dev' && inputs.upstream-agent != 'true'
+      uses: jdx/mise-action@eb508e65f0eb73d4fc9fc9505569833136217cc9
+      env:
+        MISE_YES: 1
+        MISE_EXPERIMENTAL: 1
+        MISE_VERBOSE: ${{ inputs.mise-debug }}
+      with:
+        github_token: ${{ inputs.github-token }}
+        experimental: true
+        install: true
+        cache: true
+        cache_key_prefix: ${{ inputs.profile }}
+        env: true
+      id: mise-setup-dev
+    - name: Setup Mise for Upstream Agent
+      id: mise-setup-upstream
+      if: inputs.upstream-agent == 'true'
+      uses: jdx/mise-action@eb508e65f0eb73d4fc9fc9505569833136217cc9
+      env:
+        MISE_YES: 1
+        MISE_EXPERIMENTAL: 1
+        MISE_VERBOSE: ${{ inputs.mise-debug }}
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      with:
+        github_token: ${{ inputs.github-token }}
+        experimental: true
+        install: true
+        cache: true
+        cache_key_prefix: ${{ inputs.profile }}-upstream
+        env: true
+        mise_toml: |
+          [tools]
+          gh = "latest"
+          uv = "latest"
+
+          [env]
+          MISE_GITHUB_TOKEN = "$GITHUB_TOKEN"
+          GITHUB_TOKEN = "$GITHUB_TOKEN"
+          GH_TOKEN = "$GITHUB_TOKEN"
+    - name: Set outputs
+      shell: bash
+      id: mise-outputs
+      env:
+        MISE_VERBOSE: ${{ inputs.mise-debug }}
+        PROFILE: ${{ inputs.profile }}
+      run: |
+        MISE_PATH="$(which mise)"
+        echo "MISE_PATH=$MISE_PATH" >> "$GITHUB_OUTPUT"
+        mise_bin_dir="$(dirname "$MISE_PATH")"
+        echo "MISE_BIN_DIR=$mise_bin_dir" >> "$GITHUB_OUTPUT"
+        echo "PROFILE=$PROFILE" >> "$GITHUB_OUTPUT"
