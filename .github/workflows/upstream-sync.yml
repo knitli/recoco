@@ -1,0 +1,282 @@
+# SPDX-FileCopyrightText: 2026 Knitli Inc.
+# SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+name: 🔄 Upstream Sync Monitor
+
+on:
+  schedule:
+    - cron: '0 9 * * 1' # Every Monday at 9:00 AM UTC
+  workflow_dispatch:
+
+concurrency:
+  group: upstream-sync-monitor
+  cancel-in-progress: true
+
+jobs:
+  monitor:
+    name: Check Upstream for Relevant Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Ensure 'claude' label exists
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'claude',
+              });
+              core.info("'claude' label already exists.");
+            } catch (e) {
+              if (e.status === 404) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: 'claude',
+                  color: 'CC785C',
+                  description: 'Created or actioned by Claude AI',
+                });
+                core.info("Created 'claude' label.");
+              } else {
+                throw e;
+              }
+            }
+
+      - name: Ensure 'upstream-sync' label exists
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: 'upstream-sync',
+              });
+              core.info("'upstream-sync' label already exists.");
+            } catch (e) {
+              if (e.status === 404) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: 'upstream-sync',
+                  color: '0075ca',
+                  description: 'Tracks changes from the upstream cocoindex-io/cocoindex repository',
+                });
+                core.info("Created 'upstream-sync' label.");
+              } else {
+                throw e;
+              }
+            }
+
+      - name: Run Claude Upstream Sync Analysis
+        uses: anthropics/claude-code-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are a code synchronization engineer monitoring the upstream repository
+            `cocoindex-io/cocoindex` for changes that are relevant to `knitli/recoco`.
+
+            ## Background: How recoco differs from upstream
+
+            Recoco is a pure Rust fork of CocoIndex. The critical differences are:
+
+            1. **Feature-gating**: ALL targets, sources, and transform functions MUST be
+               independently feature-gated. No unconditional dependencies on external
+               crates are permitted for any operation type.
+            2. **No Python**: Recoco has zero Python bindings, Python components, or
+               Python-related code. Python-only upstream changes are irrelevant.
+            3. **Performance focus**: Recoco uses blake3 hashing and generally prioritizes
+               performance. Upstream performance improvements are highly relevant.
+            4. **Modern dependencies**: Recoco uses the most recent versions of dependencies
+               possible, often at a major version newer than upstream.
+            5. **Pure Rust library**: Recoco is published on crates.io as a pure Rust
+               library with a public API. Changes to the public Rust API surface are
+               especially important.
+
+            ## Your Task
+
+            ### Step 1: Determine the lookback window
+
+            Find when this workflow last ran successfully by checking for the most recent
+            upstream-sync issue in this repo:
+
+            ```bash
+            gh issue list \
+              --repo knitli/recoco \
+              --label upstream-sync \
+              --state all \
+              --limit 1 \
+              --json createdAt,number,title \
+              --jq '.[0].createdAt // empty'
+            ```
+
+            If no previous issues exist, use a 30-day lookback window. Otherwise use
+            14 days (i.e., two weekly cycles). This provides a ~7-day overlap with
+            the previous run, ensuring no changes are missed if the workflow is delayed
+            or skipped for a cycle. Store this as SINCE_DATE in ISO 8601 format
+            (e.g., `2026-01-01T00:00:00Z`).
+
+            ### Step 2: Gather upstream changes
+
+            Collect the following from `cocoindex-io/cocoindex`:
+
+            **a) New releases:**
+            ```bash
+            gh release list --repo cocoindex-io/cocoindex --limit 20 --json tagName,publishedAt,name,body
+            ```
+            Filter to releases published after SINCE_DATE.
+
+            **b) Recent significant commits to the default branch:**
+            ```bash
+            gh api "repos/cocoindex-io/cocoindex/commits?since=${SINCE_DATE}&per_page=100" \
+              --jq '.[] | {sha: .sha[:8], message: .commit.message | split("\n")[0], date: .commit.author.date, url: .html_url}'
+            ```
+
+            **c) Upcoming release branches** (especially major version branches):
+            ```bash
+            gh api repos/cocoindex-io/cocoindex/branches --paginate \
+              --jq '[.[] | select(.name | test("^(v[0-9]|release/|main|master|develop)")) | .name]'
+            ```
+
+            **d) Recently merged PRs with significant scope:**
+            ```bash
+            gh pr list \
+              --repo cocoindex-io/cocoindex \
+              --state merged \
+              --limit 50 \
+              --json number,title,mergedAt,body,labels,url \
+              --jq "[.[] | select(.mergedAt >= \"${SINCE_DATE}\")]"
+            ```
+
+            ### Step 3: Check for existing tracking issues
+
+            Retrieve all existing upstream-sync issues to avoid duplicates:
+            ```bash
+            gh issue list \
+              --repo knitli/recoco \
+              --label upstream-sync \
+              --state all \
+              --limit 200 \
+              --json number,title,body
+            ```
+
+            An upstream change is already tracked if any existing issue's title or body
+            contains the upstream release tag, PR number, or commit SHA.
+
+            ### Step 4: Analyze and filter changes
+
+            For each upstream change gathered in Step 2, determine:
+
+            - **Skip entirely** if:
+              - It is Python-only (no Rust code changes)
+              - It only affects Python bindings, Python tests, or Python docs
+              - It is already tracked by an existing issue (from Step 3)
+              - It is a trivial change (typo fixes, minor doc updates with no API impact)
+
+            - **Prioritize highly** if:
+              - It is a new data source, target, or transform function (directly maps to recoco ops)
+              - It is a bug fix in core Rust logic
+              - It is a security fix
+              - It changes the public Rust API or core data types
+              - It is an architectural change to the execution engine or flow builder
+              - It is a performance improvement
+
+            - **Note but lower priority** if:
+              - It updates a dependency version
+              - It is a new feature in an area that already diverges significantly
+              - It improves documentation in ways applicable to recoco's docs
+
+            For each change that is not skipped, assess:
+            - **Type**: `bug-fix` | `new-feature` | `architectural-change` | `dependency-update` | `security-fix` | `performance` | `api-change`
+            - **Difficulty**: `Easy` | `Medium` | `Hard` | `Not-Applicable`
+              - Easy: Isolated fix or small addition, straightforward feature-gating
+              - Medium: Requires understanding multiple files, some architectural consideration
+              - Hard: Deep architectural change, significant refactoring, complex integration
+            - **Recommendation**: `Adopt` | `Adapt` | `Skip`
+              - Adopt: Apply change directly (with recoco-specific adjustments)
+              - Adapt: The concept is sound but implementation needs significant rework for recoco
+              - Skip: Not relevant or recoco already has a better approach
+
+            ### Step 5: Create issues for relevant changes
+
+            For each change that should NOT be skipped, create one GitHub issue:
+
+            ```bash
+            gh issue create \
+              --repo knitli/recoco \
+              --title "[upstream-sync] <concise description>" \
+              --label "claude,upstream-sync" \
+              --body "<body as described below>"
+            ```
+
+            **Issue body template:**
+
+            ```markdown
+            ## Upstream Change Summary
+
+            **Type:** <type>
+            **Difficulty:** <difficulty>
+            **Recommendation:** <recommendation>
+
+            <2-3 sentence summary of what changed upstream and why it matters>
+
+            ## Upstream References
+
+            - **Release/PR/Commit:** <link(s)>
+            - **Upstream repo:** https://github.com/cocoindex-io/cocoindex
+
+            ## Relevant Upstream Files / Areas
+
+            List the upstream files or modules involved (e.g., `src/ops/sources/`, `src/execution/`).
+
+            ## Recoco Considerations
+
+            Describe specifically what needs to change in recoco:
+            - Which recoco files/modules are affected
+            - Feature-gating requirements (if a new operation is added)
+            - Python-related code to exclude
+            - Version/dependency considerations
+            - Any blake3 or performance-related opportunities
+            - API surface changes that affect `recoco`'s public crate API
+
+            ## Integration Notes
+
+            Any additional context, caveats, or suggested approach for the integration.
+            ```
+
+            ### Step 6: Summarize
+
+            After processing all changes, print a brief summary to stdout:
+            - How many changes were examined
+            - How many were skipped (and why: Python-only, already tracked, trivial)
+            - How many issues were created
+            - List each issue created with its number and title
+
+            ## Important constraints
+
+            - Do NOT create duplicate issues. Always check Step 3 before creating.
+            - Do NOT create issues for Python-only changes.
+            - Be conservative: it is better to create fewer, higher-quality issues than
+              to flood the tracker with noise.
+            - Each issue must have BOTH the `claude` and `upstream-sync` labels.
+            - Issue titles must use the format `[upstream-sync] <description>` (note
+              the space after the closing bracket — this is intentional and required
+              for consistent title formatting).
+            - If the upstream has no relevant changes since SINCE_DATE, output a brief
+              summary saying so and exit cleanly without creating any issues.
