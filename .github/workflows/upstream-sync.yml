@@ -91,7 +91,7 @@ jobs:
             }
       - name: Create MCP Config
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHTOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
           cat > /tmp/mcp_config.json << 'EOF'
             {
@@ -102,7 +102,7 @@ jobs:
                   "headers": {
                     "X-MCP-Toolsets": "actions,copilot,dependabot,discussions,git,issues,labels,repos",
                     "X-MCP-Insiders": "true",
-                    "Authorization": "Bearer $GITHUB_TOKEN"
+                    "Authorization": "Bearer $GHTOKEN"
                   }
                 }
               }
@@ -112,7 +112,7 @@ jobs:
       - name: Run Claude Upstream Sync Analysis
         uses: anthropics/claude-code-action@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
