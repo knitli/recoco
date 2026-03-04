@@ -303,13 +303,15 @@ jobs:
             Any additional context, caveats, or suggested approach for the integration.
             ```
 
-            ### Step 6: Summarize
+            ### Step 6: After Action Review
 
             After processing all changes, print a brief summary to stdout:
             - How many changes were examined
             - How many were skipped (and why: Python-only, already tracked, trivial)
             - How many issues were created
             - List each issue created with its number and title
+            - Any problems or issues you encountered (i.e. permissions errors, rate limits, missing tools, firewall restrictions).
+            - Were your instructions clear? How could they be improved?
 
             ## Important constraints
 
@@ -323,3 +325,6 @@ jobs:
               for consistent title formatting).
             - If the upstream has no relevant changes since SINCE_DATE, output a brief
               summary saying so and exit cleanly without creating any issues.
+      - name: Log Session Output
+        run: |
+          cat "$HOME/work/_temp/claude-execution-output.json"
