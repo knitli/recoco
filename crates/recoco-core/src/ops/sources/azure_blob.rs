@@ -48,7 +48,7 @@ struct Executor {
     max_file_size: Option<i64>,
 }
 
-fn datetime_to_ordinal(dt: &time::OffsetDateTime) -> Ordinal {
+fn datetime_to_ordinal(dt: &azure_core::time::OffsetDateTime) -> Ordinal {
     Ordinal(Some(dt.unix_timestamp_nanos() as i64 / 1000))
 }
 
