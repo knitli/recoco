@@ -127,15 +127,20 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          show_full_output: true
           claude_args: |
-            --mcp-config '/tmp/mcp_config.json'
+            --mcp-config /tmp/mcp_config.json
             --max-turns 120
-            --allowedTools 'Bash,TaskOutput,Edit,ExitPlanMode,Glob,Grep,LS,KillShell,MCPSearch,MultiEdit,Read,Skill,Agent,TaskCreate,TaskGet,TaskList,TaskUpdate,WebFetch,WebSearch,Write,mcp__github*'
-            --show-full-output
+            --allowedTools Bash,TaskOutput,Edit,ExitPlanMode,Glob,Grep,LS,KillShell,MCPSearch,MultiEdit,Read,Skill,Agent,TaskCreate,TaskGet,TaskList,TaskUpdate,WebFetch,WebSearch,Write,mcp__github_*
           prompt: ${{ env.PROMPT }}
 
       - name: Log Session Output
         run: |
-          output="$(cat '/home/runner/work/_temp/claude-execution-output.json')"
-          echo "SESSION_OUTPUT=$output" >> "$GITHUB_ENV"
-          echo "$output"
+          output_file="/home/runner/work/_temp/claude-execution-output.json"
+          if [ -f "$output_file" ]; then
+            output="$(cat "$output_file")"
+            echo "SESSION_OUTPUT=$output" >> "$GITHUB_ENV"
+            echo "$output"
+          else
+            echo "No session output file found (Claude Code may have failed to start)"
+          fi
