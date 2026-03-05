@@ -37,7 +37,6 @@ jobs:
           profile: minimal
           skip-checkout: "true"
           upstream-agent: "true"
-          upstream-pat: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         id: setup-mise
       - name: Ensure 'claude' label exists
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # ratchet:actions/github-script@v8.0.0
@@ -90,51 +89,129 @@ jobs:
                 throw e;
               }
             }
-      - name: Create MCP Config
+
+      - name: Determine SINCE_DATE
+        id: since-date
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cat > /tmp/mcp_config.json << EOF
-          {
-            "mcpServers": {
-              "github": {
-                "type": "http",
-                "url": "https://api.githubcopilot.com/mcp/",
-                "headers": {
-                  "X-MCP-Toolsets": "actions,copilot,dependabot,discussions,git,issues,labels,repos",
-                  "X-MCP-Insiders": "true",
-                  "Authorization": "Bearer ${{ secrets.PERSONAL_ACCESS_TOKEN }}"
-                }
-              }
-            }
-          }
-          EOF
-          cat > /tmp/claude-env.sh << EOF
-          #!/bin/sh
-          export GITHUB_TOKEN=${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          EOF
-      - name: Setup Environment
-        id: env-setup
+          LAST_ISSUE_DATE=$(gh issue list \
+            --repo knitli/recoco \
+            --label upstream-sync \
+            --state all \
+            --limit 1 \
+            --json createdAt \
+            --jq '.[0].createdAt // empty' 2>/dev/null || true)
+
+          if [ -z "$LAST_ISSUE_DATE" ]; then
+            SINCE_DATE='2026-01-25T00:00:00Z'
+            BOOTSTRAPPING='true'
+          else
+            SINCE_DATE="$(date --utc --iso-8601=seconds --date='14 days ago')"
+            BOOTSTRAPPING='false'
+          fi
+
+          echo "SINCE_DATE=$SINCE_DATE" >> "$GITHUB_OUTPUT"
+          echo "BOOTSTRAPPING=$BOOTSTRAPPING" >> "$GITHUB_OUTPUT"
+          echo "Lookback window: SINCE_DATE=$SINCE_DATE (bootstrapping=$BOOTSTRAPPING)"
+
+      - name: Gather Upstream Data
+        id: gather-data
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SINCE_DATE: ${{ steps.since-date.outputs.SINCE_DATE }}
+        run: |
+          echo "--- Gathering upstream releases ---"
+          gh api "repos/cocoindex-io/cocoindex/releases?per_page=20" \
+            --jq "[.[] | select(.published_at >= \"$SINCE_DATE\") | {tagName: .tag_name, publishedAt: .published_at, name: .name, body: (.body // \"\" | .[0:1500])}]" \
+            > /tmp/upstream_releases.json 2>/dev/null || echo '[]' > /tmp/upstream_releases.json
+          echo "Releases: $(jq 'length' /tmp/upstream_releases.json)"
+
+          echo "--- Gathering upstream commits ---"
+          gh api "repos/cocoindex-io/cocoindex/commits?since=${SINCE_DATE}&per_page=100" \
+            --jq '[.[] | {sha: .sha[0:8], message: (.commit.message | split("\n")[0]), date: .commit.author.date, url: .html_url}]' \
+            > /tmp/upstream_commits.json 2>/dev/null || echo '[]' > /tmp/upstream_commits.json
+          echo "Commits: $(jq 'length' /tmp/upstream_commits.json)"
+
+          echo "--- Gathering upstream version branches ---"
+          gh api "repos/cocoindex-io/cocoindex/branches?per_page=100" \
+            --jq '[.[] | select(.name | test("^v[1-9]")) | .name]' \
+            > /tmp/upstream_branches.json 2>/dev/null || echo '[]' > /tmp/upstream_branches.json
+          echo "Version branches: $(cat /tmp/upstream_branches.json)"
+
+          echo "--- Gathering upstream merged PRs ---"
+          gh api "repos/cocoindex-io/cocoindex/pulls?state=closed&sort=updated&direction=desc&per_page=50" \
+            --jq "[.[] | select(.merged_at != null and (.merged_at >= \"$SINCE_DATE\")) | {number, title, mergedAt: .merged_at, url: .html_url, body: (.body // \"\" | .[0:1500])}]" \
+            > /tmp/upstream_prs.json 2>/dev/null || echo '[]' > /tmp/upstream_prs.json
+          echo "Merged PRs: $(jq 'length' /tmp/upstream_prs.json)"
+
+          echo "--- Gathering existing tracking issues ---"
+          gh issue list \
+            --repo knitli/recoco \
+            --label upstream-sync \
+            --state all \
+            --limit 200 \
+            --json number,title \
+            > /tmp/existing_issues.json 2>/dev/null || echo '[]' > /tmp/existing_issues.json
+          echo "Existing issues: $(jq 'length' /tmp/existing_issues.json)"
+
+      - name: Build Claude Prompt
+        env:
+          REPO: ${{ github.repository }}
+          SINCE_DATE: ${{ steps.since-date.outputs.SINCE_DATE }}
+          BOOTSTRAPPING: ${{ steps.since-date.outputs.BOOTSTRAPPING }}
         run: |
           {
             echo 'PROMPT<<UPSTREAM_PROMPT_DELIMITER'
-            printf 'REPO: %s\n\n' '${{ github.repository }}'
+            printf 'REPO: %s\n' "$REPO"
+            printf 'SINCE_DATE: %s\n' "$SINCE_DATE"
+            printf 'BOOTSTRAPPING: %s\n' "$BOOTSTRAPPING"
+            echo ''
+            echo '## PRE-FETCHED DATA'
+            echo ''
+            echo '### Upstream Releases (filtered to >= SINCE_DATE)'
+            echo '```json'
+            cat /tmp/upstream_releases.json
+            echo '```'
+            echo ''
+            echo '### Upstream Commits (since SINCE_DATE)'
+            echo '```json'
+            cat /tmp/upstream_commits.json
+            echo '```'
+            echo ''
+            echo '### Version Branches (^v[1-9] only)'
+            echo '```json'
+            cat /tmp/upstream_branches.json
+            echo '```'
+            echo ''
+            echo '### Merged PRs (merged >= SINCE_DATE)'
+            echo '```json'
+            cat /tmp/upstream_prs.json
+            echo '```'
+            echo ''
+            echo '### Existing Upstream-Sync Issues in knitli/recoco'
+            echo '```json'
+            cat /tmp/existing_issues.json
+            echo '```'
+            echo ''
+            echo '---'
+            echo ''
             cat "$GITHUB_WORKSPACE/.github/_upstream_agent_prompt.md"
-            printf '\n'
             echo 'UPSTREAM_PROMPT_DELIMITER'
           } >> "$GITHUB_ENV"
+
       - name: Run Claude Upstream Sync Analysis
         uses: anthropics/claude-code-action@v1
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          CLAUDE_ENV_FILE: '/tmp/claude-env.sh'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           show_full_output: true
           claude_args: |
-            --mcp-config /tmp/mcp_config.json
-            --max-turns 120
-            --allowedTools 'Bash,TaskOutput,Edit,ExitPlanMode,Glob,Grep,LS,KillShell,MCPSearch,MultiEdit,Read,Skill,Agent,TaskCreate,TaskGet,TaskList,TaskUpdate,WebFetch,WebSearch,Write,mcp__github_*'
+            --max-turns 50
+            --allowedTools 'Bash,WebFetch'
           prompt: ${{ env.PROMPT }}
 
       - name: Log Session Output
