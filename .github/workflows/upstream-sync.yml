@@ -112,7 +112,7 @@ jobs:
       - name: Setup Environment
         id: env-setup
         run: |
-          PROMPT_CONTENT="$(cat ./github/_upstream_agent_prompt.md)"
+          PROMPT_CONTENT="$(cat '/home/runner/work/recoco/recoco/.github/_upstream_agent_prompt.md')"
           PROMPT="REPO: ${{ github.repository }} \n\n$PROMPT_CONTENT"
           echo "PROMPT=$PROMPT" >> "$GITHUB_ENV"
       - name: Run Claude Upstream Sync Analysis
@@ -132,6 +132,6 @@ jobs:
 
       - name: Log Session Output
         run: |
-          output="$(cat "$HOME/work/_temp/claude-execution-output.json")"
+          output="$(cat '/home/runner/work/_temp/claude-execution-output.json')"
           echo "SESSION_OUTPUT=$output" >> "$GITHUB_ENV"
           echo "$output"
