@@ -95,20 +95,20 @@ jobs:
           GHTOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
           cat > /tmp/mcp_config.json << EOF
-            {
-              "mcpServers": {
-                "github": {
-                  "type": "http",
-                  "url": "https://api.githubcopilot.com/mcp/",
-                  "headers": {
-                    "X-MCP-Toolsets": "actions,copilot,dependabot,discussions,git,issues,labels,repos",
-                    "X-MCP-Insiders": "true",
-                    "Authorization": "Bearer ${GHTOKEN}"
-                  }
+          {
+            "mcpServers": {
+              "github": {
+                "type": "http",
+                "url": "https://api.githubcopilot.com/mcp/",
+                "headers": {
+                  "X-MCP-Toolsets": "actions,copilot,dependabot,discussions,git,issues,labels,repos",
+                  "X-MCP-Insiders": "true",
+                  "Authorization": "Bearer ${GHTOKEN}"
                 }
               }
             }
-            EOF
+          }
+          EOF
       - name: Setup Environment
         id: env-setup
         run: |
@@ -116,6 +116,7 @@ jobs:
             echo 'PROMPT<<UPSTREAM_PROMPT_DELIMITER'
             printf 'REPO: %s\n\n' '${{ github.repository }}'
             cat "$GITHUB_WORKSPACE/.github/_upstream_agent_prompt.md"
+            printf '\n'
             echo 'UPSTREAM_PROMPT_DELIMITER'
           } >> "$GITHUB_ENV"
       - name: Run Claude Upstream Sync Analysis
