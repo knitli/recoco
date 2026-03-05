@@ -116,8 +116,8 @@ runs:
           uv = "latest"
 
           [env]
-          MISE_GITHUB_TOKEN = ${{ inputs.github-token }}
-          GH_TOKEN = ${{ inputs.upstream-pat }}
+          MISE_GITHUB_TOKEN = "${{ inputs.github-token }}"
+          GH_TOKEN = "${{ inputs.upstream-pat }}"
     - name: Set outputs
       shell: bash
       id: mise-outputs
