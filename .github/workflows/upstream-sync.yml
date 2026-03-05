@@ -121,28 +121,44 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SINCE_DATE: ${{ steps.since-date.outputs.SINCE_DATE }}
         run: |
+          fetch() {
+            local label="$1" out="$2"; shift 2
+            if "$@" > "$out"; then
+              echo "$label: $(jq 'length' "$out")"
+            else
+              echo "WARNING: $label fetch failed (exit $?), using empty array" >&2
+              echo '[]' > "$out"
+            fi
+          }
+
           echo "--- Gathering upstream releases ---"
           gh api "repos/cocoindex-io/cocoindex/releases?per_page=20" \
-            --jq "[.[] | select(.published_at >= \"$SINCE_DATE\") | {tagName: .tag_name, publishedAt: .published_at, name: .name, body: (.body // \"\" | .[0:1500])}]" \
-            > /tmp/upstream_releases.json 2>/dev/null || echo '[]' > /tmp/upstream_releases.json
+            > /tmp/upstream_releases_raw.json
+          jq --arg since "$SINCE_DATE" \
+            '[.[] | select(.published_at >= $since) | {tagName: .tag_name, publishedAt: .published_at, name: .name, body: (.body // "" | .[:1500])}]' \
+            /tmp/upstream_releases_raw.json > /tmp/upstream_releases.json
           echo "Releases: $(jq 'length' /tmp/upstream_releases.json)"
 
           echo "--- Gathering upstream commits ---"
           gh api "repos/cocoindex-io/cocoindex/commits?since=${SINCE_DATE}&per_page=100" \
-            --jq '[.[] | {sha: .sha[0:8], message: (.commit.message | split("\n")[0]), date: .commit.author.date, url: .html_url}]' \
-            > /tmp/upstream_commits.json 2>/dev/null || echo '[]' > /tmp/upstream_commits.json
+            > /tmp/upstream_commits_raw.json
+          jq '[.[] | {sha: (.sha // "" | .[:8]), message: ((.commit.message // "") | split("\n")[0]), date: .commit.author.date, url: (.html_url // "")}]' \
+            /tmp/upstream_commits_raw.json > /tmp/upstream_commits.json
           echo "Commits: $(jq 'length' /tmp/upstream_commits.json)"
 
           echo "--- Gathering upstream version branches ---"
           gh api "repos/cocoindex-io/cocoindex/branches?per_page=100" \
-            --jq '[.[] | select(.name | test("^v[1-9]")) | .name]' \
-            > /tmp/upstream_branches.json 2>/dev/null || echo '[]' > /tmp/upstream_branches.json
+            > /tmp/upstream_branches_raw.json
+          jq '[.[] | select(.name | test("^v[1-9]")) | .name]' \
+            /tmp/upstream_branches_raw.json > /tmp/upstream_branches.json
           echo "Version branches: $(cat /tmp/upstream_branches.json)"
 
           echo "--- Gathering upstream merged PRs ---"
           gh api "repos/cocoindex-io/cocoindex/pulls?state=closed&sort=updated&direction=desc&per_page=50" \
-            --jq "[.[] | select(.merged_at != null and (.merged_at >= \"$SINCE_DATE\")) | {number, title, mergedAt: .merged_at, url: .html_url, body: (.body // \"\" | .[0:1500])}]" \
-            > /tmp/upstream_prs.json 2>/dev/null || echo '[]' > /tmp/upstream_prs.json
+            > /tmp/upstream_prs_raw.json
+          jq --arg since "$SINCE_DATE" \
+            '[.[] | select(.merged_at != null and (.merged_at >= $since)) | {number, title, mergedAt: .merged_at, url: .html_url, body: (.body // "" | .[:1500])}]' \
+            /tmp/upstream_prs_raw.json > /tmp/upstream_prs.json
           echo "Merged PRs: $(jq 'length' /tmp/upstream_prs.json)"
 
           echo "--- Gathering existing tracking issues ---"
@@ -152,7 +168,7 @@ jobs:
             --state all \
             --limit 200 \
             --json number,title \
-            > /tmp/existing_issues.json 2>/dev/null || echo '[]' > /tmp/existing_issues.json
+            > /tmp/existing_issues.json || echo '[]' > /tmp/existing_issues.json
           echo "Existing issues: $(jq 'length' /tmp/existing_issues.json)"
 
       - name: Build Claude Prompt
