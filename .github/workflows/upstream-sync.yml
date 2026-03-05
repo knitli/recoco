@@ -91,8 +91,6 @@ jobs:
               }
             }
       - name: Create MCP Config
-        env:
-          GHTOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
         run: |
           cat > /tmp/mcp_config.json << EOF
           {
@@ -103,11 +101,15 @@ jobs:
                 "headers": {
                   "X-MCP-Toolsets": "actions,copilot,dependabot,discussions,git,issues,labels,repos",
                   "X-MCP-Insiders": "true",
-                  "Authorization": "Bearer ${GHTOKEN}"
+                  "Authorization": "Bearer ${{ secrets.PERSONAL_ACCESS_TOKEN }}"
                 }
               }
             }
           }
+          EOF
+          cat > /tmp/claude-env.sh << EOF
+          #!/bin/sh
+          export GITHUB_TOKEN=${{ secrets.PERSONAL_ACCESS_TOKEN }}
           EOF
       - name: Setup Environment
         id: env-setup
@@ -124,6 +126,7 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          CLAUDE_ENV_FILE: '/tmp/claude-env.sh'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
