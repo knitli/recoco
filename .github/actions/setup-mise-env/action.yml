@@ -30,6 +30,10 @@ inputs:
     description: Whether this is for the upstream sync agent
     required: false
     default: "false"
+  upstream-pat:
+    description: Personal Access Token for upstream sync agent
+    required: false
+    default: ""
 
 outputs:
   # MISE_PATH is typically in uppercase and may be case sensitive in some environments
@@ -102,6 +106,7 @@ runs:
         MISE_EXPERIMENTAL: 1
         MISE_VERBOSE: ${{ inputs.mise-debug }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
+        UPSTREAM_PAT: ${{ inputs.upstream-pat }}
       with:
         github_token: ${{ inputs.github-token }}
         experimental: true
@@ -116,8 +121,7 @@ runs:
 
           [env]
           MISE_GITHUB_TOKEN = "$GITHUB_TOKEN"
-          GITHUB_TOKEN = "$GITHUB_TOKEN"
-          GH_TOKEN = "$GITHUB_TOKEN"
+          GH_TOKEN = "$UPSTREAM_PAT"
     - name: Set outputs
       shell: bash
       id: mise-outputs
