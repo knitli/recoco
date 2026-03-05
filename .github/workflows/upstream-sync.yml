@@ -131,7 +131,7 @@ jobs:
           claude_args: |
             --mcp-config /tmp/mcp_config.json
             --max-turns 120
-            --allowedTools Bash,TaskOutput,Edit,ExitPlanMode,Glob,Grep,LS,KillShell,MCPSearch,MultiEdit,Read,Skill,Agent,TaskCreate,TaskGet,TaskList,TaskUpdate,WebFetch,WebSearch,Write,mcp__github_*
+            --allowedTools 'Bash,TaskOutput,Edit,ExitPlanMode,Glob,Grep,LS,KillShell,MCPSearch,MultiEdit,Read,Skill,Agent,TaskCreate,TaskGet,TaskList,TaskUpdate,WebFetch,WebSearch,Write,mcp__github_*'
           prompt: ${{ env.PROMPT }}
 
       - name: Log Session Output
