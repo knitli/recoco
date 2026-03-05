@@ -115,7 +115,7 @@ jobs:
           {
             echo 'PROMPT<<UPSTREAM_PROMPT_DELIMITER'
             printf 'REPO: %s\n\n' '${{ github.repository }}'
-            cat '/home/runner/work/recoco/recoco/.github/_upstream_agent_prompt.md'
+            cat "$GITHUB_WORKSPACE/.github/_upstream_agent_prompt.md"
             echo 'UPSTREAM_PROMPT_DELIMITER'
           } >> "$GITHUB_ENV"
       - name: Run Claude Upstream Sync Analysis
