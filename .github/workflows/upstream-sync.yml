@@ -218,9 +218,7 @@ jobs:
         run: |
           output_file="/home/runner/work/_temp/claude-execution-output.json"
           if [ -f "$output_file" ]; then
-            output="$(cat "$output_file")"
-            echo "SESSION_OUTPUT=$output" >> "$GITHUB_ENV"
-            echo "$output"
+            cat "$output_file"
           else
             echo "No session output file found (Claude Code may have failed to start)"
           fi

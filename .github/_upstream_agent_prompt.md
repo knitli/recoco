@@ -43,7 +43,10 @@ workflow steps have already done this work. The provided data includes:
 
 ### Bootstrapping Mode
 
-If `BOOTSTRAPPING` is `true`:
+If `BOOTSTRAPPING` is `true` and all upstream data arrays are empty, output a
+brief summary saying so and exit cleanly without creating any issues.
+
+Otherwise, if there are relevant changes:
 
 1. Create a **single summary issue** covering all relevant changes in the
    provided data.
