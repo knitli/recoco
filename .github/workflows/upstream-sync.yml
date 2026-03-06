@@ -126,7 +126,6 @@ jobs:
         run: |
           echo "SINCE_DATE: ${{ steps.since-date.outputs.SINCE_DATE }}"
           echo "BOOTSTRAPPING: ${{ steps.since-date.outputs.BOOTSTRAPPING }}"
-        id: since-date
 
       - name: Gather Upstream Data
         id: gather-data
