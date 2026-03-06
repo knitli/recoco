@@ -95,13 +95,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LAST_ISSUE_DATE=$(gh issue list \
+          auth_status="$(gh auth status)"
+          echo "$auth_status"
+          LAST_ISSUE_DATE="$(gh issue list \
             --repo knitli/recoco \
             --label upstream-sync \
             --state all \
             --limit 1 \
             --json createdAt \
-            --jq '.[0].createdAt // empty' 2>/dev/null || true)
+            --jq '.[0].createdAt // empty' 2>/dev/null || true)"
 
           if [ -z "$LAST_ISSUE_DATE" ]; then
             SINCE_DATE='2026-01-25T00:00:00Z'
