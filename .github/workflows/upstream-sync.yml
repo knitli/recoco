@@ -93,7 +93,7 @@ jobs:
       - name: Determine SINCE_DATE
         id: since-date
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           LAST_ISSUE_DATE="$(gh issue list \
             --repo knitli/recoco \
@@ -118,7 +118,7 @@ jobs:
       - name: Gather Upstream Data
         id: gather-data
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           SINCE_DATE: ${{ steps.since-date.outputs.SINCE_DATE }}
         run: |
           fetch() {
@@ -220,9 +220,9 @@ jobs:
         uses: anthropics/claude-code-action@v1
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ github.token }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           show_full_output: true
           claude_args: |
