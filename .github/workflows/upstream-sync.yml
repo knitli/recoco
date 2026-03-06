@@ -118,7 +118,7 @@ jobs:
               core.setOutput('SINCE_DATE', sinceDate);
               core.setOutput('BOOTSTRAPPING', bootstrapping);
               core.info(`SINCE_DATE=${sinceDate} (bootstrapping=${bootstrapping})`);
-            } catch (error) {
+            }.catch (error) {
               core.setFailed(`Error determining SINCE_DATE: ${error.message}`);
             }
 
