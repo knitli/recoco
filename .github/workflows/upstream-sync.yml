@@ -95,7 +95,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          auth_status="$(gh auth status)"
+          auth_status="$(gh auth status 2&>/dev/null)"
           echo "$auth_status"
           LAST_ISSUE_DATE="$(gh issue list \
             --repo knitli/recoco \
