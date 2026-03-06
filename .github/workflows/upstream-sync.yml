@@ -89,87 +89,153 @@ jobs:
                 throw e;
               }
             }
-
-      - name: Determine SINCE_DATE
+      - name: Determine SINCE_DATE and BOOTSTRAPPING status
         id: since-date
-        env:
-          GH_TOKEN: ${{ github.token }}
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+        with:
+          github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          script: |
+            try {
+              const { data: issues } = await github.rest.issues.listForRepo({
+                owner: 'knitli',
+                repo: 'recoco',
+                labels: 'upstream-sync',
+                state: 'all',
+                per_page: 1,
+                sort: 'created',
+                direction: 'desc',
+              });
+
+              let sinceDate, bootstrapping;
+              if (issues.length === 0) {
+                sinceDate = '2026-01-25T00:00:00Z';
+                bootstrapping = 'true';
+              } else {
+                sinceDate = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+                bootstrapping = 'false';
+              }
+
+              core.setOutput('SINCE_DATE', sinceDate);
+              core.setOutput('BOOTSTRAPPING', bootstrapping);
+              core.info(`SINCE_DATE=${sinceDate} (bootstrapping=${bootstrapping})`);
+            } catch (error) {
+              core.setFailed(`Error determining SINCE_DATE: ${error.message}`);
+            }
+
+      - name: Echo SINCE_DATE and BOOTSTRAPPING
         run: |
-          LAST_ISSUE_DATE="$(GH_TOKEN=${{ github.token }} gh issue list \
-            --repo knitli/recoco \
-            --label upstream-sync \
-            --state all \
-            --limit 1 \
-            --json createdAt \
-            --jq '.[0].createdAt // empty' 2>/dev/null || true)"
-
-          if [ -z "$LAST_ISSUE_DATE" ]; then
-            SINCE_DATE='2026-01-25T00:00:00Z'
-            BOOTSTRAPPING='true'
-          else
-            SINCE_DATE="$(date --utc --iso-8601=seconds --date='14 days ago')"
-            BOOTSTRAPPING='false'
-          fi
-
-          echo "SINCE_DATE=$SINCE_DATE" >> "$GITHUB_OUTPUT"
-          echo "BOOTSTRAPPING=$BOOTSTRAPPING" >> "$GITHUB_OUTPUT"
-          echo "Lookback window: SINCE_DATE=$SINCE_DATE (bootstrapping=$BOOTSTRAPPING)"
+          echo "SINCE_DATE: ${{ steps.since-date.outputs.SINCE_DATE }}"
+          echo "BOOTSTRAPPING: ${{ steps.since-date.outputs.BOOTSTRAPPING }}"
+        id: since-date
 
       - name: Gather Upstream Data
         id: gather-data
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
         env:
-          GH_TOKEN: ${{ github.token }}
           SINCE_DATE: ${{ steps.since-date.outputs.SINCE_DATE }}
-        run: |
-          fetch() {
-            local label="$1" out="$2"; shift 2
-            if "$@" > "$out"; then
-              echo "$label: $(jq 'length' "$out")"
-            else
-              echo "WARNING: $label fetch failed (exit $?), using empty array" >&2
-              echo '[]' > "$out"
-            fi
-          }
+        with:
+          github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          script: |
+            try {
+              // Get upstream releases
+              const releasesResponse = await github.rest.repos.listReleases({
+                owner: 'cocoindex-io',
+                repo: 'cocoindex',
+                per_page: 20,
+              });
+              let releases = releasesResponse.data.filter(release => new Date(release.published_at) >= new Date(process.env.SINCE_DATE)).map(release => ({
+                tagName: release.tag_name,
+                publishedAt: release.published_at,
+                name: release.name,
+                body: release.body ? release.body.substring(0, 1500) : '',
+              }));
+              core.info(`Releases: ${releases.length}`);
+            }.catch (error) {
+              core.warning(`Error fetching releases: ${error.message}`);
+              releases = [];
+            });
+              try {
+                // Get upstream commits
+                const commitsResponse = await github.rest.repos.listCommits({
+                  owner: 'cocoindex-io',
+                  repo: 'cocoindex',
+                  since: process.env.SINCE_DATE,
+                  per_page: 100,
+                });
+                let commits = commitsResponse.data.map(commit => ({
+                  sha: commit.sha ? commit.sha.substring(0, 8) : '',
+                  message: commit.commit.message ? commit.commit.message.split('\n')[0] : '',
+                  date: commit.commit.author.date,
+                  url: commit.html_url || '',
+                }));
+                core.info(`Commits: ${commits.length}`);
+              }.catch (error) {
+                core.warning(`Error fetching commits: ${error.message}`);
+                commits = [];
+              });
 
-          echo "--- Gathering upstream releases ---"
-          GH_TOKEN=${{ github.token }} gh api "repos/cocoindex-io/cocoindex/releases?per_page=20" \
-            > /tmp/upstream_releases_raw.json
-          jq --arg since "$SINCE_DATE" \
-            '[.[] | select(.published_at >= $since) | {tagName: .tag_name, publishedAt: .published_at, name: .name, body: (.body // "" | .[:1500])}]' \
-            /tmp/upstream_releases_raw.json > /tmp/upstream_releases.json
-          echo "Releases: $(jq 'length' /tmp/upstream_releases.json)"
+              try {
+                // Get upstream version branches
+                const branchesResponse = await github.rest.repos.listBranches({
+                  owner: 'cocoindex-io',
+                  repo: 'cocoindex',
+                  per_page: 100,
+                });
+                let versionBranches = branchesResponse.data.filter(branch => /^v[1-9]/.test(branch.name)).map(branch => branch.name);
+                core.info(`Version branches: ${versionBranches.join(', ')}`);
+              }.catch (error) {
+                core.warning(`Error fetching branches: ${error.message}`);
+                versionBranches = [];
+              });
 
-          echo "--- Gathering upstream commits ---"
-          GH_TOKEN=${{ github.token }} gh api "repos/cocoindex-io/cocoindex/commits?since=${SINCE_DATE}&per_page=100" \
-            > /tmp/upstream_commits_raw.json
-          jq '[.[] | {sha: (.sha // "" | .[:8]), message: ((.commit.message // "") | split("\n")[0]), date: .commit.author.date, url: (.html_url // "")}]' \
-            /tmp/upstream_commits_raw.json > /tmp/upstream_commits.json
-          echo "Commits: $(jq 'length' /tmp/upstream_commits.json)"
+              try {
+                // Get merged PRs
+                const prsResponse = await github.rest.pulls.list({
+                  owner: 'cocoindex-io',
+                  repo: 'cocoindex',
+                  state: 'closed',
+                  sort: 'updated',
+                  direction: 'desc',
+                  per_page: 50,
+                });
+                let mergedPRs = prsResponse.data.filter(pr => pr.merged_at && new Date(pr.merged_at) >= new Date(process.env.SINCE_DATE)).map(pr => ({
+                  number: pr.number,
+                  title: pr.title,
+                  mergedAt: pr.merged_at,
+                  url: pr.html_url,
+                  body: pr.body ? pr.body.substring(0, 1500) : '',
+                }));
+                core.info(`Merged PRs: ${mergedPRs.length}`);
+              }.catch (error) {
+                core.warning(`Error fetching PRs: ${error.message}`);
+                mergedPRs = [];
+              });
 
-          echo "--- Gathering upstream version branches ---"
-          GH_TOKEN=${{ github.token }} gh api "repos/cocoindex-io/cocoindex/branches?per_page=100" \
-            > /tmp/upstream_branches_raw.json
-          jq '[.[] | select(.name | test("^v[1-9]")) | .name]' \
-            /tmp/upstream_branches_raw.json > /tmp/upstream_branches.json
-          echo "Version branches: $(cat /tmp/upstream_branches.json)"
-
-          echo "--- Gathering upstream merged PRs ---"
-          GH_TOKEN=${{ github.token }} gh api "repos/cocoindex-io/cocoindex/pulls?state=closed&sort=updated&direction=desc&per_page=50" \
-            > /tmp/upstream_prs_raw.json
-          jq --arg since "$SINCE_DATE" \
-            '[.[] | select(.merged_at != null and (.merged_at >= $since)) | {number, title, mergedAt: .merged_at, url: .html_url, body: (.body // "" | .[:1500])}]' \
-            /tmp/upstream_prs_raw.json > /tmp/upstream_prs.json
-          echo "Merged PRs: $(jq 'length' /tmp/upstream_prs.json)"
-
-          echo "--- Gathering existing tracking issues ---"
-          GH_TOKEN=${{ github.token }} gh issue list \
-            --repo knitli/recoco \
-            --label upstream-sync \
-            --state all \
-            --limit 200 \
-            --json number,title \
-            > /tmp/existing_issues.json || echo '[]' > /tmp/existing_issues.json
-          echo "Existing issues: $(jq 'length' /tmp/existing_issues.json)"
+              try {
+                // Get existing tracking issues
+                const issuesResponse = await github.rest.issues.listForRepo({
+                  owner: 'knitli',
+                  repo: 'recoco',
+                  labels: 'upstream-sync',
+                  state: 'all',
+                  per_page: 200,
+                });
+                let existingIssues = issuesResponse.data.map(issue => ({
+                  number: issue.number,
+                  title: issue.title,
+                }));
+                core.info(`Existing issues: ${existingIssues.length}`);
+              }.catch (error) {
+                core.warning(`Error fetching existing issues: ${error.message}`);
+                existingIssues = [];
+              });
+              // Save data to files for next steps
+              const fs = require('fs');
+              fs.writeFileSync('/tmp/upstream_releases.json', JSON.stringify(releases));
+              fs.writeFileSync('/tmp/upstream_commits.json', JSON.stringify(commits));
+              fs.writeFileSync('/tmp/upstream_branches.json', JSON.stringify(versionBranches));
+              fs.writeFileSync('/tmp/upstream_prs.json', JSON.stringify(mergedPRs));
+              fs.writeFileSync('/tmp/existing_issues.json', JSON.stringify(existingIssues));
 
       - name: Build Claude Prompt
         env:
@@ -220,9 +286,9 @@ jobs:
         uses: anthropics/claude-code-action@v1
         continue-on-error: true
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          github_token: ${{ github.token }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           show_full_output: true
           claude_args: |
