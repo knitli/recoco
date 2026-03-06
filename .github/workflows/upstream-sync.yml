@@ -135,6 +135,7 @@ jobs:
         with:
           github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           script: |
+            const fs = require('fs');
             try {
               // Get upstream releases
               const releasesResponse = await github.rest.repos.listReleases({
@@ -149,9 +150,10 @@ jobs:
                 body: release.body ? release.body.substring(0, 1500) : '',
               }));
               core.info(`Releases: ${releases.length}`);
+              fs.writeFileSync('/tmp/upstream_releases.json', JSON.stringify(releases));
             } catch (error) {
               core.warning(`Error fetching releases: ${error.message}`);
-              const releases = [];
+              fs.writeFileSync('/tmp/upstream_releases.json', "[]");
             };
             try {
               // Get upstream commits
@@ -168,9 +170,10 @@ jobs:
                 url: commit.html_url || '',
               }));
               core.info(`Commits: ${commits.length}`);
+              fs.writeFileSync('/tmp/upstream_commits.json', JSON.stringify(commits));
             } catch (error) {
               core.warning(`Error fetching commits: ${error.message}`);
-              const commits = [];
+              fs.writeFileSync('/tmp/upstream_commits.json', "[]");
             };
             try {
               // Get upstream version branches
@@ -181,9 +184,10 @@ jobs:
               });
               const versionBranches = branchesResponse.data.filter(branch => /^v[1-9]/.test(branch.name)).map(branch => branch.name);
               core.info(`Version branches: ${versionBranches.join(', ')}`);
+              fs.writeFileSync('/tmp/upstream_branches.json', JSON.stringify(versionBranches));
             } catch (error) {
               core.warning(`Error fetching branches: ${error.message}`);
-              const versionBranches = [];
+              fs.writeFileSync('/tmp/upstream_branches.json', "[]");
             };
             try {
               // Get merged PRs
@@ -203,9 +207,10 @@ jobs:
                 body: pr.body ? pr.body.substring(0, 1500) : '',
               }));
               core.info(`Merged PRs: ${mergedPRs.length}`);
+              fs.writeFileSync('/tmp/upstream_prs.json', JSON.stringify(mergedPRs));
             } catch (error) {
               core.warning(`Error fetching PRs: ${error.message}`);
-              const mergedPRs = [];
+              fs.writeFileSync('/tmp/upstream_prs.json', "[]");
             };
             try {
               // Get existing tracking issues
@@ -221,17 +226,11 @@ jobs:
                 title: issue.title,
               }));
               core.info(`Existing issues: ${existingIssues.length}`);
+              fs.writeFileSync('/tmp/existing_issues.json', JSON.stringify(existingIssues));
             } catch (error) {
               core.warning(`Error fetching existing issues: ${error.message}`);
-              const existingIssues = [];
+              fs.writeFileSync('/tmp/existing_issues.json', "[]");
             };
-            // Save data to files for next steps
-            const fs = require('fs');
-            fs.writeFileSync('/tmp/upstream_releases.json', JSON.stringify(releases));
-            fs.writeFileSync('/tmp/upstream_commits.json', JSON.stringify(commits));
-            fs.writeFileSync('/tmp/upstream_branches.json', JSON.stringify(versionBranches));
-            fs.writeFileSync('/tmp/upstream_prs.json', JSON.stringify(mergedPRs));
-            fs.writeFileSync('/tmp/existing_issues.json', JSON.stringify(existingIssues));
 
       - name: Build Claude Prompt
         env:
