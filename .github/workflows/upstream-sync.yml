@@ -95,7 +95,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          LAST_ISSUE_DATE="$(gh issue list \
+          LAST_ISSUE_DATE="$(GH_TOKEN=${{ github.token }} gh issue list \
             --repo knitli/recoco \
             --label upstream-sync \
             --state all \
@@ -132,7 +132,7 @@ jobs:
           }
 
           echo "--- Gathering upstream releases ---"
-          gh api "repos/cocoindex-io/cocoindex/releases?per_page=20" \
+          GH_TOKEN=${{ github.token }} gh api "repos/cocoindex-io/cocoindex/releases?per_page=20" \
             > /tmp/upstream_releases_raw.json
           jq --arg since "$SINCE_DATE" \
             '[.[] | select(.published_at >= $since) | {tagName: .tag_name, publishedAt: .published_at, name: .name, body: (.body // "" | .[:1500])}]' \
@@ -140,21 +140,21 @@ jobs:
           echo "Releases: $(jq 'length' /tmp/upstream_releases.json)"
 
           echo "--- Gathering upstream commits ---"
-          gh api "repos/cocoindex-io/cocoindex/commits?since=${SINCE_DATE}&per_page=100" \
+          GH_TOKEN=${{ github.token }} gh api "repos/cocoindex-io/cocoindex/commits?since=${SINCE_DATE}&per_page=100" \
             > /tmp/upstream_commits_raw.json
           jq '[.[] | {sha: (.sha // "" | .[:8]), message: ((.commit.message // "") | split("\n")[0]), date: .commit.author.date, url: (.html_url // "")}]' \
             /tmp/upstream_commits_raw.json > /tmp/upstream_commits.json
           echo "Commits: $(jq 'length' /tmp/upstream_commits.json)"
 
           echo "--- Gathering upstream version branches ---"
-          gh api "repos/cocoindex-io/cocoindex/branches?per_page=100" \
+          GH_TOKEN=${{ github.token }} gh api "repos/cocoindex-io/cocoindex/branches?per_page=100" \
             > /tmp/upstream_branches_raw.json
           jq '[.[] | select(.name | test("^v[1-9]")) | .name]' \
             /tmp/upstream_branches_raw.json > /tmp/upstream_branches.json
           echo "Version branches: $(cat /tmp/upstream_branches.json)"
 
           echo "--- Gathering upstream merged PRs ---"
-          gh api "repos/cocoindex-io/cocoindex/pulls?state=closed&sort=updated&direction=desc&per_page=50" \
+          GH_TOKEN=${{ github.token }} gh api "repos/cocoindex-io/cocoindex/pulls?state=closed&sort=updated&direction=desc&per_page=50" \
             > /tmp/upstream_prs_raw.json
           jq --arg since "$SINCE_DATE" \
             '[.[] | select(.merged_at != null and (.merged_at >= $since)) | {number, title, mergedAt: .merged_at, url: .html_url, body: (.body // "" | .[:1500])}]' \
@@ -162,7 +162,7 @@ jobs:
           echo "Merged PRs: $(jq 'length' /tmp/upstream_prs.json)"
 
           echo "--- Gathering existing tracking issues ---"
-          gh issue list \
+          GH_TOKEN=${{ github.token }} gh issue list \
             --repo knitli/recoco \
             --label upstream-sync \
             --state all \
