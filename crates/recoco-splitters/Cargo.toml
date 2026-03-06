@@ -34,7 +34,7 @@ tree-sitter-javascript = { version = "0.23.1", optional = true }
 tree-sitter-json = { version = "0.24.8", optional = true }
 # The other more popular crate tree-sitter-kotlin requires tree-sitter < 0.23 for now
 tree-sitter-kotlin-ng = { version = "1.1.0", optional = true }
-tree-sitter-language = { version = "0.1.5" }
+tree-sitter-language = { version = "0.1.7" }
 tree-sitter-md = { version = "0.5.1", optional = true }
 tree-sitter-pascal = { version = "0.10.0", optional = true }
 tree-sitter-php = { version = "0.23.11", optional = true }
