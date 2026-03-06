@@ -101,7 +101,7 @@ schemars = "1.2.0"
 serde = { version = "1.0.228", features = ["derive", "rc"] }
 serde_json = "1.0.149"
 serde_path_to_error = "0.1.20"
-serde_with = { version = "3.16.1", features = ["base64"] }
+serde_with = { version = "3.17.0", features = ["base64"] }
 sqlx = { version = "0.8.6", features = [
   "chrono",
   "postgres",
