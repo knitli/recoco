@@ -142,7 +142,7 @@ jobs:
                 repo: 'cocoindex',
                 per_page: 20,
               });
-              let releases = releasesResponse.data.filter(release => new Date(release.published_at) >= new Date(process.env.SINCE_DATE)).map(release => ({
+              const releases = releasesResponse.data.filter(release => new Date(release.published_at) >= new Date(process.env.SINCE_DATE)).map(release => ({
                 tagName: release.tag_name,
                 publishedAt: release.published_at,
                 name: release.name,
@@ -151,7 +151,7 @@ jobs:
               core.info(`Releases: ${releases.length}`);
             } catch (error) {
               core.warning(`Error fetching releases: ${error.message}`);
-              releases = [];
+              const releases = [];
             };
             try {
               // Get upstream commits
@@ -161,7 +161,7 @@ jobs:
                 since: process.env.SINCE_DATE,
                 per_page: 100,
               });
-              let commits = commitsResponse.data.map(commit => ({
+              const commits = commitsResponse.data.map(commit => ({
                 sha: commit.sha ? commit.sha.substring(0, 8) : '',
                 message: commit.commit.message ? commit.commit.message.split('\n')[0] : '',
                 date: commit.commit.author.date,
@@ -170,7 +170,7 @@ jobs:
               core.info(`Commits: ${commits.length}`);
             } catch (error) {
               core.warning(`Error fetching commits: ${error.message}`);
-              commits = [];
+              const commits = [];
             };
             try {
               // Get upstream version branches
@@ -179,11 +179,11 @@ jobs:
                 repo: 'cocoindex',
                 per_page: 100,
               });
-              let versionBranches = branchesResponse.data.filter(branch => /^v[1-9]/.test(branch.name)).map(branch => branch.name);
+              const versionBranches = branchesResponse.data.filter(branch => /^v[1-9]/.test(branch.name)).map(branch => branch.name);
               core.info(`Version branches: ${versionBranches.join(', ')}`);
             } catch (error) {
               core.warning(`Error fetching branches: ${error.message}`);
-              versionBranches = [];
+              const versionBranches = [];
             };
             try {
               // Get merged PRs
@@ -195,7 +195,7 @@ jobs:
                 direction: 'desc',
                 per_page: 50,
               });
-              let mergedPRs = prsResponse.data.filter(pr => pr.merged_at && new Date(pr.merged_at) >= new Date(process.env.SINCE_DATE)).map(pr => ({
+              const mergedPRs = prsResponse.data.filter(pr => pr.merged_at && new Date(pr.merged_at) >= new Date(process.env.SINCE_DATE)).map(pr => ({
                 number: pr.number,
                 title: pr.title,
                 mergedAt: pr.merged_at,
@@ -205,7 +205,7 @@ jobs:
               core.info(`Merged PRs: ${mergedPRs.length}`);
             } catch (error) {
               core.warning(`Error fetching PRs: ${error.message}`);
-              mergedPRs = [];
+              const mergedPRs = [];
             };
             try {
               // Get existing tracking issues
@@ -216,14 +216,14 @@ jobs:
                 state: 'all',
                 per_page: 200,
               });
-              let existingIssues = issuesResponse.data.map(issue => ({
+              const existingIssues = issuesResponse.data.map(issue => ({
                 number: issue.number,
                 title: issue.title,
               }));
               core.info(`Existing issues: ${existingIssues.length}`);
             } catch (error) {
               core.warning(`Error fetching existing issues: ${error.message}`);
-              existingIssues = [];
+              const existingIssues = [];
             };
             // Save data to files for next steps
             const fs = require('fs');
