@@ -118,7 +118,7 @@ jobs:
               core.setOutput('SINCE_DATE', sinceDate);
               core.setOutput('BOOTSTRAPPING', bootstrapping);
               core.info(`SINCE_DATE=${sinceDate} (bootstrapping=${bootstrapping})`);
-            }.catch (error) {
+            } catch (error) {
               core.setFailed(`Error determining SINCE_DATE: ${error.message}`);
             }
 
@@ -149,92 +149,89 @@ jobs:
                 body: release.body ? release.body.substring(0, 1500) : '',
               }));
               core.info(`Releases: ${releases.length}`);
-            }.catch (error) {
+            } catch (error) {
               core.warning(`Error fetching releases: ${error.message}`);
               releases = [];
-            });
-              try {
-                // Get upstream commits
-                const commitsResponse = await github.rest.repos.listCommits({
-                  owner: 'cocoindex-io',
-                  repo: 'cocoindex',
-                  since: process.env.SINCE_DATE,
-                  per_page: 100,
-                });
-                let commits = commitsResponse.data.map(commit => ({
-                  sha: commit.sha ? commit.sha.substring(0, 8) : '',
-                  message: commit.commit.message ? commit.commit.message.split('\n')[0] : '',
-                  date: commit.commit.author.date,
-                  url: commit.html_url || '',
-                }));
-                core.info(`Commits: ${commits.length}`);
-              }.catch (error) {
-                core.warning(`Error fetching commits: ${error.message}`);
-                commits = [];
+            };
+            try {
+              // Get upstream commits
+              const commitsResponse = await github.rest.repos.listCommits({
+                owner: 'cocoindex-io',
+                repo: 'cocoindex',
+                since: process.env.SINCE_DATE,
+                per_page: 100,
               });
-
-              try {
-                // Get upstream version branches
-                const branchesResponse = await github.rest.repos.listBranches({
-                  owner: 'cocoindex-io',
-                  repo: 'cocoindex',
-                  per_page: 100,
-                });
-                let versionBranches = branchesResponse.data.filter(branch => /^v[1-9]/.test(branch.name)).map(branch => branch.name);
-                core.info(`Version branches: ${versionBranches.join(', ')}`);
-              }.catch (error) {
-                core.warning(`Error fetching branches: ${error.message}`);
-                versionBranches = [];
+              let commits = commitsResponse.data.map(commit => ({
+                sha: commit.sha ? commit.sha.substring(0, 8) : '',
+                message: commit.commit.message ? commit.commit.message.split('\n')[0] : '',
+                date: commit.commit.author.date,
+                url: commit.html_url || '',
+              }));
+              core.info(`Commits: ${commits.length}`);
+            } catch (error) {
+              core.warning(`Error fetching commits: ${error.message}`);
+              commits = [];
+            };
+            try {
+              // Get upstream version branches
+              const branchesResponse = await github.rest.repos.listBranches({
+                owner: 'cocoindex-io',
+                repo: 'cocoindex',
+                per_page: 100,
               });
-
-              try {
-                // Get merged PRs
-                const prsResponse = await github.rest.pulls.list({
-                  owner: 'cocoindex-io',
-                  repo: 'cocoindex',
-                  state: 'closed',
-                  sort: 'updated',
-                  direction: 'desc',
-                  per_page: 50,
-                });
-                let mergedPRs = prsResponse.data.filter(pr => pr.merged_at && new Date(pr.merged_at) >= new Date(process.env.SINCE_DATE)).map(pr => ({
-                  number: pr.number,
-                  title: pr.title,
-                  mergedAt: pr.merged_at,
-                  url: pr.html_url,
-                  body: pr.body ? pr.body.substring(0, 1500) : '',
-                }));
-                core.info(`Merged PRs: ${mergedPRs.length}`);
-              }.catch (error) {
-                core.warning(`Error fetching PRs: ${error.message}`);
-                mergedPRs = [];
+              let versionBranches = branchesResponse.data.filter(branch => /^v[1-9]/.test(branch.name)).map(branch => branch.name);
+              core.info(`Version branches: ${versionBranches.join(', ')}`);
+            } catch (error) {
+              core.warning(`Error fetching branches: ${error.message}`);
+              versionBranches = [];
+            };
+            try {
+              // Get merged PRs
+              const prsResponse = await github.rest.pulls.list({
+                owner: 'cocoindex-io',
+                repo: 'cocoindex',
+                state: 'closed',
+                sort: 'updated',
+                direction: 'desc',
+                per_page: 50,
               });
-
-              try {
-                // Get existing tracking issues
-                const issuesResponse = await github.rest.issues.listForRepo({
-                  owner: 'knitli',
-                  repo: 'recoco',
-                  labels: 'upstream-sync',
-                  state: 'all',
-                  per_page: 200,
-                });
-                let existingIssues = issuesResponse.data.map(issue => ({
-                  number: issue.number,
-                  title: issue.title,
-                }));
-                core.info(`Existing issues: ${existingIssues.length}`);
-              }.catch (error) {
-                core.warning(`Error fetching existing issues: ${error.message}`);
-                existingIssues = [];
+              let mergedPRs = prsResponse.data.filter(pr => pr.merged_at && new Date(pr.merged_at) >= new Date(process.env.SINCE_DATE)).map(pr => ({
+                number: pr.number,
+                title: pr.title,
+                mergedAt: pr.merged_at,
+                url: pr.html_url,
+                body: pr.body ? pr.body.substring(0, 1500) : '',
+              }));
+              core.info(`Merged PRs: ${mergedPRs.length}`);
+            } catch (error) {
+              core.warning(`Error fetching PRs: ${error.message}`);
+              mergedPRs = [];
+            };
+            try {
+              // Get existing tracking issues
+              const issuesResponse = await github.rest.issues.listForRepo({
+                owner: 'knitli',
+                repo: 'recoco',
+                labels: 'upstream-sync',
+                state: 'all',
+                per_page: 200,
               });
-              // Save data to files for next steps
-              const fs = require('fs');
-              fs.writeFileSync('/tmp/upstream_releases.json', JSON.stringify(releases));
-              fs.writeFileSync('/tmp/upstream_commits.json', JSON.stringify(commits));
-              fs.writeFileSync('/tmp/upstream_branches.json', JSON.stringify(versionBranches));
-              fs.writeFileSync('/tmp/upstream_prs.json', JSON.stringify(mergedPRs));
-              fs.writeFileSync('/tmp/existing_issues.json', JSON.stringify(existingIssues));
+              let existingIssues = issuesResponse.data.map(issue => ({
+                number: issue.number,
+                title: issue.title,
+              }));
+              core.info(`Existing issues: ${existingIssues.length}`);
+            } catch (error) {
+              core.warning(`Error fetching existing issues: ${error.message}`);
+              existingIssues = [];
+            };
+            // Save data to files for next steps
+            const fs = require('fs');
+            fs.writeFileSync('/tmp/upstream_releases.json', JSON.stringify(releases));
+            fs.writeFileSync('/tmp/upstream_commits.json', JSON.stringify(commits));
+            fs.writeFileSync('/tmp/upstream_branches.json', JSON.stringify(versionBranches));
+            fs.writeFileSync('/tmp/upstream_prs.json', JSON.stringify(mergedPRs));
+            fs.writeFileSync('/tmp/existing_issues.json', JSON.stringify(existingIssues));
 
       - name: Build Claude Prompt
         env:
