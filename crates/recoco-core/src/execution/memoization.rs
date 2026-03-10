@@ -264,3 +264,118 @@ where
     };
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::base::schema;
+    use serde_json::json;
+
+    fn test_fingerprint() -> Fingerprint {
+        Fingerprint([0u8; 16])
+    }
+
+    fn make_stored_info_with_str(fp: Fingerprint, str_value: &str) -> StoredMemoizationInfo {
+        let mut cache = HashMap::new();
+        cache.insert(
+            fp,
+            StoredCacheEntry {
+                time_sec: 1_700_000_000,
+                value: json!(str_value),
+            },
+        );
+        StoredMemoizationInfo {
+            cache,
+            uuids: HashMap::new(),
+            content_hash: None,
+        }
+    }
+
+    #[test]
+    fn cache_hit_when_stored_info_present() {
+        // Verifies that EvaluationMemory returns pre-populated cached values from StoredMemoizationInfo.
+        let fp = test_fingerprint();
+        let stored_info = make_stored_info_with_str(fp, "cached_value");
+        let memory = EvaluationMemory::new(
+            chrono::Utc::now(),
+            Some(stored_info),
+            EvaluationMemoryOptions {
+                enable_cache: true,
+                evaluation_only: false,
+            },
+        );
+
+        let str_type = schema::ValueType::Basic(schema::BasicValueType::Str);
+        let cell = memory
+            .get_cache_entry(|| Ok(fp), &str_type, None)
+            .unwrap()
+            .expect("should return a cache entry cell on hit");
+
+        // A cache hit from stored data means the cell is already initialized.
+        assert!(
+            cell.get().is_some(),
+            "cache entry should be pre-initialized from stored data"
+        );
+        if let Some(Ok(value::Value::Basic(value::BasicValue::Str(s)))) = cell.get() {
+            assert_eq!(s.as_ref(), "cached_value");
+        } else {
+            panic!("expected cached str value 'cached_value'");
+        }
+    }
+
+    #[test]
+    fn clearing_stored_cache_before_construction_bypasses_stale_entries() {
+        // Simulates the full_reprocess path in row_indexer::update_source_row:
+        // when full_reprocess is set, stored_info.cache.clear() is called before
+        // passing the info to EvaluationMemory::new, so no stale cached values
+        // are returned during re-evaluation.
+        let fp = test_fingerprint();
+        let mut stored_info = make_stored_info_with_str(fp, "stale_cached_value");
+
+        // This is the fix: clear the stored cache before constructing EvaluationMemory,
+        // mirroring the upstream full_reprocess guard.
+        stored_info.cache.clear();
+
+        let memory = EvaluationMemory::new(
+            chrono::Utc::now(),
+            Some(stored_info),
+            EvaluationMemoryOptions {
+                enable_cache: true,
+                evaluation_only: false,
+            },
+        );
+
+        let str_type = schema::ValueType::Basic(schema::BasicValueType::Str);
+        let cell = memory
+            .get_cache_entry(|| Ok(fp), &str_type, None)
+            .unwrap()
+            .expect("should return a cache entry cell even on miss");
+
+        // Cache miss: the cell is uninitialized — the stale stored value was not used.
+        assert!(
+            cell.get().is_none(),
+            "cache entry must not be pre-initialized when stored cache was cleared (full_reprocess)"
+        );
+    }
+
+    #[test]
+    fn cache_disabled_returns_none() {
+        // Verifies that get_cache_entry returns None when enable_cache is false.
+        let memory = EvaluationMemory::new(
+            chrono::Utc::now(),
+            None,
+            EvaluationMemoryOptions {
+                enable_cache: false,
+                evaluation_only: true,
+            },
+        );
+        let str_type = schema::ValueType::Basic(schema::BasicValueType::Str);
+        let result = memory
+            .get_cache_entry(|| Ok(test_fingerprint()), &str_type, None)
+            .unwrap();
+        assert!(
+            result.is_none(),
+            "get_cache_entry should return None when cache is disabled"
+        );
+    }
+}
