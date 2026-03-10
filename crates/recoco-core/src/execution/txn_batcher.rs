@@ -42,7 +42,7 @@ impl Runner for PgTxnRunner {
         let mut outputs = Vec::with_capacity(inputs.len());
         let mut txn = self.pool.begin().await?;
         for body in inputs {
-            outputs.push(body(&mut txn).await?);
+            outputs.push(body(&mut *txn).await?);
         }
         txn.commit().await?;
         Ok(outputs.into_iter())
