@@ -68,6 +68,7 @@ jobs:
               - '**/*.rs'
               - '**/Cargo.toml'
               - '**/Cargo.lock'
+              - '.cargo/**'
               - '.github/workflows/ci.yml'
             core:
               - 'crates/recoco/**'
