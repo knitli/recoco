@@ -32,7 +32,7 @@ pub struct ServerSettings {
 pub async fn init_server(
     lib_context: Arc<LibContext>,
     settings: ServerSettings,
-) -> Result<BoxFuture<'static, ()>> {
+) -> Result<BoxFuture<'static, Result<()>>> {
     let mut cors = CorsLayer::default();
     if !settings.cors_origins.is_empty() {
         let origins: Vec<_> = settings
@@ -104,7 +104,7 @@ pub async fn init_server(
         "Server running at http://{}/cocoindex",
         listener.local_addr()?
     );
-    let serve_fut = async { axum::serve(listener, app).await.unwrap() };
+    let serve_fut = async { axum::serve(listener, app).await.map_err(Error::from) };
     Ok(serve_fut.boxed())
 }
 
