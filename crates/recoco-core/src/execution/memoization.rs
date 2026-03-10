@@ -275,12 +275,19 @@ mod tests {
         Fingerprint([0u8; 16])
     }
 
+    /// Fixed evaluation timestamp used across all tests to keep them deterministic.
+    fn test_now() -> chrono::DateTime<chrono::Utc> {
+        chrono::DateTime::from_timestamp(1_700_000_100, 0).unwrap()
+    }
+
+    /// Build a `StoredMemoizationInfo` whose single cache entry timestamp aligns with
+    /// `test_now()`, so TTL logic (if ever introduced) doesn't interfere.
     fn make_stored_info_with_str(fp: Fingerprint, str_value: &str) -> StoredMemoizationInfo {
         let mut cache = HashMap::new();
         cache.insert(
             fp,
             StoredCacheEntry {
-                time_sec: 1_700_000_000,
+                time_sec: test_now().timestamp(),
                 value: json!(str_value),
             },
         );
@@ -297,7 +304,7 @@ mod tests {
         let fp = test_fingerprint();
         let stored_info = make_stored_info_with_str(fp, "cached_value");
         let memory = EvaluationMemory::new(
-            chrono::Utc::now(),
+            test_now(),
             Some(stored_info),
             EvaluationMemoryOptions {
                 enable_cache: true,
@@ -311,15 +318,12 @@ mod tests {
             .unwrap()
             .expect("should return a cache entry cell on hit");
 
-        // A cache hit from stored data means the cell is already initialized.
-        assert!(
-            cell.get().is_some(),
-            "cache entry should be pre-initialized from stored data"
-        );
-        if let Some(Ok(value::Value::Basic(value::BasicValue::Str(s)))) = cell.get() {
-            assert_eq!(s.as_ref(), "cached_value");
-        } else {
-            panic!("expected cached str value 'cached_value'");
+        // A cache hit from stored data means the cell is already initialized with the cached value.
+        match cell.get() {
+            Some(Ok(value::Value::Basic(value::BasicValue::Str(s)))) => {
+                assert_eq!(s.as_ref(), "cached_value");
+            }
+            other => panic!("expected cached str value 'cached_value', got {other:?}"),
         }
     }
 
@@ -337,7 +341,7 @@ mod tests {
         stored_info.cache.clear();
 
         let memory = EvaluationMemory::new(
-            chrono::Utc::now(),
+            test_now(),
             Some(stored_info),
             EvaluationMemoryOptions {
                 enable_cache: true,
@@ -362,7 +366,7 @@ mod tests {
     fn cache_disabled_returns_none() {
         // Verifies that get_cache_entry returns None when enable_cache is false.
         let memory = EvaluationMemory::new(
-            chrono::Utc::now(),
+            test_now(),
             None,
             EvaluationMemoryOptions {
                 enable_cache: false,
