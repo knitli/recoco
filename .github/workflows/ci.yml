@@ -11,25 +11,167 @@ permissions:
 on:
   push:
     branches: ["main"]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'site/**'
+      - 'assets/**'
+      - 'LICENSE'
+      - 'NOTICE.md'
   pull_request:
     branches: ["main"]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'site/**'
+      - 'assets/**'
+      - 'LICENSE'
+      - 'NOTICE.md'
   workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      rust: ${{ steps.filter.outputs.rust }}
+      core: ${{ steps.filter.outputs.core }}
+      source_postgres: ${{ steps.filter.outputs.source_postgres }}
+      source_s3: ${{ steps.filter.outputs.source_s3 }}
+      source_azure: ${{ steps.filter.outputs.source_azure }}
+      source_gdrive: ${{ steps.filter.outputs.source_gdrive }}
+      target_postgres: ${{ steps.filter.outputs.target_postgres }}
+      target_qdrant: ${{ steps.filter.outputs.target_qdrant }}
+      target_neo4j: ${{ steps.filter.outputs.target_neo4j }}
+      target_kuzu: ${{ steps.filter.outputs.target_kuzu }}
+      function_split: ${{ steps.filter.outputs.function_split }}
+      function_embed: ${{ steps.filter.outputs.function_embed }}
+      function_extract_llm: ${{ steps.filter.outputs.function_extract_llm }}
+      function_detect_lang: ${{ steps.filter.outputs.function_detect_lang }}
+      function_json: ${{ steps.filter.outputs.function_json }}
+      test_matrix: ${{ steps.matrix.outputs.test_matrix }}
+      feature_matrix: ${{ steps.matrix.outputs.feature_matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            rust:
+              - '**/*.rs'
+              - '**/Cargo.toml'
+              - '**/Cargo.lock'
+              - '.cargo/**'
+              - '.github/workflows/ci.yml'
+            core:
+              - 'crates/recoco/**'
+              - 'crates/recoco-utils/**'
+              - 'crates/recoco-splitters/**'
+              - 'crates/recoco-core/src/base/**'
+              - 'crates/recoco-core/src/builder/**'
+              - 'crates/recoco-core/src/execution/**'
+              - 'crates/recoco-core/src/llm/**'
+              - 'crates/recoco-core/src/service/**'
+              - 'crates/recoco-core/src/setup/**'
+              - 'crates/recoco-core/src/ops/mod.rs'
+              - 'crates/recoco-core/src/ops/sources/mod.rs'
+              - 'crates/recoco-core/src/ops/sources/shared/**'
+              - 'crates/recoco-core/src/ops/targets/mod.rs'
+              - 'crates/recoco-core/src/ops/targets/shared/**'
+              - 'crates/recoco-core/src/ops/functions/mod.rs'
+              - 'crates/recoco-core/src/ops/functions/test_utils.rs'
+              - 'crates/recoco-core/src/ops/interface.rs'
+              - 'crates/recoco-core/src/ops/registry.rs'
+              - 'crates/recoco-core/src/ops/sdk.rs'
+              - 'crates/recoco-core/src/*.rs'
+              - 'crates/recoco-core/Cargo.toml'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - '.github/workflows/ci.yml'
+            source_postgres:
+              - 'crates/recoco-core/src/ops/sources/postgres.rs'
+            source_s3:
+              - 'crates/recoco-core/src/ops/sources/amazon_s3.rs'
+            source_azure:
+              - 'crates/recoco-core/src/ops/sources/azure_blob.rs'
+            source_gdrive:
+              - 'crates/recoco-core/src/ops/sources/google_drive.rs'
+            target_postgres:
+              - 'crates/recoco-core/src/ops/targets/postgres.rs'
+            target_qdrant:
+              - 'crates/recoco-core/src/ops/targets/qdrant.rs'
+            target_neo4j:
+              - 'crates/recoco-core/src/ops/targets/neo4j.rs'
+            target_kuzu:
+              - 'crates/recoco-core/src/ops/targets/kuzu.rs'
+            function_split:
+              - 'crates/recoco-core/src/ops/functions/split_*.rs'
+            function_embed:
+              - 'crates/recoco-core/src/ops/functions/embed_*.rs'
+            function_extract_llm:
+              - 'crates/recoco-core/src/ops/functions/extract_*.rs'
+            function_detect_lang:
+              - 'crates/recoco-core/src/ops/functions/detect_*.rs'
+            function_json:
+              - 'crates/recoco-core/src/ops/functions/parse_*.rs'
+
+      - name: Generate Matrices
+        id: matrix
+        run: |
+          if [[ "${{ steps.filter.outputs.core }}" == "true" ]]; then
+            echo 'test_matrix=["", "full", "all-sources", "all-targets", "all-functions"]' >> $GITHUB_OUTPUT
+            echo 'feature_matrix=[{"features":"source-postgres"},{"features":"source-s3"},{"features":"source-azure"},{"features":"source-gdrive"},{"features":"target-postgres"},{"features":"target-qdrant"},{"features":"target-neo4j"},{"features":"target-kuzu"},{"features":"function-split"},{"features":"function-embed"},{"features":"function-extract-llm"},{"features":"function-detect-lang"},{"features":"function-json"},{"features":"source-postgres,target-postgres"},{"features":"function-split,function-embed"},{"features":"source-local-file,function-split,target-qdrant"}]' >> $GITHUB_OUTPUT
+          else
+            # Build matrices dynamically
+            TESTS='[""]'
+            FEATURES='[]'
+
+            # Map outputs to bundle features for the tests job
+            if [[ "${{ steps.filter.outputs.source_postgres }}" == "true" ]] || [[ "${{ steps.filter.outputs.source_s3 }}" == "true" ]] || [[ "${{ steps.filter.outputs.source_azure }}" == "true" ]] || [[ "${{ steps.filter.outputs.source_gdrive }}" == "true" ]]; then
+              TESTS=$(echo "$TESTS" | jq '. + ["all-sources"]')
+            fi
+            if [[ "${{ steps.filter.outputs.target_postgres }}" == "true" ]] || [[ "${{ steps.filter.outputs.target_qdrant }}" == "true" ]] || [[ "${{ steps.filter.outputs.target_neo4j }}" == "true" ]] || [[ "${{ steps.filter.outputs.target_kuzu }}" == "true" ]]; then
+              TESTS=$(echo "$TESTS" | jq '. + ["all-targets"]')
+            fi
+            if [[ "${{ steps.filter.outputs.function_split }}" == "true" ]] || [[ "${{ steps.filter.outputs.function_embed }}" == "true" ]] || [[ "${{ steps.filter.outputs.function_extract_llm }}" == "true" ]] || [[ "${{ steps.filter.outputs.function_detect_lang }}" == "true" ]] || [[ "${{ steps.filter.outputs.function_json }}" == "true" ]]; then
+              TESTS=$(echo "$TESTS" | jq '. + ["all-functions"]')
+            fi
+
+            # Individual feature combinations
+            [[ "${{ steps.filter.outputs.source_postgres }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-postgres"}, {"features":"source-postgres,target-postgres"}]')
+            [[ "${{ steps.filter.outputs.source_s3 }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-s3"}]')
+            [[ "${{ steps.filter.outputs.source_azure }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-azure"}]')
+            [[ "${{ steps.filter.outputs.source_gdrive }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-gdrive"}]')
+
+            [[ "${{ steps.filter.outputs.target_postgres }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"target-postgres"}, {"features":"source-postgres,target-postgres"}]')
+            [[ "${{ steps.filter.outputs.target_qdrant }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"target-qdrant"}, {"features":"source-local-file,function-split,target-qdrant"}]')
+            [[ "${{ steps.filter.outputs.target_neo4j }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"target-neo4j"}]')
+            [[ "${{ steps.filter.outputs.target_kuzu }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"target-kuzu"}]')
+
+            [[ "${{ steps.filter.outputs.function_split }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"function-split"}, {"features":"function-split,function-embed"}, {"features":"source-local-file,function-split,target-qdrant"}]')
+            [[ "${{ steps.filter.outputs.function_embed }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"function-embed"}, {"features":"function-split,function-embed"}]')
+            [[ "${{ steps.filter.outputs.function_extract_llm }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"function-extract-llm"}]')
+            [[ "${{ steps.filter.outputs.function_detect_lang }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"function-detect-lang"}]')
+            [[ "${{ steps.filter.outputs.function_json }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"function-json"}]')
+
+            # Ensure unique feature combinations
+            FEATURES=$(echo "$FEATURES" | jq 'unique')
+
+            echo "test_matrix=$(echo "$TESTS" | jq -c .)" >> $GITHUB_OUTPUT
+            echo "feature_matrix=$(echo "$FEATURES" | jq -c .)" >> $GITHUB_OUTPUT
+          fi
+
   test:
     name: Test
+    needs: changes
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.core == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        features:
-          - "" # Default
-          - "full"
-          - "all-sources"
-          - "all-targets"
-          - "all-functions"
+        features: ${{ fromJson(needs.changes.outputs.test_matrix) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -48,6 +190,8 @@ jobs:
 
   lint:
     name: Lint & Format
+    needs: changes
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.core == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +212,8 @@ jobs:
 
   msrv:
     name: MSRV (1.89)
+    needs: changes
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.core == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -83,31 +229,13 @@ jobs:
 
   feature-combinations:
     name: Feature Combinations
+    needs: changes
+    if: needs.changes.outputs.feature_matrix != '[]' && needs.changes.outputs.feature_matrix != ''
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Individual sources
-          - features: "source-postgres"
-          - features: "source-s3"
-          - features: "source-azure"
-          - features: "source-gdrive"
-          # Individual targets
-          - features: "target-postgres"
-          - features: "target-qdrant"
-          - features: "target-neo4j"
-          - features: "target-kuzu"
-          # Individual functions
-          - features: "function-split"
-          - features: "function-embed"
-          - features: "function-extract-llm"
-          - features: "function-detect-lang"
-          - features: "function-json"
-          # Common combinations
-          - features: "source-postgres,target-postgres"
-          - features: "function-split,function-embed"
-          - features: "source-local-file,function-split,target-qdrant"
+        include: ${{ fromJson(needs.changes.outputs.feature_matrix) }}
 
     steps:
       - uses: actions/checkout@v4
@@ -127,6 +255,8 @@ jobs:
 
   docs:
     name: Documentation
+    needs: changes
+    if: needs.changes.outputs.rust == 'true' || needs.changes.outputs.core == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
