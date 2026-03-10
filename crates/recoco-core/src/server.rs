@@ -104,7 +104,11 @@ pub async fn init_server(
         "Server running at http://{}/cocoindex",
         listener.local_addr()?
     );
-    let serve_fut = async { axum::serve(listener, app).await.unwrap() };
+    let serve_fut = async {
+        if let Err(err) = axum::serve(listener, app).await {
+            error!("Server error: {err}");
+        }
+    };
     Ok(serve_fut.boxed())
 }
 
