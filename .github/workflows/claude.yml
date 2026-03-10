@@ -73,7 +73,6 @@ jobs:
           claude_args: |
             --max-turns 100
             --allowedTools Bash,TaskOutput,Batch,Glob,Grep,MCPSearch,Read,Skill,TaskCreate,TaskGet,TaskList,TaskUpdate,WebFetch,WebSearch,mcp__context7__get-library-docs,mcp__context7__resolve-library-id,mcp__sequential-thinking__sequentialthinking,mcp__github_ci__get_workflow_run_details,mcp__codeweaver__find_code,
-            --mcp-config .mcp.json
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
@@ -107,7 +106,6 @@ jobs:
           claude_args: |
             --max-turns 100
             --allowedTools Bash,TaskOutput,Edit,Glob,Grep,KillShell,MCPSearch,Read,Skill,Agent,TaskCreate,TaskGet,TaskList,TaskUpdate,WebFetch,WebSearch,Write,mcp__context7__get-library-docs,mcp__context7__resolve-library-id,mcp__sequential-thinking__sequentialthinking,mcp__github_ci__get_workflow_run_details,mcp__codeweaver__find_code,WebFetch,WebSearch
-            --mcp-config .mcp.json
           prompt: |
             REPO: ${{ github.repository }}
             ISSUE NUMBER: ${{ github.event.issue.number }}
@@ -140,7 +138,6 @@ jobs:
           claude_args: |
             --max-turns 50
             --allowedTools Bash,TaskOutput,Glob,Grep,KillShell,MCPSearch,Read,Skill,Agent,TaskCreate,TaskGet,TaskList,TaskUpdate,WebFetch,WebSearch,mcp__context7__get-library-docs,mcp__context7__resolve-library-id,mcp__sequential-thinking__sequentialthinking,mcp__github_ci__get_workflow_run_details,mcp__codeweaver__find_code,WebFetch,WebSearch
-            --mcp-config .mcp.json
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
@@ -181,7 +178,6 @@ jobs:
           claude_args: |
             --max-turns 200
             --allowedTools Bash,TaskOutput,Edit,ExitPlanMode,Glob,Grep,KillShell,MCPSearch,Read,Skill,Agent,TaskCreate,TaskGet,TaskList,TaskUpdate,WebFetch,WebSearch,Write,mcp__context7__get-library-docs,mcp__context7__resolve-library-id,mcp__sequential-thinking__sequentialthinking,mcp__github_ci__get_workflow_run_details,mcp__codeweaver__find_code,WebFetch,WebSearch
-            --mcp-config .mcp.json
           prompt: |
             REPO: ${{ github.repository }}
             ISSUE/PR NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}

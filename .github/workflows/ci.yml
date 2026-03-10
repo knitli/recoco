@@ -7,13 +7,12 @@ name: Recoco CI
 
 permissions:
   contents: read
-  pull-requests: read
 
 on:
   push:
     branches: ["main"]
     paths-ignore:
-      - '**/*.md'
+      - '**.md'
       - 'docs/**'
       - 'site/**'
       - 'assets/**'
@@ -22,7 +21,7 @@ on:
   pull_request:
     branches: ["main"]
     paths-ignore:
-      - '**/*.md'
+      - '**.md'
       - 'docs/**'
       - 'site/**'
       - 'assets/**'
@@ -44,7 +43,6 @@ jobs:
       source_s3: ${{ steps.filter.outputs.source_s3 }}
       source_azure: ${{ steps.filter.outputs.source_azure }}
       source_gdrive: ${{ steps.filter.outputs.source_gdrive }}
-      source_local_file: ${{ steps.filter.outputs.source_local_file }}
       target_postgres: ${{ steps.filter.outputs.target_postgres }}
       target_qdrant: ${{ steps.filter.outputs.target_qdrant }}
       target_neo4j: ${{ steps.filter.outputs.target_neo4j }}
@@ -58,8 +56,6 @@ jobs:
       feature_matrix: ${{ steps.matrix.outputs.feature_matrix }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -96,8 +92,6 @@ jobs:
               - '.github/workflows/ci.yml'
             source_postgres:
               - 'crates/recoco-core/src/ops/sources/postgres.rs'
-            source_local_file:
-              - 'crates/recoco-core/src/ops/sources/local_file.rs'
             source_s3:
               - 'crates/recoco-core/src/ops/sources/amazon_s3.rs'
             source_azure:
@@ -135,7 +129,7 @@ jobs:
             FEATURES='[]'
 
             # Map outputs to bundle features for the tests job
-            if [[ "${{ steps.filter.outputs.source_postgres }}" == "true" ]] || [[ "${{ steps.filter.outputs.source_s3 }}" == "true" ]] || [[ "${{ steps.filter.outputs.source_azure }}" == "true" ]] || [[ "${{ steps.filter.outputs.source_gdrive }}" == "true" ]] || [[ "${{ steps.filter.outputs.source_local_file }}" == "true" ]]; then
+            if [[ "${{ steps.filter.outputs.source_postgres }}" == "true" ]] || [[ "${{ steps.filter.outputs.source_s3 }}" == "true" ]] || [[ "${{ steps.filter.outputs.source_azure }}" == "true" ]] || [[ "${{ steps.filter.outputs.source_gdrive }}" == "true" ]]; then
               TESTS=$(echo "$TESTS" | jq '. + ["all-sources"]')
             fi
             if [[ "${{ steps.filter.outputs.target_postgres }}" == "true" ]] || [[ "${{ steps.filter.outputs.target_qdrant }}" == "true" ]] || [[ "${{ steps.filter.outputs.target_neo4j }}" == "true" ]] || [[ "${{ steps.filter.outputs.target_kuzu }}" == "true" ]]; then
@@ -147,7 +141,6 @@ jobs:
 
             # Individual feature combinations
             [[ "${{ steps.filter.outputs.source_postgres }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-postgres"}, {"features":"source-postgres,target-postgres"}]')
-            [[ "${{ steps.filter.outputs.source_local_file }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-local-file,function-split,target-qdrant"}]')
             [[ "${{ steps.filter.outputs.source_s3 }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-s3"}]')
             [[ "${{ steps.filter.outputs.source_azure }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-azure"}]')
             [[ "${{ steps.filter.outputs.source_gdrive }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-gdrive"}]')
