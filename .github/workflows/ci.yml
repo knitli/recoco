@@ -147,7 +147,7 @@ jobs:
 
             # Individual feature combinations
             [[ "${{ steps.filter.outputs.source_postgres }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-postgres"}, {"features":"source-postgres,target-postgres"}]')
-            [[ "${{ steps.filter.outputs.source_local_file }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-local-file"}, {"features":"source-local-file,function-split,target-qdrant"}]')
+            [[ "${{ steps.filter.outputs.source_local_file }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-local-file,function-split,target-qdrant"}]')
             [[ "${{ steps.filter.outputs.source_s3 }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-s3"}]')
             [[ "${{ steps.filter.outputs.source_azure }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-azure"}]')
             [[ "${{ steps.filter.outputs.source_gdrive }}" == "true" ]] && FEATURES=$(echo "$FEATURES" | jq '. + [{"features":"source-gdrive"}]')
