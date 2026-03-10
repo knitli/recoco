@@ -510,8 +510,8 @@ fn to_column_type_sql(column_type: &ValueType) -> String {
 
 fn qualified_table_name(table_id: &TableId) -> String {
     match &table_id.schema {
-        Some(schema) => format!("\"{}\".{}", schema, table_id.table_name),
-        None => table_id.table_name.clone(),
+        Some(schema) => format!("\"{}\".\"{}\"", schema, table_id.table_name),
+        None => format!("\"{}\"", table_id.table_name),
     }
 }
 
@@ -838,15 +838,27 @@ impl TargetFactoryBase for TargetFactory {
                     );
                 }
 
+                let table_name = d.spec.table_name.unwrap_or_else(|| {
+                    utils::db::sanitize_identifier(&format!(
+                        "{}__{}",
+                        context.flow_instance_name, d.name
+                    ))
+                });
+
+                // Validate table name
+                utils::db::validate_identifier(&table_name, "table name")
+                    .map_err(|e| client_error!("{}", e))?;
+
+                // Validate schema name if specified
+                if let Some(ref schema_name) = d.spec.schema {
+                    utils::db::validate_identifier(schema_name, "schema name")
+                        .map_err(|e| client_error!("{}", e))?;
+                }
+
                 let table_id = TableId {
                     database: d.spec.database.clone(),
                     schema: d.spec.schema.clone(),
-                    table_name: d.spec.table_name.unwrap_or_else(|| {
-                        utils::db::sanitize_identifier(&format!(
-                            "{}__{}",
-                            context.flow_instance_name, d.name
-                        ))
-                    }),
+                    table_name,
                 };
                 let setup_state = SetupState::new(
                     &table_id,

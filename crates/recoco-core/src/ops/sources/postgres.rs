@@ -846,6 +846,24 @@ impl SourceFactoryBase for Factory {
         spec: &Spec,
         context: &FlowInstanceContext,
     ) -> Result<EnrichedValueType> {
+        // Validate table name early to provide clear error messages
+        utils::db::validate_identifier(&spec.table_name, "table name")
+            .map_err(|e| client_error!("{}", e))?;
+
+        // Validate column names if specified
+        if let Some(cols) = &spec.included_columns {
+            for col in cols {
+                utils::db::validate_identifier(col, "column name")
+                    .map_err(|e| client_error!("{}", e))?;
+            }
+        }
+
+        // Validate ordinal column name if specified
+        if let Some(ord_col) = &spec.ordinal_column {
+            utils::db::validate_identifier(ord_col, "ordinal column name")
+                .map_err(|e| client_error!("{}", e))?;
+        }
+
         // Fetch table schema to build dynamic output schema
         let db_pool = get_db_pool(spec.database.as_ref(), &context.auth_registry).await?;
         let table_schema = fetch_table_schema(
@@ -881,6 +899,24 @@ impl SourceFactoryBase for Factory {
         spec: Spec,
         context: Arc<FlowInstanceContext>,
     ) -> Result<Box<dyn SourceExecutor>> {
+        // Validate table name early to provide clear error messages
+        utils::db::validate_identifier(&spec.table_name, "table name")
+            .map_err(|e| client_error!("{}", e))?;
+
+        // Validate column names if specified
+        if let Some(cols) = &spec.included_columns {
+            for col in cols {
+                utils::db::validate_identifier(col, "column name")
+                    .map_err(|e| client_error!("{}", e))?;
+            }
+        }
+
+        // Validate ordinal column name if specified
+        if let Some(ord_col) = &spec.ordinal_column {
+            utils::db::validate_identifier(ord_col, "ordinal column name")
+                .map_err(|e| client_error!("{}", e))?;
+        }
+
         let db_pool = get_db_pool(spec.database.as_ref(), &context.auth_registry).await?;
 
         // Fetch table schema for dynamic type handling

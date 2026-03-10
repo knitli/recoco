@@ -371,6 +371,43 @@ pub fn analyze_graph_mappings<'a, AuthEntry: 'a>(
     let data_coll_inputs: Vec<_> = data_coll_inputs.collect();
     let decls: Vec<_> = declarations.collect();
 
+    // Validate all labels and property names early
+    for d in &data_coll_inputs {
+        match d.mapping {
+            GraphElementMapping::Node(node_spec) => {
+                utils::db::validate_identifier(&node_spec.label, "node label")
+                    .map_err(|e| client_error!("{}", e))?;
+            }
+            GraphElementMapping::Relationship(rel_spec) => {
+                utils::db::validate_identifier(&rel_spec.rel_type, "relationship type")
+                    .map_err(|e| client_error!("{}", e))?;
+                utils::db::validate_identifier(&rel_spec.source.label, "source node label")
+                    .map_err(|e| client_error!("{}", e))?;
+                utils::db::validate_identifier(&rel_spec.target.label, "target node label")
+                    .map_err(|e| client_error!("{}", e))?;
+
+                // Validate field names
+                for field_mapping in &rel_spec.source.fields {
+                    if let Some(ref target) = field_mapping.target {
+                        utils::db::validate_identifier(target, "target property name")
+                            .map_err(|e| client_error!("{}", e))?;
+                    }
+                }
+                for field_mapping in &rel_spec.target.fields {
+                    if let Some(ref target) = field_mapping.target {
+                        utils::db::validate_identifier(target, "target property name")
+                            .map_err(|e| client_error!("{}", e))?;
+                    }
+                }
+            }
+        }
+    }
+
+    for (_, decl) in &decls {
+        utils::db::validate_identifier(&decl.nodes_label, "nodes label")
+            .map_err(|e| client_error!("{}", e))?;
+    }
+
     // 1a. Prepare graph element types
     let graph_elem_types = data_coll_inputs
         .iter()
