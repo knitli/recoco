@@ -23,7 +23,7 @@ fn build_glob_set(patterns: Vec<String>) -> Result<GlobSet> {
 }
 
 /// Pattern matcher that handles include and exclude patterns for files
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PatternMatcher {
     /// Patterns matching full path of files to be included.
     included_glob_set: Option<GlobSet>,

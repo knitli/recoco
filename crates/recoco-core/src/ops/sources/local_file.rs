@@ -28,6 +28,7 @@ pub struct Spec {
     included_patterns: Option<Vec<String>>,
     excluded_patterns: Option<Vec<String>>,
     max_file_size: Option<i64>,
+    watch_changes: Option<bool>,
 }
 
 struct Executor {
@@ -35,6 +36,7 @@ struct Executor {
     binary: bool,
     pattern_matcher: PatternMatcher,
     max_file_size: Option<i64>,
+    watch_changes: bool,
 }
 
 async fn ensure_metadata<'a>(
@@ -189,6 +191,72 @@ impl SourceExecutor for Executor {
     fn provides_ordinal(&self) -> bool {
         true
     }
+
+    async fn change_stream(
+        &self,
+    ) -> Result<Option<BoxStream<'async_trait, Result<SourceChangeMessage>>>> {
+        if !self.watch_changes {
+            return Ok(None);
+        }
+
+        use notify::{Config, RecommendedWatcher, RecursiveMode, Watcher};
+        use tokio::sync::mpsc;
+
+        let root_path = self.root_path.clone();
+        let root_component_size = root_path.components().count();
+        let pattern_matcher = self.pattern_matcher.clone();
+
+        let (tx, mut rx) = mpsc::channel::<PathBuf>(100);
+
+        let mut watcher = RecommendedWatcher::new(
+            move |res: notify::Result<notify::Event>| {
+                if let Ok(event) = res {
+                    for path in event.paths {
+                        let _ = tx.blocking_send(path);
+                    }
+                }
+            },
+            Config::default(),
+        )
+        .map_err(|e| anyhow::anyhow!("Failed to create file watcher: {}", e))?;
+
+        watcher
+            .watch(&root_path, RecursiveMode::Recursive)
+            .map_err(|e| anyhow::anyhow!("Failed to watch path: {}", e))?;
+
+        let stream = async_stream::stream! {
+            // Keep the watcher alive for the duration of the stream
+            let _watcher = watcher;
+
+            while let Some(path) = rx.recv().await {
+                let mut path_components = path.components();
+                for _ in 0..root_component_size {
+                    path_components.next();
+                }
+                let Some(relative_path) = path_components.as_path().to_str() else {
+                    continue;
+                };
+
+                // Filter through pattern matcher
+                if pattern_matcher.is_file_included(relative_path) {
+                    yield Ok(SourceChangeMessage {
+                        changes: vec![SourceChange {
+                            key: KeyValue::from_single_part(relative_path.to_string()),
+                            key_aux_info: serde_json::Value::Null,
+                            data: PartialSourceRowData {
+                                ordinal: None,
+                                content_version_fp: None,
+                                value: None,
+                            },
+                        }],
+                        ack_fn: None,
+                    });
+                }
+            }
+        };
+
+        Ok(Some(stream.boxed()))
+    }
 }
 
 pub struct Factory;
@@ -242,6 +310,7 @@ impl SourceFactoryBase for Factory {
             binary: spec.binary,
             pattern_matcher: PatternMatcher::new(spec.included_patterns, spec.excluded_patterns)?,
             max_file_size: spec.max_file_size,
+            watch_changes: spec.watch_changes.unwrap_or(false),
         }))
     }
 }
