@@ -10,7 +10,7 @@
 // Both the upstream CocoIndex code and the Recoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
-#[cfg(feature = "batching")]
+#[cfg(any(feature = "batching", feature = "batching-core"))]
 pub mod batching;
 #[cfg(feature = "concur_control")]
 pub mod concur_control;

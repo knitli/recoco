@@ -169,6 +169,7 @@ persistence = [
   "dep:sqlx",
   "dep:urlencoding",
   "dep:yaml-rust2",
+  "recoco-utils/batching-core",
   "recoco-utils/retryable",
   "recoco-utils/sqlx",
   "recoco-utils/yaml",

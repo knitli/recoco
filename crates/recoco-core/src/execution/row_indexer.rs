@@ -196,6 +196,7 @@ pub struct RowIndexer<'a> {
     update_stats: &'a stats::UpdateStats,
     operation_in_process_stats: Option<&'a stats::OperationInProcessStats>,
     pool: &'a PgPool,
+    txn_batcher: &'a super::txn_batcher::PgTxnBatcher,
 
     source_id: i32,
     process_time: chrono::DateTime<chrono::Utc>,
@@ -215,6 +216,7 @@ impl<'a> RowIndexer<'a> {
         update_stats: &'a stats::UpdateStats,
         operation_in_process_stats: Option<&'a stats::OperationInProcessStats>,
         pool: &'a PgPool,
+        txn_batcher: &'a super::txn_batcher::PgTxnBatcher,
     ) -> Result<Self> {
         Ok(Self {
             source_id: setup_execution_ctx.import_ops[src_eval_ctx.import_op_idx].source_id,
@@ -227,6 +229,7 @@ impl<'a> RowIndexer<'a> {
             update_stats,
             operation_in_process_stats,
             pool,
+            txn_batcher,
         })
     }
 
@@ -788,83 +791,95 @@ impl<'a> RowIndexer<'a> {
         source_fp: Option<Vec<u8>>,
         precommit_metadata: PrecommitMetadata,
     ) -> Result<()> {
-        let db_setup = &self.setup_execution_ctx.setup_state.tracking_table;
-        let mut txn = self.pool.begin().await?;
+        // Extract all data needed by the closure before capture, so the closure
+        // is 'static and can be batched with other concurrent callers.
+        let source_id = self.source_id;
+        let source_key_json = self.source_key_json.clone();
+        let db_setup = self.setup_execution_ctx.setup_state.tracking_table.clone();
+        let logic_fp = self.src_eval_ctx.source_logic_fp.current;
+        let source_version = *source_version;
+        let process_time_micros = self.process_time.timestamp_micros();
 
-        let tracking_info = db_tracking::read_source_tracking_info_for_commit(
-            self.source_id,
-            &self.source_key_json,
-            db_setup,
-            &mut *txn,
-        )
-        .await?;
-        let tracking_info_exists = tracking_info.is_some();
-        if tracking_info.as_ref().and_then(|info| info.process_ordinal)
-            >= Some(precommit_metadata.process_ordinal)
-        {
-            return Ok(());
-        }
+        self.txn_batcher
+            .run(move |conn| {
+                Box::pin(async move {
+                    let tracking_info = db_tracking::read_source_tracking_info_for_commit(
+                        source_id,
+                        &source_key_json,
+                        &db_setup,
+                        &mut *conn,
+                    )
+                    .await?;
+                    let tracking_info_exists = tracking_info.is_some();
+                    if tracking_info.as_ref().and_then(|info| info.process_ordinal)
+                        >= Some(precommit_metadata.process_ordinal)
+                    {
+                        return Ok(());
+                    }
 
-        let cleaned_staging_target_keys = tracking_info
-            .map(|info| {
-                let sqlx::types::Json(staging_target_keys) = info.staging_target_keys;
-                staging_target_keys
-                    .into_iter()
-                    .filter_map(|(target_id, target_keys)| {
-                        let cleaned_target_keys: Vec<_> = target_keys
-                            .into_iter()
-                            .filter(|key_info| {
-                                Some(key_info.process_ordinal)
-                                    > precommit_metadata.existing_process_ordinal
-                                    && key_info.process_ordinal
-                                        != precommit_metadata.process_ordinal
-                            })
-                            .collect();
-                        if !cleaned_target_keys.is_empty() {
-                            Some((target_id, cleaned_target_keys))
-                        } else {
-                            None
+                    let cleaned_staging_target_keys = tracking_info
+                        .map(|info| {
+                            let sqlx::types::Json(staging_target_keys) = info.staging_target_keys;
+                            staging_target_keys
+                                .into_iter()
+                                .filter_map(|(target_id, target_keys)| {
+                                    let cleaned_target_keys: Vec<_> = target_keys
+                                        .into_iter()
+                                        .filter(|key_info| {
+                                            Some(key_info.process_ordinal)
+                                                > precommit_metadata.existing_process_ordinal
+                                                && key_info.process_ordinal
+                                                    != precommit_metadata.process_ordinal
+                                        })
+                                        .collect();
+                                    if !cleaned_target_keys.is_empty() {
+                                        Some((target_id, cleaned_target_keys))
+                                    } else {
+                                        None
+                                    }
+                                })
+                                .collect::<Vec<_>>()
+                        })
+                        .unwrap_or_default();
+                    if !precommit_metadata.source_entry_exists
+                        && cleaned_staging_target_keys.is_empty()
+                    {
+                        // delete tracking if no source and no staged keys
+                        if tracking_info_exists {
+                            db_tracking::delete_source_tracking_info(
+                                source_id,
+                                &source_key_json,
+                                &db_setup,
+                                &mut *conn,
+                            )
+                            .await?;
                         }
-                    })
-                    .collect::<Vec<_>>()
+                    } else {
+                        db_tracking::commit_source_tracking_info(
+                            source_id,
+                            &source_key_json,
+                            cleaned_staging_target_keys,
+                            source_version.ordinal.into(),
+                            source_fp,
+                            &logic_fp.0,
+                            precommit_metadata.process_ordinal,
+                            process_time_micros,
+                            precommit_metadata.new_target_keys,
+                            &db_setup,
+                            &mut *conn,
+                            if tracking_info_exists {
+                                WriteAction::Update
+                            } else {
+                                WriteAction::Insert
+                            },
+                        )
+                        .await?;
+                    }
+
+                    Ok(())
+                })
             })
-            .unwrap_or_default();
-        if !precommit_metadata.source_entry_exists && cleaned_staging_target_keys.is_empty() {
-            // delete tracking if no source and no staged keys
-            if tracking_info_exists {
-                db_tracking::delete_source_tracking_info(
-                    self.source_id,
-                    &self.source_key_json,
-                    db_setup,
-                    &mut *txn,
-                )
-                .await?;
-            }
-        } else {
-            db_tracking::commit_source_tracking_info(
-                self.source_id,
-                &self.source_key_json,
-                cleaned_staging_target_keys,
-                source_version.ordinal.into(),
-                source_fp,
-                &self.src_eval_ctx.source_logic_fp.current.0,
-                precommit_metadata.process_ordinal,
-                self.process_time.timestamp_micros(),
-                precommit_metadata.new_target_keys,
-                db_setup,
-                &mut *txn,
-                if tracking_info_exists {
-                    WriteAction::Update
-                } else {
-                    WriteAction::Insert
-                },
-            )
-            .await?;
-        }
-
-        txn.commit().await?;
-
-        Ok(())
+            .await
     }
 
     pub fn process_ordinal_from_time(process_time: chrono::DateTime<chrono::Utc>) -> i64 {

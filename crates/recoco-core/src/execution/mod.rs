@@ -23,6 +23,8 @@ pub(crate) mod row_indexer;
 #[cfg(feature = "persistence")]
 pub(crate) mod source_indexer;
 pub(crate) mod stats;
+#[cfg(feature = "persistence")]
+pub(crate) mod txn_batcher;
 
 #[cfg(feature = "persistence")]
 mod live_updater;

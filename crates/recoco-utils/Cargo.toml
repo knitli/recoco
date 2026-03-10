@@ -57,14 +57,17 @@ serde_path_to_error = { workspace = true }
 [features]
 default = []
 azure = ["dep:azure_storage", "dep:globset"]
-batching = [
+batching-core = [
   "concur_control",
   "dep:serde",
   "dep:tokio",
   "dep:tokio-util",
   "fingerprint",
+  "retryable",
+]
+batching = [
+  "batching-core",
   "http",
-  "retryable"
 ]
 bytes_decode = ["dep:encoding_rs"]
 chrono = ["dep:chrono"]

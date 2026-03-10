@@ -95,6 +95,7 @@ pub struct SourceIndexingContext {
         feature = "source-postgres"
     ))]
     update_once_batcher: batching::Batcher<UpdateOnceRunner>,
+    txn_batcher: super::txn_batcher::PgTxnBatcher,
     source_logic_fp: SourceLogicFingerprint,
 }
 
@@ -369,6 +370,7 @@ impl SourceIndexingContext {
                 UpdateOnceRunner,
                 batching::BatchingOptions::default(),
             ),
+            txn_batcher: super::txn_batcher::PgTxnBatcher::new(pool.clone()),
             source_logic_fp,
         }))
     }
@@ -425,6 +427,7 @@ impl SourceIndexingContext {
                     .as_ref()
                     .map(|s| s.as_ref()),
                 &self.pool,
+                &self.txn_batcher,
             )?;
 
             let source_data = row_input.data;
