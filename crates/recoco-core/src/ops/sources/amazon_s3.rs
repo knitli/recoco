@@ -19,7 +19,7 @@ use redis::Client as RedisClient;
 use std::sync::Arc;
 use urlencoding;
 
-use super::shared::pattern_matcher::PatternMatcher;
+use recoco_splitters::pattern_matcher::PatternMatcher;
 use crate::base::field_attrs;
 use crate::ops::sdk::*;
 

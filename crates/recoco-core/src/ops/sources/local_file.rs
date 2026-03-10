@@ -17,7 +17,7 @@ use std::path::Path;
 use std::{path::PathBuf, sync::Arc};
 use tracing::warn;
 
-use super::shared::pattern_matcher::PatternMatcher;
+use recoco_splitters::pattern_matcher::PatternMatcher;
 use crate::base::field_attrs;
 use crate::{fields_value, ops::sdk::*};
 

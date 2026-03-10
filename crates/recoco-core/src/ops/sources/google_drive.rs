@@ -10,7 +10,7 @@
 // Both the upstream CocoIndex code and the Recoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
-use super::shared::pattern_matcher::PatternMatcher;
+use recoco_splitters::pattern_matcher::PatternMatcher;
 use chrono::Duration;
 use google_drive3::{
     DriveHub,
