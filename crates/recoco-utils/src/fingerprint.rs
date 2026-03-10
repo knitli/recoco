@@ -545,3 +545,117 @@ impl SerializeStructVariant for &mut Fingerprinter {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    #[test]
+    fn test_fingerprint_from_base64_standard() {
+        let bytes = [0u8; 16];
+        let base64_str = BASE64_STANDARD.encode(bytes);
+        assert_eq!(base64_str.len(), 24);
+        let fp = Fingerprint::from_base64(&base64_str).unwrap();
+        assert_eq!(fp.0, bytes);
+    }
+
+    #[test]
+    fn test_fingerprint_from_base64_hex_legacy() {
+        let bytes = [0x12u8; 16];
+        let hex_str = hex::encode(bytes);
+        assert_eq!(hex_str.len(), 32);
+        let fp = Fingerprint::from_base64(&hex_str).unwrap();
+        assert_eq!(fp.0, bytes);
+    }
+
+    #[test]
+    fn test_fingerprint_from_base64_invalid_length() {
+        assert!(Fingerprint::from_base64("too_short").is_err());
+        assert!(
+            Fingerprint::from_base64(
+                "this_string_is_way_too_long_and_definitely_not_a_fingerprint"
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn test_fingerprint_from_base64_invalid_encoding() {
+        let invalid_base64 = "!!!!####$$$$%%%%^^^^&&&&";
+        assert_eq!(invalid_base64.len(), 24);
+        assert!(Fingerprint::from_base64(invalid_base64).is_err());
+
+        let invalid_hex = "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG";
+        assert!(Fingerprint::from_base64(invalid_hex).is_err());
+    }
+
+    #[test]
+    fn test_fingerprint_from_base64_invalid_decoded_length() {
+        // A 24-char base64 string that decodes to more or less than 16 bytes.
+        // Standard base64 for 16 bytes is 22 chars + 2 padding '='.
+        // BASE64_STANDARD.decode("AQIDBAUGBwgJCgsMDQ4PEBES") would be 18 bytes (24 chars, no padding)
+        let invalid_bytes_len_base64 = "AQIDBAUGBwgJCgsMDQ4PEBES";
+        assert_eq!(invalid_bytes_len_base64.len(), 24);
+        assert!(Fingerprint::from_base64(invalid_bytes_len_base64).is_err());
+    }
+
+    #[test]
+    fn test_fingerprint_roundtrip() {
+        let bytes = [0xABu8; 16];
+        let fp = Fingerprint(bytes);
+        let base64 = fp.to_base64();
+        let fp2 = Fingerprint::from_base64(&base64).unwrap();
+        assert_eq!(fp, fp2);
+    }
+
+    #[test]
+    fn test_fingerprint_display_debug() {
+        let bytes = [
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
+            0x0f, 0x10,
+        ];
+        let fp = Fingerprint(bytes);
+        let display = format!("{}", fp);
+        let debug = format!("{:?}", fp);
+        assert_eq!(display, "#0102030405060708090a0b0c0d0e0f10");
+        assert_eq!(debug, "#0102030405060708090a0b0c0d0e0f10");
+    }
+
+    #[test]
+    fn test_fingerprint_serde() {
+        let bytes = [0x42u8; 16];
+        let fp = Fingerprint(bytes);
+        let serialized = serde_json::to_string(&fp).unwrap();
+        let expected = format!("\"{}\"", fp.to_base64());
+        assert_eq!(serialized, expected);
+
+        let deserialized: Fingerprint = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized, fp);
+    }
+
+    #[test]
+    fn test_fingerprint_hash() {
+        let mut set = HashSet::new();
+        let fp1 = Fingerprint([1u8; 16]);
+        let fp2 = Fingerprint([2u8; 16]);
+
+        set.insert(fp1);
+        assert!(set.contains(&fp1));
+        assert!(!set.contains(&fp2));
+
+        set.insert(fp1);
+        assert_eq!(set.len(), 1);
+
+        set.insert(fp2);
+        assert_eq!(set.len(), 2);
+    }
+
+    #[test]
+    fn test_fingerprint_as_ref_and_slice() {
+        let bytes = [0xFEu8; 16];
+        let fp = Fingerprint(bytes);
+        assert_eq!(fp.as_ref(), &bytes);
+        assert_eq!(fp.as_slice(), &bytes);
+    }
+}
