@@ -12,6 +12,7 @@
 
 #[cfg(any(
     feature = "target-kuzu",
+    feature = "target-ladybug",
     feature = "target-neo4j",
     feature = "target-postgres",
     feature = "target-qdrant"
@@ -20,6 +21,8 @@ pub mod shared;
 
 #[cfg(feature = "target-kuzu")]
 pub mod kuzu;
+#[cfg(feature = "target-ladybug")]
+pub mod ladybug;
 #[cfg(feature = "target-neo4j")]
 pub mod neo4j;
 #[cfg(feature = "target-postgres")]
