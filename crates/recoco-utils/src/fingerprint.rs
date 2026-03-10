@@ -571,7 +571,12 @@ mod tests {
     #[test]
     fn test_fingerprint_from_base64_invalid_length() {
         assert!(Fingerprint::from_base64("too_short").is_err());
-        assert!(Fingerprint::from_base64("this_string_is_way_too_long_and_definitely_not_a_fingerprint").is_err());
+        assert!(
+            Fingerprint::from_base64(
+                "this_string_is_way_too_long_and_definitely_not_a_fingerprint"
+            )
+            .is_err()
+        );
     }
 
     #[test]
@@ -595,7 +600,10 @@ mod tests {
 
     #[test]
     fn test_fingerprint_display_debug() {
-        let bytes = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10];
+        let bytes = [
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
+            0x0f, 0x10,
+        ];
         let fp = Fingerprint(bytes);
         let display = format!("{}", fp);
         let debug = format!("{:?}", fp);
