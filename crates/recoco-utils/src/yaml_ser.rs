@@ -386,7 +386,6 @@ impl ser::SerializeTupleVariant for VariantSeqSerializer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde::ser::Error as SerdeSerError;
     use serde::{Serialize, Serializer};
     use std::collections::BTreeMap;
     use yaml_rust2::yaml::{Hash, Yaml};
