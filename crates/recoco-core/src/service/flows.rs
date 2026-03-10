@@ -28,9 +28,11 @@ use axum_extra::extract::Query;
 pub async fn list_flows(
     State(lib_context): State<Arc<LibContext>>,
 ) -> std::result::Result<Json<Vec<String>>, ApiError> {
-    Ok(Json(
-        lib_context.flows.lock().unwrap().keys().cloned().collect(),
-    ))
+    let flows = lib_context
+        .flows
+        .lock()
+        .map_err(|_| api_error!("flows lock is poisoned"))?;
+    Ok(Json(flows.keys().cloned().collect()))
 }
 
 #[instrument(name = "api.get_flow_schema", skip(lib_context), fields(flow_name = %flow_name))]
@@ -65,7 +67,10 @@ pub async fn get_flow(
     let flow_spec = flow_ctx.flow.flow_instance.clone();
     let data_schema = flow_ctx.flow.data_schema.clone();
     let query_handlers_spec: HashMap<_, _> = {
-        let query_handlers = flow_ctx.query_handlers.read().unwrap();
+        let query_handlers = flow_ctx
+            .query_handlers
+            .read()
+            .map_err(|_| api_error!("query_handlers lock is poisoned"))?;
         query_handlers
             .iter()
             .map(|(name, handler)| (name.clone(), handler.info.clone()))
@@ -314,7 +319,10 @@ pub async fn query(
 ) -> std::result::Result<Json<QueryOutput>, ApiError> {
     let flow_ctx = lib_context.get_flow_context(&flow_name)?;
     let query_handler = {
-        let query_handlers = flow_ctx.query_handlers.read().unwrap();
+        let query_handlers = flow_ctx
+            .query_handlers
+            .read()
+            .map_err(|_| api_error!("query_handlers lock is poisoned"))?;
         query_handlers
             .get(&query_handler_name)
             .ok_or_else(|| {
