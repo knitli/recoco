@@ -549,6 +549,7 @@ impl SerializeStructVariant for &mut Fingerprinter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn test_fingerprint_from_base64_standard() {
@@ -590,6 +591,16 @@ mod tests {
     }
 
     #[test]
+    fn test_fingerprint_from_base64_invalid_decoded_length() {
+        // A 24-char base64 string that decodes to more or less than 16 bytes.
+        // Standard base64 for 16 bytes is 22 chars + 2 padding '='.
+        // BASE64_STANDARD.decode("AQIDBAUGBwgJCgsMDQ4PEBES") would be 18 bytes (24 chars, no padding)
+        let invalid_bytes_len_base64 = "AQIDBAUGBwgJCgsMDQ4PEBES";
+        assert_eq!(invalid_bytes_len_base64.len(), 24);
+        assert!(Fingerprint::from_base64(invalid_bytes_len_base64).is_err());
+    }
+
+    #[test]
     fn test_fingerprint_roundtrip() {
         let bytes = [0xABu8; 16];
         let fp = Fingerprint(bytes);
@@ -609,5 +620,42 @@ mod tests {
         let debug = format!("{:?}", fp);
         assert_eq!(display, "#0102030405060708090a0b0c0d0e0f10");
         assert_eq!(debug, "#0102030405060708090a0b0c0d0e0f10");
+    }
+
+    #[test]
+    fn test_fingerprint_serde() {
+        let bytes = [0x42u8; 16];
+        let fp = Fingerprint(bytes);
+        let serialized = serde_json::to_string(&fp).unwrap();
+        let expected = format!("\"{}\"", fp.to_base64());
+        assert_eq!(serialized, expected);
+
+        let deserialized: Fingerprint = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized, fp);
+    }
+
+    #[test]
+    fn test_fingerprint_hash() {
+        let mut set = HashSet::new();
+        let fp1 = Fingerprint([1u8; 16]);
+        let fp2 = Fingerprint([2u8; 16]);
+
+        set.insert(fp1);
+        assert!(set.contains(&fp1));
+        assert!(!set.contains(&fp2));
+
+        set.insert(fp1);
+        assert_eq!(set.len(), 1);
+
+        set.insert(fp2);
+        assert_eq!(set.len(), 2);
+    }
+
+    #[test]
+    fn test_fingerprint_as_ref_and_slice() {
+        let bytes = [0xFEu8; 16];
+        let fp = Fingerprint(bytes);
+        assert_eq!(fp.as_ref(), &bytes);
+        assert_eq!(fp.as_slice(), &bytes);
     }
 }
