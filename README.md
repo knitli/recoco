@@ -6,7 +6,7 @@ SPDX-License-Identifier: Apache-2.0
 -->
 
 <div align="center">
-  <img src="assets/recoco.webp" alt="Recoco Logo" width="200"/>
+  <img src="assets/recocov2.webp" alt="Recoco Logo" width="200"/>
 
   # Recoco
 
