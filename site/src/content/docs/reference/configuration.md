@@ -110,10 +110,19 @@ RUST_LOG=recoco::execution=trace cargo run
 ### Transient (no database needed)
 
 ```rust
+use recoco::builder::FlowBuilder;
+use recoco::execution::evaluator::evaluate_transient_flow;
+use recoco::prelude::*;
+use recoco::settings::Settings;
+
 // No database configuration required
 recoco::lib_context::init_lib_context(Some(Settings::default())).await?;
 
+let mut builder = FlowBuilder::new("my_flow").await?;
+// ... add inputs and transforms ...
 let flow = builder.build_transient_flow().await?;
+
+let inputs = vec![value::Value::Basic("hello world".into())];
 let result = evaluate_transient_flow(&flow.0, &inputs).await?;
 ```
 
@@ -125,10 +134,14 @@ recoco = { version = "0.2", features = ["persistence", "source-local-file"] }
 ```
 
 ```rust
+use recoco::builder::FlowBuilder;
+use recoco::settings::{Settings, DatabaseConnectionSpec};
+
 let settings = Settings {
     database: Some(DatabaseConnectionSpec {
         url: std::env::var("DATABASE_URL")?,
-        // Set required database configuration fields explicitly:
+        user: None,
+        password: None,
         max_connections: 10,
         min_connections: 1,
     }),
@@ -137,6 +150,8 @@ let settings = Settings {
 
 recoco::lib_context::init_lib_context(Some(settings)).await?;
 
+let mut builder = FlowBuilder::new("my_flow").await?;
+// ... add inputs and transforms ...
 let flow = builder.build_flow().await?;
 ```
 
