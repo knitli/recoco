@@ -82,7 +82,7 @@ Controls concurrency and backpressure during flow execution.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `app_namespace` | `String` | `"recoco"` | Namespace prefix for database tables and keys |
+| `app_namespace` | `String` | `""` | Namespace prefix for database tables and keys (empty string means no prefix) |
 | `ignore_target_drop_failures` | `bool` | `false` | Suppress errors when dropping target tables during teardown |
 
 ## Environment Variables
@@ -90,7 +90,7 @@ Controls concurrency and backpressure during flow execution.
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `RUST_LOG` | Logging verbosity filter (e.g., `info`, `debug`, `recoco=trace`) | `info` |
-| `DATABASE_URL` | PostgreSQL connection URL (alternative to `Settings::database`) | — |
+| `DATABASE_URL` | PostgreSQL connection URL your application can read to populate `Settings::database` (Recoco does not read this automatically) | — |
 
 ### Logging Examples
 
@@ -128,7 +128,9 @@ recoco = { version = "0.2", features = ["persistence", "source-local-file"] }
 let settings = Settings {
     database: Some(DatabaseConnectionSpec {
         url: std::env::var("DATABASE_URL")?,
-        ..Default::default()
+        // Set required database configuration fields explicitly:
+        max_connections: 10,
+        min_connections: 1,
     }),
     ..Default::default()
 };
