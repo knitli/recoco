@@ -10,7 +10,7 @@ SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 SPDX-License-Identifier: Apache-2.0
 -->
 
-Recoco is configured via the `Settings` struct passed to `init_lib_context`, and through environment variables.
+Configure Recoco via the `Settings` struct passed to `init_lib_context`, and through environment variables.
 
 ## Library Initialization
 
@@ -59,7 +59,7 @@ recoco::lib_context::init_lib_context(Some(settings)).await?;
 
 ### `DatabaseConnectionSpec`
 
-Required when using **persisted flows** (the `persistence` feature must be enabled).
+Required when using **persisted flows** (requires the `persistence` feature).
 
 | Field | Type | Description |
 |-------|------|-------------|

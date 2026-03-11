@@ -17,7 +17,7 @@ Standard text splitters often break code in the middle of functions or classes, 
 
 ## 📦 Supported Languages
 
-To minimize binary size, every language parser is feature-gated. Enable only what you need in your `Cargo.toml`.
+To minimize binary size, Recoco feature-gates every language parser. Enable only what you need in your `Cargo.toml`.
 
 ```toml
 [dependencies]

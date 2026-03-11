@@ -123,7 +123,7 @@ Sources → Transforms → Targets
 **Transforms** ('functions') process data (split, embed, map, filter)
 **Targets** persist results (vector DBs, graph DBs, databases)
 
-The engine tracks **data lineage** - when source data changes, only affected downstream computations are re-executed.
+The engine tracks **data lineage** - when source data changes, the engine re-executes only the affected downstream computations.
 
 ### Two Flow Execution Modes
 
@@ -198,7 +198,7 @@ See `examples/custom_op.rs` for full implementation pattern.
 
 ### Feature System
 
-Operations are feature-gated at the dependency level:
+Recoco feature-gates all operations at the dependency level:
 
 - **Sources**: `source-local-file`, `source-postgres`, `source-s3`, `source-azure`, `source-gdrive`
 - **Targets**: `target-postgres`, `target-qdrant`, `target-neo4j`, `target-kuzu`
@@ -211,7 +211,7 @@ When adding new code:
 
 ### Library Context
 
-The global library context (`lib_context::init_lib_context()`) must be initialized before creating flows. It:
+Initialize the global library context (`lib_context::init_lib_context()`) before creating flows. It:
 - Loads the operation registry with all compiled-in operations
 - Sets up authentication registries
 - Initializes runtime configuration
@@ -234,7 +234,7 @@ Use [Conventional Commits](https://www.conventionalcommits.org/):
 - `chore:` for maintenance tasks
 - `refactor:` for code restructuring
 
-This is required for changelog generation via `git cliff`.
+Our changelog generator (`git cliff`) requires this.
 
 ## Relationship to Upstream
 

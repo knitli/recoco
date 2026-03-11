@@ -29,7 +29,7 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 		Modular architecture. Bring only what you need: `source-postgres`, `target-qdrant`, `function-embed`, etc.
 	</Card>
 	<Card title="Incremental Dataflow" icon="random">
-		Tracks data lineage. When source data changes, only affected downstream computations are re-executed.
+		Tracks data lineage. When source data changes, Recoco re-executes only the affected downstream computations.
 	</Card>
 	<Card title="Persistent or Transient" icon="document">
 		Run in-memory for quick tasks or backed by a database for long-running, stateful pipelines.

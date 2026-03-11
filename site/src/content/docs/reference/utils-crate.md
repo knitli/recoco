@@ -12,7 +12,7 @@ SPDX-License-Identifier: Apache-2.0
 
 **Common utilities for the [Recoco](https://github.com/knitli/recoco) ecosystem.**
 
-This crate provides shared building blocks used across Recoco's core and operation modules. While primarily intended for internal use within Recoco, these utilities can be useful for developing custom Recoco operations or for standalone use in Rust projects.
+This crate provides shared building blocks used across Recoco's core and operation modules. While Recoco primarily uses this crate internally, these utilities can be useful for developing custom operations or for standalone use in Rust projects.
 
 ## Installation
 
@@ -40,7 +40,7 @@ recoco-utils = { version = "0.2", features = ["batching", "fingerprint"] }
 | `yaml` | YAML parsing and serialization | `yaml-rust2`, `base64` | Configuration files, structured data |
 
 
-> [!NOTE] This list isn't exhaustive. It doesn't include features that are intended for recoco-core. The above features cover all functionality of the crate, providing granular by-module access.
+> [!NOTE] This list isn't exhaustive. It excludes features specific to recoco-core. The above features cover all functionality of the crate, providing granular by-module access.
 
 ## 🛠️ Key Modules & Usage
 
@@ -143,7 +143,7 @@ Some features depend on others. Most are fully independent, except:
 - `batching` requires `concur_control`, `fingerprint`, and `retryable`
 - `fingerprint` requires `deserialize`
 
-When you enable a feature, its dependencies are automatically enabled.
+Enabling a feature automatically enables its dependencies.
 
 ## 🎯 Common Feature Combinations
 

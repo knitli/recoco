@@ -3,7 +3,7 @@ title: API Documentation
 description: Comprehensive API documentation for Recoco crates.
 ---
 
-Recoco provides detailed API documentation generated from source code comments. The documentation is hosted on docs.rs and covers all public APIs, traits, and types.
+Recoco provides detailed API documentation generated from source code comments. docs.rs hosts the documentation and covers all public APIs, traits, and types.
 
 ## Main Crate Documentation
 

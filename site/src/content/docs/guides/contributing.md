@@ -58,7 +58,7 @@ cargo fmt
 
 ## Pull Requests
 
-- **Use Conventional Commits**: We follow [Conventional Commits](https://www.conventionalcommits.org/). Start your commit messages with `feat:`, `fix:`, `docs:`, etc. This is required for our changelog generation (via `git cliff`).
+- **Use Conventional Commits**: We follow [Conventional Commits](https://www.conventionalcommits.org/). Start your commit messages with `feat:`, `fix:`, `docs:`, etc. Our changelog generator (`git cliff`) requires this.
 - **Keep it small**: Focus on one logical change per pull request.
 - **Test your changes**: Run the tests above before submitting.
 

@@ -40,7 +40,7 @@ I decided to create a Rust-only fork of CocoIndex for a couple reasons:
 For [Knitli](https://knitli.com), **I needed dependency control**. I wanted to use CocoIndex as an ETL engine for [Thread](https://github.com/knitli/thread/), but Thread needs to be edge-deployable. The dependencies were way too heavy and would never compile to WASM. Thread, of course, is also a Rust project, so pulling in a lot of Python dependencies didn't make sense for me.
 
 > [!NOTE]
-> Knitli and Recoco have no official relationship with CocoIndex and this project is not endorsed by them. **We will contribute as much as we can upstream**, our [contribution guidelines](CONTRIBUTING.md) encourage you to submit PRs and issues affecting shared code upstream to help both projects.
+> Knitli and Recoco have no official relationship with CocoIndex and they don't endorse this project. **We will contribute as much as we can upstream**, our [contribution guidelines](CONTRIBUTING.md) encourage you to submit PRs and issues affecting shared code upstream to help both projects.
 
 ## How Recoco is Different from CocoIndex
 
