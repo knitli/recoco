@@ -108,7 +108,7 @@ recoco::lib_context::init_lib_context(
 ).await?;
 ```
 
-This loads the operation registry with all compiled-in operations. **Required before creating any flows.**
+This loads the operation registry with all compiled-in operations. **Call this before creating any flows.**
 
 ### 2. Create Flow Builder
 
@@ -116,7 +116,7 @@ This loads the operation registry with all compiled-in operations. **Required be
 let mut builder = FlowBuilder::new("transient_example").await?;
 ```
 
-The flow builder is used to construct your data processing pipeline. The name is used for debugging and logging.
+The flow builder constructs your data processing pipeline. Recoco uses the name for debugging and logging.
 
 ### 3. Define Input Schema
 

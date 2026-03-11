@@ -6,20 +6,20 @@ SPDX-License-Identifier: Apache-2.0
 
 # Recoco HTTP API Documentation
 
-This document describes the HTTP API provided by the Recoco library when the `server` feature is enabled. This API is primarily used for inspecting, monitoring, and querying running data flows.
+This document describes the HTTP API provided by the Recoco library when the `server` feature is enabled. Use this API to inspect, monitor, and query running data flows.
 
 ## 1. Overview
 
 - **Purpose**: Monitor flow status, inspect schemas, debugging keys/data, and execute queries against configured Query Handlers.
 - **Base URL**: `http://{address}/cocoindex/api`
-  - The `{address}` is configured via `ServerSettings` (e.g., `127.0.0.1:3000`).
+  - Configure `{address}` via `ServerSettings` (e.g., `127.0.0.1:3000`).
 - **Version**: Varies with library version (e.g., `0.2.x`).
 - **Content-Type**: `application/json`
 
 ## 2. Authentication
 
 - **Authentication Method**: None.
-- **Security Note**: This API is intended for internal use within a private network or a secured environment (e.g., behind a reverse proxy or VPN). It does not implement built-in authentication mechanisms.
+- **Security Note**: Deploy this API only within a private network or secured environment (e.g., behind a reverse proxy or VPN). It does not implement built-in authentication mechanisms.
 
 ## 3. Endpoints
 
@@ -136,7 +136,7 @@ This document describes the HTTP API provided by the Recoco library when the `se
 #### Evaluate Source Data
 **Method**: `GET`
 **Path**: `/cocoindex/api/flows/{flowInstName}/data`
-**Description**: Evaluates and returns the data scope (variables) for a specific row in a source. Useful for debugging how a row is processed.
+**Description**: Evaluates and returns the data scope (variables) for a specific row in a source. Useful for debugging how the flow processes a row.
 **Query Parameters**:
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -161,7 +161,7 @@ This document describes the HTTP API provided by the Recoco library when the `se
 #### Get Row Indexing Status
 **Method**: `GET`
 **Path**: `/cocoindex/api/flows/{flowInstName}/rowStatus`
-**Description**: Checks the indexing status of a specific source row (e.g., is it fully processed, pending, or failed?).
+**Description**: Checks the indexing status of a specific source row (e.g., did it finish processing, or is it still pending or failed?).
 **Query Parameters**:
 - Same as `Evaluate Data` (`field`, `key`, `key_aux`).
 **Response**:
