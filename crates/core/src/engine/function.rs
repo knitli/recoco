@@ -123,12 +123,11 @@ pub async fn reserve_memoization<Prof: EngineProfile>(
 
     // If still pending (first caller, or retry after a previous caller failed),
     // try loading from the database.
-    if let FnCallMemoEntry::Pending = &*guard {
-        if !comp_exec_ctx.full_reprocess() {
-            if let Some(fn_call_memo) = read_fn_call_memo(comp_exec_ctx, memo_fp)? {
-                *guard = FnCallMemoEntry::Ready(Some(fn_call_memo));
-            }
-        }
+    if let FnCallMemoEntry::Pending = &*guard
+        && !comp_exec_ctx.full_reprocess()
+        && let Some(fn_call_memo) = read_fn_call_memo(comp_exec_ctx, memo_fp)?
+    {
+        *guard = FnCallMemoEntry::Ready(Some(fn_call_memo));
     }
 
     Ok(FnCallMemoGuard { guard })

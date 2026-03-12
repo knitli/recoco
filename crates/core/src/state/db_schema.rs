@@ -60,7 +60,7 @@ impl storekey::Encode for StablePathEntryKey {
             StablePathEntryKey::FunctionMemoizationPrefix => e.write_u8(0x30),
             StablePathEntryKey::FunctionMemoization(fp) => {
                 e.write_u8(0x30)?;
-                fp.encode(e)
+                <Fingerprint as storekey::Encode>::encode(fp, e)
             }
             StablePathEntryKey::TrackingInfo => e.write_u8(0x40),
             StablePathEntryKey::ChildExistencePrefix => e.write_u8(0xa0),
@@ -84,7 +84,7 @@ impl storekey::Decode for StablePathEntryKey {
         let key = match d.read_u8()? {
             0x20 => StablePathEntryKey::ComponentMemoization,
             0x30 => {
-                let fp = Fingerprint::decode(d)?;
+                let fp = <Fingerprint as storekey::Decode>::decode(d)?;
                 StablePathEntryKey::FunctionMemoization(fp)
             }
             0x40 => StablePathEntryKey::TrackingInfo,
@@ -267,7 +267,7 @@ pub struct TargetStateInfoItem<'a> {
     pub provider_generation: Option<TargetStateProviderGeneration>,
 }
 
-pub const UNKNOWN_PROCESSOR_NAME: &'static str = "<unknown>";
+pub const UNKNOWN_PROCESSOR_NAME: &str = "<unknown>";
 
 fn unknown_processor_name() -> Cow<'static, str> {
     Cow::Borrowed(UNKNOWN_PROCESSOR_NAME)

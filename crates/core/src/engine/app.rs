@@ -123,7 +123,7 @@ impl<Prof: EngineProfile> App<Prof> {
             handle.ready().await?;
 
             // Clear the database
-            let db = self.app_ctx().db().clone();
+            let db = *self.app_ctx().db();
             self.app_ctx()
                 .env()
                 .txn_batcher()

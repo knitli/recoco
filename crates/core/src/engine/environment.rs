@@ -17,7 +17,7 @@ use crate::{
 use recoco_utils::fingerprint::Fingerprint;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeSet, HashSet};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 
 const DEFAULT_MAX_DBS: u32 = 1024;
@@ -95,7 +95,7 @@ impl<Prof: EngineProfile> Environment<Prof> {
 
     /// Migrate legacy LMDB files from the old layout (directly in `base_path`)
     /// into the new `db_path` subdirectory.
-    fn migrate_legacy_db_files(base_path: &PathBuf, db_path: &PathBuf) -> Result<()> {
+    fn migrate_legacy_db_files(base_path: &Path, db_path: &Path) -> Result<()> {
         let legacy_files: Vec<PathBuf> = ["data.mdb", "lock.mdb"]
             .iter()
             .map(|name| base_path.join(name))

@@ -68,6 +68,7 @@ pub trait ComponentProcessor<Prof: EngineProfile>: Send + Sync + 'static {
     /// - `can_reuse`: when true, the cached value is valid and can be returned without re-execution.
     /// - `states_changed`: when true, the new states differ from stored states and must be persisted.
     ///   This can be true even when `can_reuse` is true (e.g. mtime changed but content hash unchanged).
+    #[allow(clippy::type_complexity)]
     fn handle_memo_states(
         &self,
         host_runtime_ctx: &Prof::HostRuntimeCtx,
@@ -366,7 +367,7 @@ impl<Prof: EngineProfile> Component<Prof> {
                 drop(processor);
                 drop(context);
                 drop(self);
-                child_readiness_guard.map(|guard| guard.resolve(outcome));
+                if let Some(guard) = child_readiness_guard { guard.resolve(outcome) }
                 output?
                     .ok_or_else(|| internal_error!("component deletion can only run in background"))
             }
@@ -545,7 +546,7 @@ impl<Prof: EngineProfile> Component<Prof> {
                         Some(processor) => processor
                             .process(
                                 processor_context.app_ctx().env().host_runtime_ctx(),
-                                &processor_context,
+                                processor_context,
                             )?
                             .await
                             .map(Some),
@@ -555,7 +556,7 @@ impl<Prof: EngineProfile> Component<Prof> {
                         Ok(ret) => {
                             let submit_output = submit(processor_context, processor, |name| {
                                 if reported_processor_name.is_none() {
-                                    processing_stats.update(&name, |stats| {
+                                    processing_stats.update(name, |stats| {
                                         stats.num_execution_starts += 1;
                                     });
                                     *reported_processor_name = Some(Cow::Owned(name.to_string()));
@@ -631,7 +632,7 @@ impl<Prof: EngineProfile> Component<Prof> {
                         })
                     }
                     None => {
-                        cleanup_tombstone(&processor_context).await?;
+                        cleanup_tombstone(processor_context).await?;
                         None
                     }
                 };

@@ -35,7 +35,7 @@ use crate::state::stable_path_set::{ChildStablePathSet, StablePathSet};
 use crate::state::target_state_path::{
     TargetStatePath, TargetStatePathWithProviderId, TargetStateProviderGeneration,
 };
-use recoco_utils::deser::from_msgpack_slice;
+use recoco_utils::deser::{from_msgpack_slice, from_msgpack_slice_borrow};
 use recoco_utils::fingerprint::Fingerprint;
 
 pub(crate) async fn use_or_invalidate_component_memoization<Prof: EngineProfile>(
@@ -61,16 +61,14 @@ pub(crate) async fn use_or_invalidate_component_memoization<Prof: EngineProfile>
             return Ok(None);
         };
         if let Some(processor_fp) = processor_fp {
-            let memo_info: db_schema::ComponentMemoizationInfo<'_> = from_msgpack_slice(&data)?;
+            let memo_info: db_schema::ComponentMemoizationInfo<'_> = from_msgpack_slice_borrow(data)?;
             if memo_info.processor_fp == processor_fp
                 && logic_registry::all_contained_with_env(
                     &memo_info.logic_deps,
                     comp_ctx.app_ctx().env(),
                 )
             {
-                let bytes = match memo_info.return_value {
-                    db_schema::MemoizedValue::Inlined(b) => b,
-                };
+                let db_schema::MemoizedValue::Inlined(bytes) = memo_info.return_value;
                 let ret = Prof::FunctionData::from_bytes(bytes.as_ref());
                 match ret {
                     Ok(ret) => {
@@ -78,9 +76,7 @@ pub(crate) async fn use_or_invalidate_component_memoization<Prof: EngineProfile>
                             .memo_states
                             .iter()
                             .map(|s| {
-                                let bytes = match s {
-                                    db_schema::MemoizedValue::Inlined(b) => b,
-                                };
+                                let db_schema::MemoizedValue::Inlined(bytes) = s;
                                 Prof::FunctionData::from_bytes(bytes.as_ref())
                             })
                             .collect::<Result<Vec<_>>>()?;
@@ -99,7 +95,7 @@ pub(crate) async fn use_or_invalidate_component_memoization<Prof: EngineProfile>
 
     // Invalidate the memoization.
     {
-        let db = comp_ctx.app_ctx().db().clone();
+        let db = *comp_ctx.app_ctx().db();
         comp_ctx
             .app_ctx()
             .env()
@@ -130,7 +126,7 @@ pub(crate) async fn update_component_memo_states<Prof: EngineProfile>(
     )
     .encode()?;
 
-    let db = comp_ctx.app_ctx().db().clone();
+    let db = *comp_ctx.app_ctx().db();
 
     // Serialize new states
     let memo_states_serialized: Vec<db_schema::MemoizedValue<'_>> = new_states
@@ -150,7 +146,7 @@ pub(crate) async fn update_component_memo_states<Prof: EngineProfile>(
             let Some(data) = db.get(wtxn, key.as_slice())? else {
                 return Ok(());
             };
-            let existing: db_schema::ComponentMemoizationInfo<'_> = from_msgpack_slice(data)?;
+            let existing: db_schema::ComponentMemoizationInfo<'_> = from_msgpack_slice_borrow(data)?;
             let memo_info = db_schema::ComponentMemoizationInfo {
                 processor_fp: existing.processor_fp,
                 return_value: existing.return_value,
@@ -215,7 +211,7 @@ fn read_fn_call_memo_with_txn<Prof: EngineProfile>(
     let Some(data) = data else {
         return Ok(None);
     };
-    let fn_call_memo: db_schema::FunctionMemoizationEntry<'_> = from_msgpack_slice(&data)?;
+    let fn_call_memo: db_schema::FunctionMemoizationEntry<'_> = from_msgpack_slice_borrow(data)?;
     if !logic_registry::all_contained_with_env(&fn_call_memo.logic_deps, comp_ctx.app_ctx().env()) {
         return Ok(None);
     }
@@ -224,17 +220,13 @@ fn read_fn_call_memo_with_txn<Prof: EngineProfile>(
         // detects the child components, logs a warning, and the entry is cleaned up.
         return Ok(None);
     }
-    let return_value_bytes = match fn_call_memo.return_value {
-        db_schema::MemoizedValue::Inlined(b) => b,
-    };
+    let db_schema::MemoizedValue::Inlined(return_value_bytes) = fn_call_memo.return_value;
     let ret = Prof::FunctionData::from_bytes(return_value_bytes.as_ref())?;
     let memo_states = fn_call_memo
         .memo_states
         .iter()
         .map(|s| {
-            let bytes = match s {
-                db_schema::MemoizedValue::Inlined(b) => b,
-            };
+            let db_schema::MemoizedValue::Inlined(bytes) = s;
             Prof::FunctionData::from_bytes(bytes.as_ref())
         })
         .collect::<Result<Vec<_>>>()?;
@@ -383,7 +375,7 @@ impl<Prof: EngineProfile> Committer<Prof> {
         let encoded_tombstone_key_prefix = tombstone_key_prefix.encode()?;
         Ok(Self {
             component_ctx: component_ctx.clone(),
-            db: component_ctx.app_ctx().db().clone(),
+            db: *component_ctx.app_ctx().db(),
             target_states_providers: target_states_providers.clone(),
             component_path,
             encoded_tombstone_key_prefix,
@@ -411,12 +403,18 @@ impl<Prof: EngineProfile> Committer<Prof> {
             } else {
                 let curr_version = curr_version
                     .ok_or_else(|| internal_error!("curr_version is required for Build mode"))?;
-                let mut tracking_info: db_schema::StablePathEntryTrackingInfo = self
+                // Clone the raw bytes first so we can release the read borrow on wtxn
+                // before the subsequent write operations (put). LMDB's RwTxn doesn't
+                // allow an active &[u8] borrow from get() to coexist with &mut for put().
+                let raw_bytes: Option<Vec<u8>> = self
                     .db
                     .get(&*wtxn, encoded_target_state_info_key.as_ref())?
-                    .map(|data| from_msgpack_slice(&data))
-                    .transpose()?
-                    .ok_or_else(|| internal_error!("tracking info not found for commit"))?;
+                    .map(|d| d.to_vec());
+                let Some(raw_bytes) = raw_bytes else {
+                    return Err(internal_error!("tracking info not found for commit"));
+                };
+                let mut tracking_info: db_schema::StablePathEntryTrackingInfo<'_> =
+                    from_msgpack_slice_borrow(&raw_bytes)?;
 
                 for item in tracking_info.effect_items.values_mut() {
                     item.states.retain(|(version, state)| {
@@ -430,10 +428,9 @@ impl<Prof: EngineProfile> Committer<Prof> {
                     if let Some(parent_provider) = self
                         .target_states_providers
                         .get(path_with_pid.target_state_path.provider_path())
+                        && let Some(pg) = parent_provider.provider_generation()
                     {
-                        if let Some(pg) = parent_provider.provider_generation() {
-                            item.provider_schema_version = pg.provider_schema_version;
-                        }
+                        item.provider_schema_version = pg.provider_schema_version;
                     }
                 }
 
@@ -575,7 +572,7 @@ impl<Prof: EngineProfile> Committer<Prof> {
                 loop {
                     let Some(db_next_entry) = db_next else {
                         // All remaining children are new.
-                        curr_next.map(|v| children_to_add.push(v));
+                        if let Some(v) = curr_next { children_to_add.push(v) }
                         while let Some(entry) = curr_iter_next()? {
                             children_to_add.push(entry);
                         }
@@ -776,7 +773,7 @@ impl<Prof: EngineProfile> SinkInput<Prof> {
             child_providers.push(child_provider);
         } else if let Some(child_provider) = child_provider {
             let mut v = Vec::with_capacity(self.actions.len());
-            v.extend(std::iter::repeat(None).take(self.actions.len() - 1));
+            v.extend(std::iter::repeat_n(None, self.actions.len() - 1));
             v.push(Some(child_provider));
             self.child_providers = Some(v);
         }
@@ -841,20 +838,24 @@ fn pre_commit<Prof: EngineProfile>(
     }
 
     let mut id_reservation = IdReservation::new(&TARGET_ID_KEY);
-    let mut tracking_info: Option<db_schema::StablePathEntryTrackingInfo> = db
+    // Clone the raw bytes so we can release the &wtxn borrow before subsequent writes.
+    let raw_tracking_bytes: Option<Vec<u8>> = db
         .get(wtxn, encoded_target_state_info_key)?
-        .map(|data| from_msgpack_slice(data))
+        .map(|d| d.to_vec());
+    let mut tracking_info: Option<db_schema::StablePathEntryTrackingInfo<'_>> = raw_tracking_bytes
+        .as_deref()
+        .map(from_msgpack_slice_borrow)
         .transpose()?;
     let previously_exists = tracking_info.is_some();
     if let Some(tracking_info) = &mut tracking_info {
         if let Some(processor_name) = processor_name {
-            tracking_info.processor_name = Cow::Borrowed(processor_name);
+            tracking_info.processor_name = Cow::Owned(processor_name.to_owned());
         } else {
             processor_name_for_del = Some(tracking_info.processor_name.as_ref().to_owned());
         }
     } else if let Some(processor_name) = processor_name {
-        tracking_info = Some(db_schema::StablePathEntryTrackingInfo::new(Cow::Borrowed(
-            processor_name,
+        tracking_info = Some(db_schema::StablePathEntryTrackingInfo::new(Cow::Owned(
+            processor_name.to_owned(),
         )));
     }
     let curr_version = if let Some(mut tracking_info) = tracking_info {
@@ -889,7 +890,7 @@ fn pre_commit<Prof: EngineProfile>(
                 .states
                 .iter()
                 .filter_map(|(_, s)| s.as_ref())
-                .map(|s_bytes| Prof::TargetStateTrackingRecord::from_bytes(s_bytes))
+                .map(Prof::TargetStateTrackingRecord::from_bytes)
                 .collect::<Result<Vec<_>>>()?;
 
             let (target_states_provider, effect_key, declared_decl, child_provider) =
@@ -1039,7 +1040,7 @@ fn pre_commit<Prof: EngineProfile>(
             };
 
             let item = db_schema::TargetStateInfoItem {
-                key: Cow::Owned(effect_key_bytes.into()),
+                key: Cow::Owned(effect_key_bytes),
                 states: vec![
                     (0, db_schema::TargetStateInfoItemState::Deleted),
                     (
@@ -1080,7 +1081,7 @@ pub(crate) struct SubmitOutput<Prof: EngineProfile> {
 pub(crate) async fn submit<Prof: EngineProfile>(
     comp_ctx: &ComponentProcessorContext<Prof>,
     processor: Option<&Prof::ComponentProc>,
-    collect_processor_name_name_for_del: impl FnOnce(&str) -> (),
+    collect_processor_name_name_for_del: impl FnOnce(&str),
 ) -> Result<SubmitOutput<Prof>> {
     let processor_name = processor.map(|p| p.processor_info().name.as_str());
 
@@ -1116,7 +1117,7 @@ pub(crate) async fn submit<Prof: EngineProfile>(
             ),
         };
 
-    let db = comp_ctx.app_ctx().db().clone();
+    let db = *comp_ctx.app_ctx().db();
     let comp_mode = comp_ctx.mode();
     let stable_path = comp_ctx.stable_path().clone();
     let full_reprocess = comp_ctx.full_reprocess();
@@ -1199,7 +1200,7 @@ pub(crate) async fn submit<Prof: EngineProfile>(
         }
     }
 
-    let committer = Committer::new(comp_ctx, &target_states_providers, demote_component_only)?;
+    let committer = Committer::new(comp_ctx, target_states_providers, demote_component_only)?;
     committer
         .commit(
             child_path_set,
@@ -1217,6 +1218,7 @@ pub(crate) async fn submit<Prof: EngineProfile>(
 }
 
 #[instrument(name = "post_submit_after_ready", skip_all)]
+#[allow(clippy::type_complexity)]
 pub(crate) async fn post_submit_for_build<Prof: EngineProfile>(
     comp_ctx: &ComponentProcessorContext<Prof>,
     comp_memo: Option<(
@@ -1251,7 +1253,7 @@ pub(crate) async fn post_submit_for_build<Prof: EngineProfile>(
     };
     let encoded = rmp_serde::to_vec_named(&memo_info)?;
 
-    let db = comp_ctx.app_ctx().db().clone();
+    let db = *comp_ctx.app_ctx().db();
     comp_ctx
         .app_ctx()
         .env()
@@ -1280,7 +1282,7 @@ pub(crate) async fn cleanup_tombstone<Prof: EngineProfile>(
     );
     let encoded_tombstone_key = tombstone_key.encode()?;
 
-    let db = comp_ctx.app_ctx().db().clone();
+    let db = *comp_ctx.app_ctx().db();
     comp_ctx
         .app_ctx()
         .env()
