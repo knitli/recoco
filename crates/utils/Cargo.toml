@@ -28,6 +28,7 @@ chrono = { workspace = true, optional = true }
 encoding_rs = { workspace = true, optional = true }
 globset = { workspace = true, optional = true }
 google-drive3 = { workspace = true, optional = true }
+heed = { workspace = true, optional = true }
 hex = { workspace = true, optional = true }
 http = { workspace = true, optional = true }
 neo4rs = { workspace = true, optional = true }
@@ -36,10 +37,12 @@ rand = { workspace = true, optional = true }
 redis = { workspace = true, optional = true }
 regex = { workspace = true, optional = true }
 reqwest = { workspace = true, optional = true }
+rmp-serde = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
 serde_path_to_error = { workspace = true, optional = true }
 sqlx = { workspace = true, optional = true }
+storekey = { workspace = true, optional = true }
 time = { workspace = true, optional = true }
 tokio = { workspace = true, optional = true }
 tokio-util = { workspace = true, optional = true }
@@ -77,9 +80,11 @@ fingerprint = [
   "deserialize"
 ]
 google-drive = ["dep:globset", "dep:google-drive3"]
+heed = ["dep:heed"]
 http = ["dep:http", "reqwest", "retryable"]
 immutable = []
 local-file = ["dep:globset"]
+msgpack = ["dep:rmp-serde"]
 neo4rs = ["dep:neo4rs"]
 openai = ["dep:async-openai", "reqwest"]
 qdrant = ["dep:qdrant-client"]
@@ -91,6 +96,7 @@ s3 = ["dep:globset"]
 server = ["dep:axum", "dep:tracing", "http"]
 slow_warn = ["dep:tokio", "dep:tracing"]
 sqlx = ["dep:sqlx"]
+storekey = ["dep:storekey"]
 str_sanitize = ["dep:serde", "dep:sqlx"]
 tracing = ["dep:tracing"]
 uuid = ["dep:uuid"]

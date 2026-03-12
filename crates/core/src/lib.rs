@@ -12,5 +12,6 @@
 mod prelude;
 
 pub mod engine;
+#[cfg(feature = "inspect")]
 pub mod inspect;
 pub mod state;

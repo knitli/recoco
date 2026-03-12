@@ -35,3 +35,20 @@ pub fn from_json_str<T: DeserializeOwned>(s: &str) -> Result<T> {
     let mut de = serde_json::Deserializer::from_str(s);
     serde_path_to_error::deserialize::<_, T>(&mut de).map_err(map_serde_path_err::<T>)
 }
+
+/// Deserialize a value from a MessagePack byte slice.
+#[cfg(feature = "msgpack")]
+pub fn from_msgpack_slice<T: serde::de::DeserializeOwned>(data: &[u8]) -> crate::error::Result<T> {
+    rmp_serde::from_slice(data).map_err(crate::error::Error::internal)
+}
+
+/// Deserialize a value from a MessagePack byte slice, allowing the result to borrow from `data`.
+///
+/// Use this for types that contain `Cow<'_, [u8]>` or other borrowed fields. The returned value's
+/// lifetime is tied to `data`.
+#[cfg(feature = "msgpack")]
+pub fn from_msgpack_slice_borrow<'de, T: serde::Deserialize<'de>>(
+    data: &'de [u8],
+) -> crate::error::Result<T> {
+    rmp_serde::from_slice(data).map_err(crate::error::Error::internal)
+}

@@ -367,7 +367,9 @@ impl<Prof: EngineProfile> Component<Prof> {
                 drop(processor);
                 drop(context);
                 drop(self);
-                if let Some(guard) = child_readiness_guard { guard.resolve(outcome) }
+                if let Some(guard) = child_readiness_guard {
+                    guard.resolve(outcome)
+                }
                 output?
                     .ok_or_else(|| internal_error!("component deletion can only run in background"))
             }

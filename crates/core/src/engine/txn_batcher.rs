@@ -10,9 +10,8 @@
 // Both the upstream CocoIndex code and the Recoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 use std::any::Any;
-use std::sync::Arc;
 
-use recoco_utils::batching::{BatchQueue, Batcher, BatchingOptions, Runner};
+use recoco_utils::batching::{Batcher, BatchingOptions, Runner};
 
 use crate::prelude::*;
 
@@ -60,9 +59,8 @@ pub struct TxnBatcher {
 
 impl TxnBatcher {
     pub fn new(db_env: heed::Env) -> Self {
-        let queue = Arc::new(BatchQueue::new());
         Self {
-            inner: Batcher::new(TxnRunner { db_env }, queue, BatchingOptions::default()),
+            inner: Batcher::new(TxnRunner { db_env }, BatchingOptions::default()),
         }
     }
 

@@ -38,7 +38,7 @@ impl serde::ser::Error for FingerprinterError {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Fingerprint(pub [u8; 16]);
 
 impl Fingerprint {
@@ -119,6 +119,27 @@ impl<'de> Deserialize<'de> for Fingerprint {
         Self::from_base64(&s).map_err(serde::de::Error::custom)
     }
 }
+
+#[cfg(feature = "storekey")]
+impl storekey::Encode for Fingerprint {
+    fn encode<W: std::io::Write>(
+        &self,
+        w: &mut storekey::Writer<W>,
+    ) -> Result<(), storekey::EncodeError> {
+        <[u8; 16] as storekey::Encode>::encode(&self.0, w)
+    }
+}
+
+#[cfg(feature = "storekey")]
+impl storekey::Decode for Fingerprint {
+    fn decode<R: std::io::BufRead>(
+        r: &mut storekey::Reader<R>,
+    ) -> Result<Self, storekey::DecodeError> {
+        let bytes: [u8; 16] = <[u8; 16] as storekey::Decode>::decode(r)?;
+        Ok(Fingerprint(bytes))
+    }
+}
+
 #[derive(Clone, Default)]
 pub struct Fingerprinter {
     hasher: blake3::Hasher,
@@ -127,7 +148,8 @@ pub struct Fingerprinter {
 impl Fingerprinter {
     #[inline(always)]
     pub fn into_fingerprint(self) -> Fingerprint {
-        Fingerprint(self.hasher.finalize().into())
+        let full: [u8; 32] = self.hasher.finalize().into();
+        Fingerprint(full[..16].try_into().expect("slice is exactly 16 bytes"))
     }
 
     #[inline(always)]

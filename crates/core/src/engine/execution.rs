@@ -61,7 +61,8 @@ pub(crate) async fn use_or_invalidate_component_memoization<Prof: EngineProfile>
             return Ok(None);
         };
         if let Some(processor_fp) = processor_fp {
-            let memo_info: db_schema::ComponentMemoizationInfo<'_> = from_msgpack_slice_borrow(data)?;
+            let memo_info: db_schema::ComponentMemoizationInfo<'_> =
+                from_msgpack_slice_borrow(data)?;
             if memo_info.processor_fp == processor_fp
                 && logic_registry::all_contained_with_env(
                     &memo_info.logic_deps,
@@ -146,7 +147,8 @@ pub(crate) async fn update_component_memo_states<Prof: EngineProfile>(
             let Some(data) = db.get(wtxn, key.as_slice())? else {
                 return Ok(());
             };
-            let existing: db_schema::ComponentMemoizationInfo<'_> = from_msgpack_slice_borrow(data)?;
+            let existing: db_schema::ComponentMemoizationInfo<'_> =
+                from_msgpack_slice_borrow(data)?;
             let memo_info = db_schema::ComponentMemoizationInfo {
                 processor_fp: existing.processor_fp,
                 return_value: existing.return_value,
@@ -572,7 +574,9 @@ impl<Prof: EngineProfile> Committer<Prof> {
                 loop {
                     let Some(db_next_entry) = db_next else {
                         // All remaining children are new.
-                        if let Some(v) = curr_next { children_to_add.push(v) }
+                        if let Some(v) = curr_next {
+                            children_to_add.push(v)
+                        }
                         while let Some(entry) = curr_iter_next()? {
                             children_to_add.push(entry);
                         }
