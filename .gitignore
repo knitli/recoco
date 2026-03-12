@@ -15,7 +15,7 @@ site/dist
 site/.wrangler
 site/.astro
 site/node_modules
-
+cocoindex/
 # Byte-compiled / optimized / DLL files
 __pycache__/
 .pytest_cache/

@@ -85,9 +85,9 @@ For each upstream change in the provided data, determine:
   - It improves documentation in ways applicable to recoco's docs
 
 - **Mapping changes to Recoco**:
-  - `./rust/cocoindex` → `crates/recoco-core`
-  - `./rust/utils` → `crates/recoco-utils`
-  - `./rust/ops_text` → `crates/recoco-splitters`
+  - `./rust/core` → `crates/core`
+  - `./rust/utils` → `crates/utils`
+  - `./rust/ops_text` → `crates/splitters`
   - Most other file changes are less likely to be relevant.
 
 For each non-skipped change, assess:
