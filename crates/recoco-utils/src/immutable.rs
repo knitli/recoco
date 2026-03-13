@@ -80,3 +80,26 @@ impl<'a, T> Iterator for &'a RefList<'a, T> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_headn() {
+        let nil: RefList<'_, i32> = RefList::Nil;
+        assert_eq!(nil.headn(0), None);
+        assert_eq!(nil.headn(1), None);
+
+        let n3 = nil.prepend(3);
+        let n2 = n3.prepend(2);
+        let n1 = n2.prepend(1);
+
+        // List is 1 -> 2 -> 3 -> Nil
+        assert_eq!(n1.headn(0), Some(&1));
+        assert_eq!(n1.headn(1), Some(&2));
+        assert_eq!(n1.headn(2), Some(&3));
+        assert_eq!(n1.headn(3), None);
+        assert_eq!(n1.headn(10), None);
+    }
+}
