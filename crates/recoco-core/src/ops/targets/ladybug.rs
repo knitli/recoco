@@ -85,12 +85,12 @@ impl LadybugThinClient {
         }
     }
 
-    async fn run_cypher(&self, cyper_builder: CypherBuilder) -> Result<()> {
-        if cyper_builder.query.is_empty() {
+    async fn run_cypher(&self, cypher_builder: CypherBuilder) -> Result<()> {
+        if cypher_builder.query.is_empty() {
             return Ok(());
         }
         let query = json!({
-            "query": cyper_builder.query
+            "query": cypher_builder.query
         });
         http::request(|| self.reqwest_client.post(&self.query_url).json(&query))
             .await

@@ -66,6 +66,7 @@ pub use recoco_utils::batching;
 pub use recoco_utils::concur_control;
 #[cfg(any(
     feature = "target-kuzu",
+    feature = "target-ladybug",
     feature = "function-embed",
     feature = "function-extract-llm",
     feature = "persistence"

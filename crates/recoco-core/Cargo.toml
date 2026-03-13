@@ -123,6 +123,7 @@ all-sources = [
 all-splitter-languages = ["recoco-splitters/all"]
 all-targets = [
   "target-kuzu",
+  "target-ladybug",
   "target-neo4j",
   "target-postgres",
   "target-qdrant",
@@ -294,6 +295,7 @@ splitter-language-xml = ["recoco-splitters/xml"]
 splitter-language-yaml = ["recoco-splitters/yaml"]
 # Targets
 target-kuzu = ["dep:reqwest", "recoco-utils/reqwest", "target-neo4j"]
+target-ladybug = ["dep:reqwest", "recoco-utils/reqwest", "target-neo4j"]
 target-neo4j = ["dep:neo4rs", "recoco-utils/neo4rs", "recoco-utils/retryable"]
 target-postgres = ["dep:itertools", "source-postgres"]
 target-qdrant = ["dep:qdrant-client", "recoco-utils/qdrant"]
