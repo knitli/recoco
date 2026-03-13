@@ -212,7 +212,17 @@ impl SourceExecutor for Executor {
             move |res: notify::Result<notify::Event>| {
                 if let Ok(event) = res {
                     for path in event.paths {
-                        let _ = tx.blocking_send(path);
+                        if let Err(err) = tx.try_send(path) {
+                            use tokio::sync::mpsc::error::TrySendError;
+                            match err {
+                                TrySendError::Full(_) => {
+                                    warn!("File watcher channel is full; dropping file change event");
+                                }
+                                TrySendError::Closed(_) => {
+                                    warn!("File watcher channel is closed; dropping file change event");
+                                }
+                            }
+                        }
                     }
                 }
             },
