@@ -145,7 +145,8 @@ impl SourceExecutor for Executor {
                     | std::path::Component::RootDir
                     | std::path::Component::Prefix(_)
             )
-        }) || !self.pattern_matcher.is_file_included(path) {
+        }) || !self.pattern_matcher.is_file_included(path)
+        {
             return Ok(PartialSourceRowData {
                 value: Some(SourceValue::NonExistence),
                 ordinal: Some(Ordinal::unavailable()),
