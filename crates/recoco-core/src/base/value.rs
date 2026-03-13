@@ -1509,6 +1509,32 @@ mod tests {
     use std::collections::BTreeMap;
 
     #[test]
+    fn test_range_value_extract_str() {
+        let text = "hello world";
+
+        // Basic extraction
+        let range = RangeValue::new(0, 5);
+        assert_eq!(range.extract_str(text), "hello");
+
+        // Extraction from middle
+        let range = RangeValue::new(6, 11);
+        assert_eq!(range.extract_str(text), "world");
+
+        // Extraction using String (AsRef<str>)
+        let string_text = String::from("hello world");
+        let range = RangeValue::new(0, 5);
+        assert_eq!(range.extract_str(&string_text), "hello");
+
+        // Empty extraction
+        let range = RangeValue::new(5, 5);
+        assert_eq!(range.extract_str(text), "");
+
+        // Full extraction
+        let range = RangeValue::new(0, 11);
+        assert_eq!(range.extract_str(text), "hello world");
+    }
+
+    #[test]
     fn test_estimated_byte_size_null() {
         let value = Value::<ScopeValue>::Null;
         let size = value.estimated_byte_size();
