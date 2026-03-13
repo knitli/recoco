@@ -66,6 +66,28 @@ impl<'a, T> RefList<'a, T> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tailn() {
+        let nil_list: RefList<i32> = RefList::Nil;
+        assert_eq!(nil_list.tailn(0), Some(&RefList::Nil));
+        assert_eq!(nil_list.tailn(1), None);
+
+        let list1 = RefList::Cons(3, &nil_list);
+        let list2 = RefList::Cons(2, &list1);
+        let list3 = RefList::Cons(1, &list2);
+
+        assert_eq!(list3.tailn(0), Some(&list3));
+        assert_eq!(list3.tailn(1), Some(&list2));
+        assert_eq!(list3.tailn(2), Some(&list1));
+        assert_eq!(list3.tailn(3), Some(&nil_list));
+        assert_eq!(list3.tailn(4), None);
+    }
+}
+
 impl<'a, T> Iterator for &'a RefList<'a, T> {
     type Item = &'a T;
 
