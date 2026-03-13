@@ -46,3 +46,4 @@ examples/**/uv.lock
 
 .gemini/
 gha-creds-*.json
+cocoindex/

@@ -27,7 +27,7 @@ SPDX-License-Identifier: Apache-2.0
 **[Recoco](https://github.com/knitli/recoco)** is a **pure Rust fork** of the excellent **[CocoIndex](https://github.com/cocoindex-io/cocoindex)**, a high-performance, incremental ETL and data processing framework.
 
 > [!TIP]
-> **Full documentation — guides, examples, API reference, and more — is at [docs.knitli.com/recoco](https://docs.knitli.com/recoco).**
+> **Full documentation — guides, examples, API reference, and more — is at [docs.knitli.com/recoco/](https://docs.knitli.com/recoco/).**
 
 ## Why Fork?
 
@@ -134,7 +134,7 @@ For step-by-step guidance, custom operations, file processing, and more, visit t
 
 ## 🔗 Relationship to CocoIndex
 
-Recoco is a fork of [CocoIndex](https://github.com/cocoindex/cocoindex):
+Recoco is a fork of [CocoIndex](https://github.com/cocoindex-io/cocoindex):
 
 | Aspect | CocoIndex (Upstream) | Recoco (Fork) |
 |--------|---------------------|---------------|
@@ -161,7 +161,7 @@ This project is [REUSE 3.3 compliant](https://reuse.software/).
 
 ## 🙏 Acknowledgments
 
-Recoco is built on the excellent foundation provided by [CocoIndex](https://github.com/cocoindex/cocoindex). We're grateful to the CocoIndex team for creating such a powerful and well-designed dataflow engine.
+Recoco is built on the excellent foundation provided by [CocoIndex](https://github.com/cocoindex-io/cocoindex). We're grateful to the CocoIndex team for creating such a powerful and well-designed dataflow engine.
 
 ---
 
@@ -169,6 +169,7 @@ Recoco is built on the excellent foundation provided by [CocoIndex](https://gith
 
 **Built with 🦀 by [Knitli Inc.](https://knit.li)**
 
-[Docs](https://docs.knitli.com/recoco) • [API Reference](https://docs.rs/recoco) • [Crates.io](https://crates.io/crates/recoco) • [GitHub](https://github.com/knitli/recoco) • [Issues](https://github.com/knitli/recoco/issues)
+[Docs](https://docs.knitli.com/recoco/) • [API Reference](https://docs.rs/recoco) • [Crates.io](https://crates.io/crates/recoco) • [GitHub](https://github.com/knitli/recoco) • [Issues](https://github.com/knitli/recoco/issues)
 
 </div>
+
