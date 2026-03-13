@@ -237,6 +237,11 @@ impl SourceExecutor for Executor {
                     continue;
                 };
 
+                // Skip events that correspond to the root directory itself or yield no relative path.
+                if relative_path.is_empty() {
+                    continue;
+                }
+
                 // Filter through pattern matcher
                 if pattern_matcher.is_file_included(relative_path) {
                     yield Ok(SourceChangeMessage {
