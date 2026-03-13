@@ -397,7 +397,7 @@ impl From<google_drive3::hyper::Error> for Error {
 #[cfg(feature = "heed")]
 impl From<heed::Error> for Error {
     fn from(e: heed::Error) -> Self {
-        Error::Internal(anyhow::Error::msg(e.to_string()))
+        Error::Internal(e.into())
     }
 }
 
@@ -418,14 +418,14 @@ impl From<rmp_serde::decode::Error> for Error {
 #[cfg(feature = "storekey")]
 impl From<storekey::EncodeError> for Error {
     fn from(e: storekey::EncodeError) -> Self {
-        Error::Internal(anyhow::Error::msg(e.to_string()))
+        Error::Internal(e.into())
     }
 }
 
 #[cfg(feature = "storekey")]
 impl From<storekey::DecodeError> for Error {
     fn from(e: storekey::DecodeError) -> Self {
-        Error::Internal(anyhow::Error::msg(e.to_string()))
+        Error::Internal(e.into())
     }
 }
 
