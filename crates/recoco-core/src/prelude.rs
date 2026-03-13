@@ -24,6 +24,8 @@ pub use indexmap::{IndexMap, IndexSet};
 #[cfg(any(
     feature = "server",
     feature = "persistence",
+    feature = "target-kuzu",
+    feature = "target-ladybug",
     feature = "target-postgres"
 ))]
 pub use itertools::Itertools;

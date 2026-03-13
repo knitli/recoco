@@ -34,8 +34,8 @@ const SELF_CONTAINED_TAG_FIELD_NAME: &str = "__self_contained";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConnectionSpec {
-    /// The URL of the Ladybug API server (Cypher-compatible endpoint),
-    /// e.g. `http://localhost:8000`.
+    /// The URL of the Ladybug API server, e.g. `http://localhost:8000`.
+    /// Ladybug is a Cypher-compatible graph database server.
     api_server_url: String,
 }
 
