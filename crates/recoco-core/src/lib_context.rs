@@ -334,6 +334,19 @@ impl LibContext {
 }
 
 static LIB_INIT: OnceLock<()> = OnceLock::new();
+
+/// Global storage for the internal DB schema name configured via [`settings::Settings::db_schema_name`].
+/// Set during [`create_lib_context`] and read by [`get_internal_db_schema`].
+static INTERNAL_DB_SCHEMA: LazyLock<std::sync::RwLock<Option<String>>> =
+    LazyLock::new(|| std::sync::RwLock::new(None));
+
+/// Returns the configured internal DB schema name, if any.
+///
+/// Tracking and metadata tables will be placed under this schema when set.
+pub fn get_internal_db_schema() -> Option<String> {
+    INTERNAL_DB_SCHEMA.read().unwrap().clone()
+}
+
 pub async fn create_lib_context(settings: settings::Settings) -> Result<LibContext> {
     LIB_INIT.get_or_init(|| {
         // Initialize tracing subscriber with env filter for log level control
@@ -347,6 +360,9 @@ pub async fn create_lib_context(settings: settings::Settings) -> Result<LibConte
         #[cfg(any(feature = "server", feature = "source-gdrive", feature = "source-s3"))]
         let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
     });
+
+    // Store the schema name globally so it can be accessed synchronously by DB helpers.
+    *INTERNAL_DB_SCHEMA.write().unwrap() = settings.db_schema_name.clone();
 
     let db_pools = DbPools::default();
     #[cfg(feature = "persistence")]
@@ -428,6 +444,7 @@ pub async fn get_lib_context() -> Result<Arc<LibContext>> {
 pub async fn clear_lib_context() {
     let mut lib_context_locked = LIB_CONTEXT.lock().await;
     *lib_context_locked = None;
+    *INTERNAL_DB_SCHEMA.write().unwrap() = None;
 }
 
 #[cfg(test)]
