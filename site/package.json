@@ -27,7 +27,7 @@
   "name": "site",
   "scripts": {
     "astro": "bunx astro",
-    "build": "bunx astro build && cp -f src/assets/{_headers,.assetsignore} dist",
+    "build": "bunx astro build && cp -f src/assets/{_headers,.assetsignore} dist && cp -f src/public/_redirects dist",
     "dev": "bunx astro dev",
     "preview": "bunx astro preview",
     "start": "bunx astro dev",

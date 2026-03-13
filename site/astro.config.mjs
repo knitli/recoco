@@ -54,6 +54,7 @@ export default defineConfig({
   markdown: {
     shikiConfig: { theme: "github-dark" },
   },
+  trailingSlash: 'always',
   // Vite configuration for better bundling
   vite: {
      server: {
