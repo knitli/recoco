@@ -712,7 +712,6 @@ async fn apply_changes_for_flow(
         .await?;
     }
 
-    let is_deletion = status == ObjectStatus::Deleted;
     db_metadata::commit_changes_for_flow(
         flow_ctx.flow_name(),
         new_version_id,
