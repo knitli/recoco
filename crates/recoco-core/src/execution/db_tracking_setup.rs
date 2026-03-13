@@ -10,9 +10,11 @@
 // Both the upstream CocoIndex code and the Recoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::builder::exec_ctx::ExportOpExecutionContext;
 use crate::prelude::*;
 
 use crate::setup::{CombinedState, ResourceSetupChange, ResourceSetupInfo, SetupChangeType};
+use recoco_utils::error::SharedError;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
@@ -105,7 +107,6 @@ pub struct TrackingTableSetupState {
     pub has_fast_fingerprint_column: bool,
 }
 
-#[derive(Debug)]
 pub struct TrackingTableSetupChange {
     pub desired_state: Option<TrackingTableSetupState>,
 
@@ -117,7 +118,42 @@ pub struct TrackingTableSetupChange {
 
     pub source_names_need_state_cleanup: BTreeMap<i32, BTreeSet<String>>,
 
+    /// Lazily resolved execution plan (awaited only when cleanup needs export contexts)
+    pub execution_plan:
+        Shared<BoxFuture<'static, std::result::Result<Arc<plan::ExecutionPlan>, SharedError>>>,
+    pub export_op_execution_contexts: Vec<ExportOpExecutionContext>,
+
     has_state_change: bool,
+}
+
+impl std::fmt::Debug for TrackingTableSetupChange {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TrackingTableSetupChange")
+            .field("desired_state", &self.desired_state)
+            .field("min_existing_version_id", &self.min_existing_version_id)
+            .field(
+                "legacy_tracking_table_names",
+                &self.legacy_tracking_table_names,
+            )
+            .field(
+                "source_state_table_always_exists",
+                &self.source_state_table_always_exists,
+            )
+            .field(
+                "legacy_source_state_table_names",
+                &self.legacy_source_state_table_names,
+            )
+            .field(
+                "source_names_need_state_cleanup",
+                &self.source_names_need_state_cleanup,
+            )
+            .field(
+                "export_op_execution_contexts",
+                &self.export_op_execution_contexts,
+            )
+            .field("has_state_change", &self.has_state_change)
+            .finish_non_exhaustive()
+    }
 }
 
 impl TrackingTableSetupChange {
@@ -125,6 +161,10 @@ impl TrackingTableSetupChange {
         desired: Option<&TrackingTableSetupState>,
         existing: &CombinedState<TrackingTableSetupState>,
         source_names_need_state_cleanup: BTreeMap<i32, BTreeSet<String>>,
+        execution_plan: Shared<
+            BoxFuture<'static, std::result::Result<Arc<plan::ExecutionPlan>, SharedError>>,
+        >,
+        export_op_execution_contexts: Vec<ExportOpExecutionContext>,
     ) -> Option<Self> {
         let legacy_tracking_table_names = existing
             .legacy_values(desired, |v| &v.table_name)
@@ -151,6 +191,8 @@ impl TrackingTableSetupChange {
                 legacy_source_state_table_names,
                 min_existing_version_id,
                 source_names_need_state_cleanup,
+                execution_plan,
+                export_op_execution_contexts,
                 has_state_change: existing.has_state_diff(desired, |v| v),
             })
         } else {
