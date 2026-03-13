@@ -1724,6 +1724,17 @@ mod tests {
     }
 
     #[test]
+    fn test_range_value_len() {
+        let range1 = RangeValue { start: 0, end: 5 };
+        assert_eq!(range1.len(), 5);
+
+        let range2 = RangeValue { start: 5, end: 5 };
+        assert_eq!(range2.len(), 0);
+
+        let range3 = RangeValue { start: 10, end: 25 };
+        assert_eq!(range3.len(), 15);
+    
+    #[test]
     fn test_key_part_to_strs() {
         let bytes_part = KeyPart::from(vec![1u8, 2, 3]);
         assert_eq!(bytes_part.to_strs(), vec!["AQID"]);
