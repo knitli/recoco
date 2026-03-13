@@ -73,7 +73,7 @@ mod tests {
     #[test]
     fn tailn_on_nil() {
         let nil_list: RefList<i32> = RefList::Nil;
-        assert_eq!(nil_list.tailn(0), Some(&RefList::Nil));
+        assert_eq!(nil_list.tailn(0), Some(&nil_list));
         assert_eq!(nil_list.tailn(1), None);
     }
 
