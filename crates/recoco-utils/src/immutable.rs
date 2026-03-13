@@ -71,11 +71,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_tailn() {
+    fn tailn_on_nil() {
         let nil_list: RefList<i32> = RefList::Nil;
         assert_eq!(nil_list.tailn(0), Some(&RefList::Nil));
         assert_eq!(nil_list.tailn(1), None);
+    }
 
+    #[test]
+    fn tailn_in_bounds() {
+        let nil_list: RefList<i32> = RefList::Nil;
         let list1 = RefList::Cons(3, &nil_list);
         let list2 = RefList::Cons(2, &list1);
         let list3 = RefList::Cons(1, &list2);
@@ -83,7 +87,25 @@ mod tests {
         assert_eq!(list3.tailn(0), Some(&list3));
         assert_eq!(list3.tailn(1), Some(&list2));
         assert_eq!(list3.tailn(2), Some(&list1));
+    }
+
+    #[test]
+    fn tailn_exact_length() {
+        let nil_list: RefList<i32> = RefList::Nil;
+        let list1 = RefList::Cons(3, &nil_list);
+        let list2 = RefList::Cons(2, &list1);
+        let list3 = RefList::Cons(1, &list2);
+
         assert_eq!(list3.tailn(3), Some(&nil_list));
+    }
+
+    #[test]
+    fn tailn_out_of_bounds() {
+        let nil_list: RefList<i32> = RefList::Nil;
+        let list1 = RefList::Cons(3, &nil_list);
+        let list2 = RefList::Cons(2, &list1);
+        let list3 = RefList::Cons(1, &list2);
+
         assert_eq!(list3.tailn(4), None);
     }
 }
