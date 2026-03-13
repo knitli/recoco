@@ -1778,7 +1778,8 @@ mod tests {
 
         let range3 = RangeValue { start: 10, end: 25 };
         assert_eq!(range3.len(), 15);
-    
+    }
+
     #[test]
     fn test_key_part_to_strs() {
         let bytes_part = KeyPart::from(vec![1u8, 2, 3]);
