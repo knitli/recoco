@@ -394,6 +394,41 @@ impl From<google_drive3::hyper::Error> for Error {
     }
 }
 
+#[cfg(feature = "heed")]
+impl From<heed::Error> for Error {
+    fn from(e: heed::Error) -> Self {
+        Error::Internal(e.into())
+    }
+}
+
+#[cfg(feature = "msgpack")]
+impl From<rmp_serde::encode::Error> for Error {
+    fn from(e: rmp_serde::encode::Error) -> Self {
+        Error::Internal(e.into())
+    }
+}
+
+#[cfg(feature = "msgpack")]
+impl From<rmp_serde::decode::Error> for Error {
+    fn from(e: rmp_serde::decode::Error) -> Self {
+        Error::Internal(e.into())
+    }
+}
+
+#[cfg(feature = "storekey")]
+impl From<storekey::EncodeError> for Error {
+    fn from(e: storekey::EncodeError) -> Self {
+        Error::Internal(e.into())
+    }
+}
+
+#[cfg(feature = "storekey")]
+impl From<storekey::DecodeError> for Error {
+    fn from(e: storekey::DecodeError) -> Self {
+        Error::Internal(e.into())
+    }
+}
+
 pub trait ContextExt<T> {
     fn context<C: Into<String>>(self, context: C) -> Result<T>;
     fn with_context<C: Into<String>, F: FnOnce() -> C>(self, f: F) -> Result<T>;

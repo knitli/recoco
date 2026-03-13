@@ -52,6 +52,40 @@ tracing-subscriber = { workspace = true, optional = true }  # runtime.rs
 serde_json = { workspace = true }
 
 [features]
-default = ["batching", "recoco-utils/deserialize", "recoco-utils/fingerprint"]
-# Core
-batching = ["recoco-utils/batching"]
+# Default: full engine with inspect capabilities enabled
+default = ["engine", "inspect"]
+
+# Core engine: async runtime, persistence (LMDB), state tracking, fingerprinting,
+# and stats/progress display. Enables all engine/*, state/*, and runtime modules.
+engine = [
+    "batching",
+    "dep:async-trait",
+    "dep:bytes",
+    "dep:futures",
+    "dep:heed",
+    "dep:indexmap",
+    "dep:indicatif",
+    "dep:rmp",
+    "dep:rmp-serde",
+    "dep:rpds",
+    "dep:serde",
+    "dep:serde_with",
+    "dep:storekey",
+    "dep:tokio",
+    "dep:tracing",
+    "dep:tracing-subscriber",
+    "dep:uuid",
+    "dep:recoco-utils",
+    "recoco-utils/batching",
+    "recoco-utils/deserialize",
+    "recoco-utils/fingerprint",
+    "recoco-utils/heed",
+    "recoco-utils/msgpack",
+    "recoco-utils/storekey",
+]
+
+# Batching support (transaction batcher for LMDB write coalescing)
+batching = ["dep:recoco-utils", "recoco-utils/batching"]
+
+# Database inspection utilities (gates inspect/ module; requires tokio-stream)
+inspect = ["engine", "dep:tokio-stream"]

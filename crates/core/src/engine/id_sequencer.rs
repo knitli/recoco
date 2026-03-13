@@ -113,7 +113,7 @@ impl IdSequencerManager {
 
         if state.needs_refill() {
             let batch_size = state.next_batch_size;
-            let db = db.clone();
+            let db = *db;
             let key = key.clone();
             let start_id = txn_batcher
                 .run(move |wtxn| Self::reserve_ids_in_txn(wtxn, &db, &key, batch_size))
@@ -135,7 +135,7 @@ impl IdSequencerManager {
 
         // Read current value (IDs start from 1, 0 is reserved)
         let current_next_id = if let Some(data) = db.get(wtxn, db_key.as_slice())? {
-            let info: db_schema::IdSequencerInfo = from_msgpack_slice(&data)?;
+            let info: db_schema::IdSequencerInfo = from_msgpack_slice(data)?;
             info.next_id
         } else {
             1
@@ -183,7 +183,7 @@ impl IdReservation {
             slot @ None => {
                 let db_key = db_schema::DbEntryKey::IdSequencer(self.key.clone()).encode()?;
                 let current = if let Some(data) = db.get(rtxn, db_key.as_slice())? {
-                    let info: db_schema::IdSequencerInfo = from_msgpack_slice(&data)?;
+                    let info: db_schema::IdSequencerInfo = from_msgpack_slice(data)?;
                     info.next_id
                 } else {
                     1

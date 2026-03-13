@@ -39,7 +39,7 @@ impl storekey::Encode for TargetStatePath {
         &self,
         e: &mut storekey::Writer<W>,
     ) -> Result<(), storekey::EncodeError> {
-        self.0.encode(e)
+        <[utils::fingerprint::Fingerprint] as storekey::Encode>::encode(self.0.as_ref(), e)
     }
 }
 
@@ -47,7 +47,8 @@ impl storekey::Decode for TargetStatePath {
     fn decode<D: std::io::BufRead>(
         d: &mut storekey::Reader<D>,
     ) -> Result<Self, storekey::DecodeError> {
-        let parts: Vec<utils::fingerprint::Fingerprint> = storekey::Decode::decode(d)?;
+        let parts: Vec<utils::fingerprint::Fingerprint> =
+            <Vec<utils::fingerprint::Fingerprint> as storekey::Decode>::decode(d)?;
         Ok(Self(Arc::from(parts)))
     }
 }
@@ -67,7 +68,10 @@ impl TargetStatePath {
     }
 
     pub fn concat(&self, part: &StableKey) -> Self {
-        let fp = utils::fingerprint::Fingerprint::from(&part).unwrap();
+        let fp = utils::fingerprint::Fingerprinter::default()
+            .with(part)
+            .expect("StableKey is always serializable")
+            .into_fingerprint();
         let inner: Arc<[utils::fingerprint::Fingerprint]> =
             self.0.iter().chain(std::iter::once(&fp)).cloned().collect();
         Self(inner)

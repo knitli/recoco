@@ -114,17 +114,13 @@ pub struct FnCallMemo<Prof: EngineProfile> {
     pub(crate) already_stored: bool,
 }
 
+#[derive(Default)]
 pub enum FnCallMemoEntry<Prof: EngineProfile> {
     /// Memoization result is pending, i.e. the function call is not finished yet.
+    #[default]
     Pending,
     /// Memoization result is ready. None means memoization is disabled, e.g. it mounts child components.
     Ready(Option<FnCallMemo<Prof>>),
-}
-
-impl<Prof: EngineProfile> Default for FnCallMemoEntry<Prof> {
-    fn default() -> Self {
-        Self::Pending
-    }
 }
 
 pub(crate) struct ComponentBuildingState<Prof: EngineProfile> {

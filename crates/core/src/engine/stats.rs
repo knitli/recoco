@@ -134,15 +134,15 @@ impl ProcessingStats {
             }
             write!(&mut result, "{name}: {group}").expect("write to string should not fail");
         }
-        if let Some(start_time) = start_time {
-            if !result.is_empty() {
-                write!(
-                    &mut result,
-                    " [elapsed: {:.1}s]",
-                    start_time.elapsed().as_secs_f64()
-                )
-                .expect("write to string should not fail");
-            }
+        if let Some(start_time) = start_time
+            && !result.is_empty()
+        {
+            write!(
+                &mut result,
+                " [elapsed: {:.1}s]",
+                start_time.elapsed().as_secs_f64()
+            )
+            .expect("write to string should not fail");
         }
         result
     }

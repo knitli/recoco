@@ -119,7 +119,7 @@ impl std::fmt::Display for StableKey {
                 }
                 f.write_char('"')
             }
-            StableKey::Uuid(u) => write!(f, "{}", u.to_string()),
+            StableKey::Uuid(u) => write!(f, "{}", u),
             StableKey::Array(a) => {
                 f.write_char('[')?;
                 for (i, part) in a.iter().enumerate() {
@@ -176,7 +176,7 @@ impl storekey::Encode for StableKey {
             }
             StableKey::Fingerprint(fp) => {
                 e.write_u8(10)?;
-                storekey::Encode::encode(fp, e)?;
+                <utils::fingerprint::Fingerprint as storekey::Encode>::encode(fp, e)?;
             }
         }
         Ok(())
@@ -203,7 +203,8 @@ impl storekey::Decode for StableKey {
                 Ok(StableKey::Array(Arc::from(v)))
             }
             10 => {
-                let fp: utils::fingerprint::Fingerprint = storekey::Decode::decode(d)?;
+                let fp: utils::fingerprint::Fingerprint =
+                    <utils::fingerprint::Fingerprint as storekey::Decode>::decode(d)?;
                 Ok(StableKey::Fingerprint(fp))
             }
             _ => Err(storekey::DecodeError::InvalidFormat),
@@ -328,7 +329,7 @@ impl std::ops::Deref for StablePath {
     }
 }
 
-impl<'a> std::borrow::Borrow<[StableKey]> for StablePath {
+impl std::borrow::Borrow<[StableKey]> for StablePath {
     fn borrow(&self) -> &[StableKey] {
         &self.0
     }

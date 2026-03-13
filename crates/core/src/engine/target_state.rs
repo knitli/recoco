@@ -214,8 +214,12 @@ impl<Prof: EngineProfile> TargetStateProviderRegistry<Prof> {
         name: String,
         handler: Prof::TargetHdl,
     ) -> Result<TargetStateProvider<Prof>> {
-        let target_state_path =
-            TargetStatePath::new(utils::fingerprint::Fingerprint::from(&name)?, None);
+        let target_state_path = TargetStatePath::new(
+            utils::fingerprint::Fingerprinter::default()
+                .with(&name)?
+                .into_fingerprint(),
+            None,
+        );
         let provider = TargetStateProvider {
             inner: Arc::new(TargetStateProviderInner {
                 parent_provider: None,
