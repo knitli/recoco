@@ -1722,4 +1722,18 @@ mod tests {
         let size = value.estimated_byte_size();
         assert_eq!(size, std::mem::size_of::<Value<ScopeValue>>());
     }
+
+    #[test]
+    fn test_range_value_len() {
+        let range1 = RangeValue::new(0, 5);
+        assert_eq!(range1.len(), 5);
+
+        let range2 = RangeValue::new(5, 5);
+        assert_eq!(range2.len(), 0);
+        assert!(range2.is_empty());
+
+        let range3 = RangeValue::new(10, 25);
+        assert_eq!(range3.len(), 15);
+        assert!(!range3.is_empty());
+    }
 }
