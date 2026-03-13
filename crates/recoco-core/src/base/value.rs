@@ -1744,7 +1744,8 @@ mod tests {
         let uuid_part = KeyPart::from(uuid_val);
         assert_eq!(uuid_part.to_strs(), vec![uuid_val.to_string()]);
 
-        let date_val = chrono::NaiveDate::from_ymd_opt(2023, 10, 15).unwrap();
+        let date_val = chrono::NaiveDate::from_ymd_opt(2023, 10, 15)
+            .expect("test date 2023-10-15 should be a valid NaiveDate");
         let date_part = KeyPart::from(date_val);
         assert_eq!(date_part.to_strs(), vec!["2023-10-15"]);
 
