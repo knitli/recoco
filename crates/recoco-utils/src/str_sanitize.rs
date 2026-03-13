@@ -521,7 +521,7 @@ mod tests {
     fn strip_zero_code_no_change_borrowed() {
         let input = "abc";
         let out = strip_zero_code(Cow::Borrowed(input));
-        assert!(matches!(out, Cow::Borrowed(_)));
+        assert!(matches!(&out, Cow::Borrowed(_)));
         assert_eq!(out.as_ref(), "abc");
     }
 
@@ -529,7 +529,48 @@ mod tests {
     fn strip_zero_code_removes_nuls_owned() {
         let input = "a\0b\0c\0".to_string();
         let out = strip_zero_code(Cow::Owned(input));
+        assert!(matches!(&out, Cow::Owned(_)));
         assert_eq!(out.as_ref(), "abc");
+    }
+
+    #[test]
+    fn strip_zero_code_removes_nuls_borrowed() {
+        let input = "a\0b\0c\0";
+        let out = strip_zero_code(Cow::Borrowed(input));
+        assert!(matches!(&out, Cow::Owned(_)));
+        assert_eq!(out.as_ref(), "abc");
+    }
+
+    #[test]
+    fn strip_zero_code_no_change_owned() {
+        let input = "abc".to_string();
+        let out = strip_zero_code(Cow::Owned(input));
+        assert!(matches!(&out, Cow::Owned(_)));
+        assert_eq!(out.as_ref(), "abc");
+    }
+
+    #[test]
+    fn strip_zero_code_empty() {
+        let input = "";
+        let out = strip_zero_code(Cow::Borrowed(input));
+        assert!(matches!(&out, Cow::Borrowed(_)));
+        assert_eq!(out.as_ref(), "");
+    }
+
+    #[test]
+    fn strip_zero_code_only_nuls() {
+        let input = "\0\0\0";
+        let out = strip_zero_code(Cow::Borrowed(input));
+        assert!(matches!(&out, Cow::Owned(_)));
+        assert_eq!(out.as_ref(), "");
+    }
+
+    #[test]
+    fn strip_zero_code_contiguous_nuls() {
+        let input = "a\0\0\0b";
+        let out = strip_zero_code(Cow::Borrowed(input));
+        assert!(matches!(&out, Cow::Owned(_)));
+        assert_eq!(out.as_ref(), "ab");
     }
 
     #[test]

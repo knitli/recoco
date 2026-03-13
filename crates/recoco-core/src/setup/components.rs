@@ -156,27 +156,35 @@ impl<D: SetupOperator + Send + Sync> ResourceSetupChange for SetupChange<D> {
     }
 }
 
+/// Maximum number of component operations (deletes or upserts) that may run concurrently.
+/// Keeping this bounded prevents overwhelming a database connection pool or
+/// network layer when a large number of components change at once.
+const COMPONENT_CONCURRENCY_LIMIT: usize = 16;
+
 pub async fn apply_component_changes<D: SetupOperator>(
     changes: Vec<&SetupChange<D>>,
     context: &D::Context,
 ) -> Result<()> {
     // First delete components that need to be removed
-    for change in changes.iter() {
-        for key in &change.keys_to_delete {
-            change.desc.delete(key, context).await?;
-        }
-    }
+    let delete_futures = changes.iter().flat_map(|change| {
+        change
+            .keys_to_delete
+            .iter()
+            .map(move |key| change.desc.delete(key, context))
+    });
+    futures::future::try_join_all(delete_futures).await?;
 
     // Then upsert components that need to be updated
-    for change in changes.iter() {
-        for state in &change.states_to_upsert {
+    let upsert_futures = changes.iter().flat_map(|change| {
+        change.states_to_upsert.iter().map(move |state| async move {
             if state.already_exists {
-                change.desc.update(&state.state, context).await?;
+                change.desc.update(&state.state, context).await
             } else {
-                change.desc.create(&state.state, context).await?;
+                change.desc.create(&state.state, context).await
             }
-        }
-    }
+        })
+    });
+    futures::future::try_join_all(upsert_futures).await?;
 
     Ok(())
 }
