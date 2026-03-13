@@ -210,19 +210,24 @@ impl SourceExecutor for Executor {
 
         let mut watcher = RecommendedWatcher::new(
             move |res: notify::Result<notify::Event>| {
-                if let Ok(event) = res {
-                    for path in event.paths {
-                        if let Err(err) = tx.try_send(path) {
-                            use tokio::sync::mpsc::error::TrySendError;
-                            match err {
-                                TrySendError::Full(_) => {
-                                    warn!("File watcher channel is full; dropping file change event");
-                                }
-                                TrySendError::Closed(_) => {
-                                    warn!("File watcher channel is closed; dropping file change event");
+                match res {
+                    Ok(event) => {
+                        for path in event.paths {
+                            if let Err(err) = tx.try_send(path) {
+                                use tokio::sync::mpsc::error::TrySendError;
+                                match err {
+                                    TrySendError::Full(_) => {
+                                        warn!("File watcher channel is full; dropping file change event");
+                                    }
+                                    TrySendError::Closed(_) => {
+                                        warn!("File watcher channel is closed; dropping file change event");
+                                    }
                                 }
                             }
                         }
+                    }
+                    Err(e) => {
+                        warn!("File watcher error: {}", e);
                     }
                 }
             },
@@ -239,6 +244,12 @@ impl SourceExecutor for Executor {
             let _watcher = watcher;
 
             while let Some(path) = rx.recv().await {
+                // Skip directory paths - notify can emit events for directories,
+                // and reading a directory as a file would produce an EISDIR error.
+                if !path.is_file() {
+                    continue;
+                }
+
                 let mut path_components = path.components();
                 for _ in 0..root_component_size {
                     path_components.next();
