@@ -66,6 +66,35 @@ impl<'a, T> RefList<'a, T> {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_reflist_prepend() {
+        let list1: RefList<'_, i32> = RefList::Nil;
+        let list2 = list1.prepend(3);
+        let list3 = list2.prepend(2);
+        let list4 = list3.prepend(1);
+
+        assert_eq!(list4.head(), Some(&1));
+        assert_eq!(list4.headn(0), Some(&1));
+        assert_eq!(list4.headn(1), Some(&2));
+        assert_eq!(list4.headn(2), Some(&3));
+        assert_eq!(list4.headn(3), None);
+
+        assert_eq!(list4.tail().unwrap().head(), Some(&2));
+        assert_eq!(list4.tailn(0).unwrap().head(), Some(&1));
+        assert_eq!(list4.tailn(1).unwrap().head(), Some(&2));
+        assert_eq!(list4.tailn(2).unwrap().head(), Some(&3));
+        assert!(matches!(list4.tailn(3).unwrap(), RefList::Nil));
+        assert_eq!(list4.tailn(4), None);
+
+        let items: Vec<&i32> = list4.iter().collect();
+        assert_eq!(items, vec![&1, &2, &3]);
+    }
+}
+
 impl<'a, T> Iterator for &'a RefList<'a, T> {
     type Item = &'a T;
 
