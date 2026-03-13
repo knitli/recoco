@@ -92,6 +92,42 @@ mod tests {
 
         let items: Vec<&i32> = list4.iter().collect();
         assert_eq!(items, vec![&1, &2, &3]);
+    fn tailn_on_nil() {
+        let nil_list: RefList<i32> = RefList::Nil;
+        assert_eq!(nil_list.tailn(0), Some(&nil_list));
+        assert_eq!(nil_list.tailn(1), None);
+    }
+
+    #[test]
+    fn tailn_in_bounds() {
+        let nil_list: RefList<i32> = RefList::Nil;
+        let list1 = RefList::Cons(3, &nil_list);
+        let list2 = RefList::Cons(2, &list1);
+        let list3 = RefList::Cons(1, &list2);
+
+        assert_eq!(list3.tailn(0), Some(&list3));
+        assert_eq!(list3.tailn(1), Some(&list2));
+        assert_eq!(list3.tailn(2), Some(&list1));
+    }
+
+    #[test]
+    fn tailn_exact_length() {
+        let nil_list: RefList<i32> = RefList::Nil;
+        let list1 = RefList::Cons(3, &nil_list);
+        let list2 = RefList::Cons(2, &list1);
+        let list3 = RefList::Cons(1, &list2);
+
+        assert_eq!(list3.tailn(3), Some(&nil_list));
+    }
+
+    #[test]
+    fn tailn_out_of_bounds() {
+        let nil_list: RefList<i32> = RefList::Nil;
+        let list1 = RefList::Cons(3, &nil_list);
+        let list2 = RefList::Cons(2, &list1);
+        let list3 = RefList::Cons(1, &list2);
+
+        assert_eq!(list3.tailn(4), None);
     }
 }
 
@@ -107,5 +143,28 @@ impl<'a, T> Iterator for &'a RefList<'a, T> {
                 Some(head)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_headn() {
+        let nil: RefList<'_, i32> = RefList::Nil;
+        assert_eq!(nil.headn(0), None);
+        assert_eq!(nil.headn(1), None);
+
+        let n3 = nil.prepend(3);
+        let n2 = n3.prepend(2);
+        let n1 = n2.prepend(1);
+
+        // List is 1 -> 2 -> 3 -> Nil
+        assert_eq!(n1.headn(0), Some(&1));
+        assert_eq!(n1.headn(1), Some(&2));
+        assert_eq!(n1.headn(2), Some(&3));
+        assert_eq!(n1.headn(3), None);
+        assert_eq!(n1.headn(10), None);
     }
 }
