@@ -1722,4 +1722,51 @@ mod tests {
         let size = value.estimated_byte_size();
         assert_eq!(size, std::mem::size_of::<Value<ScopeValue>>());
     }
+
+    #[test]
+    fn test_range_value_len() {
+        let range1 = RangeValue { start: 0, end: 5 };
+        assert_eq!(range1.len(), 5);
+
+        let range2 = RangeValue { start: 5, end: 5 };
+        assert_eq!(range2.len(), 0);
+
+        let range3 = RangeValue { start: 10, end: 25 };
+        assert_eq!(range3.len(), 15);
+    
+    #[test]
+    fn test_key_part_to_strs() {
+        let bytes_part = KeyPart::from(vec![1u8, 2, 3]);
+        assert_eq!(bytes_part.to_strs(), vec!["AQID"]);
+
+        let str_part = KeyPart::from(String::from("hello"));
+        assert_eq!(str_part.to_strs(), vec!["hello"]);
+
+        let bool_part = KeyPart::from(true);
+        assert_eq!(bool_part.to_strs(), vec!["true"]);
+
+        let int64_part = KeyPart::from(42i64);
+        assert_eq!(int64_part.to_strs(), vec!["42"]);
+
+        let range_part = KeyPart::from(RangeValue::new(10, 20));
+        assert_eq!(range_part.to_strs(), vec!["10", "20"]);
+
+        let uuid_val = uuid::Uuid::nil();
+        let uuid_part = KeyPart::from(uuid_val);
+        assert_eq!(uuid_part.to_strs(), vec![uuid_val.to_string()]);
+
+        let date_val = chrono::NaiveDate::from_ymd_opt(2023, 10, 15)
+            .expect("test date 2023-10-15 should be a valid NaiveDate");
+        let date_part = KeyPart::from(date_val);
+        assert_eq!(date_part.to_strs(), vec!["2023-10-15"]);
+
+        let struct_part = KeyPart::from(vec![
+            KeyPart::from(String::from("world")),
+            KeyPart::from(100i64),
+            KeyPart::from(vec![
+                KeyPart::from(false),
+            ]),
+        ]);
+        assert_eq!(struct_part.to_strs(), vec!["world", "100", "false"]);
+    }
 }

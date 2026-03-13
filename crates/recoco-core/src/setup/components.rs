@@ -156,6 +156,11 @@ impl<D: SetupOperator + Send + Sync> ResourceSetupChange for SetupChange<D> {
     }
 }
 
+/// Maximum number of component operations (deletes or upserts) that may run concurrently.
+/// Keeping this bounded prevents overwhelming a database connection pool or
+/// network layer when a large number of components change at once.
+const COMPONENT_CONCURRENCY_LIMIT: usize = 16;
+
 pub async fn apply_component_changes<D: SetupOperator>(
     changes: Vec<&SetupChange<D>>,
     context: &D::Context,

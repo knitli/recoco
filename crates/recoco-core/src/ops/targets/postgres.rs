@@ -287,22 +287,59 @@ impl ExportContext {
         deletions: &[interface::ExportTargetDeleteEntry],
         txn: &mut sqlx::PgTransaction<'_>,
     ) -> Result<()> {
-        // TODO: Find a way to batch delete.
-        for deletion in deletions.iter() {
+        if deletions.is_empty() {
+            return Ok(());
+        }
+
+        let num_parameters = self.key_fields_schema.len();
+        if num_parameters == 0 {
+            return Ok(());
+        }
+
+        for deletion_chunk in deletions.chunks(BIND_LIMIT / num_parameters) {
             let mut query_builder = sqlx::QueryBuilder::new("");
             query_builder.push(&self.delete_sql_prefix);
-            for (i, ((schema, _), value)) in
-                std::iter::zip(&self.key_fields_schema, &deletion.key).enumerate()
-            {
+
+            if num_parameters > 1 {
+                query_builder.push("(");
+            }
+            for (i, (schema, _)) in self.key_fields_schema.iter().enumerate() {
                 if i > 0 {
-                    query_builder.push(" AND ");
+                    query_builder.push(", ");
                 }
                 query_builder.push("\"");
                 query_builder.push(schema.name.as_str());
                 query_builder.push("\"");
-                query_builder.push("=");
-                bind_key_field(&mut query_builder, value)?;
             }
+            if num_parameters > 1 {
+                query_builder.push(")");
+            }
+
+            query_builder.push(" IN (");
+
+            for (i, deletion) in deletion_chunk.iter().enumerate() {
+                if i > 0 {
+                    query_builder.push(", ");
+                }
+                if num_parameters > 1 {
+                    query_builder.push("(");
+                }
+                for (j, (_schema, _)) in self.key_fields_schema.iter().enumerate() {
+                    if j > 0 {
+                        query_builder.push(", ");
+                    }
+                    if let Some(value) = deletion.key.get(j) {
+                        bind_key_field(&mut query_builder, value)?;
+                    } else {
+                        query_builder.push("NULL");
+                    }
+                }
+                if num_parameters > 1 {
+                    query_builder.push(")");
+                }
+            }
+
+            query_builder.push(")");
             query_builder.build().execute(&mut **txn).await?;
         }
         Ok(())
