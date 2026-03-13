@@ -18,7 +18,9 @@ license = { workspace = true }
 categories = ["parser-implementations", "parsing", "text-processing"]
 
 [dependencies]
+anyhow = { workspace = true, optional = true }
 cfg-if = { workspace = true }  # compile time
+globset = { workspace = true, optional = true }
 regex = { workspace = true }
 tree-sitter = "0.25.10"
 # Per language tree-sitter parsers
@@ -82,8 +84,10 @@ all = [
   "toml",
   "typescript",
   "xml",
-  "yaml"
+  "yaml",
 ]
+full = ["all", "pattern-matching"]
+pattern-matching = ["dep:anyhow", "dep:globset"]
 c = ["dep:tree-sitter-c"]
 c-sharp = ["dep:tree-sitter-c-sharp"]
 cpp = ["dep:tree-sitter-cpp"]

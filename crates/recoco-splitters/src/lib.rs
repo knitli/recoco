@@ -16,6 +16,9 @@
 //! - Programming language detection and tree-sitter support
 //! - Text splitting by separators
 //! - Recursive text chunking with syntax awareness
+//! - Pattern matching for file filtering
 
+#[cfg(feature = "pattern-matching")]
+pub mod pattern_matcher;
 pub mod prog_langs;
 pub mod split;
