@@ -161,22 +161,26 @@ pub async fn apply_component_changes<D: SetupOperator>(
     context: &D::Context,
 ) -> Result<()> {
     // First delete components that need to be removed
+    let mut delete_futures = Vec::new();
     for change in changes.iter() {
         for key in &change.keys_to_delete {
-            change.desc.delete(key, context).await?;
+            delete_futures.push(change.desc.delete(key, context));
         }
     }
+    futures::future::try_join_all(delete_futures).await?;
 
     // Then upsert components that need to be updated
+    let mut upsert_futures = Vec::new();
     for change in changes.iter() {
         for state in &change.states_to_upsert {
             if state.already_exists {
-                change.desc.update(&state.state, context).await?;
+                upsert_futures.push(change.desc.update(&state.state, context));
             } else {
-                change.desc.create(&state.state, context).await?;
+                upsert_futures.push(change.desc.create(&state.state, context));
             }
         }
     }
+    futures::future::try_join_all(upsert_futures).await?;
 
     Ok(())
 }
