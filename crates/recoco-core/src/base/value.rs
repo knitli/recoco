@@ -1511,27 +1511,46 @@ mod tests {
     #[test]
     fn test_range_value_extract_str() {
         let text = "hello world";
+        let hello_end = "hello".len();
+        let world_start = text.find("world").unwrap();
+        let world_end = world_start + "world".len();
+        let space_pos = text.find(' ').unwrap();
 
         // Basic extraction
-        let range = RangeValue::new(0, 5);
+        let range = RangeValue::new(0, hello_end);
         assert_eq!(range.extract_str(text), "hello");
 
         // Extraction from middle
-        let range = RangeValue::new(6, 11);
+        let range = RangeValue::new(world_start, world_end);
         assert_eq!(range.extract_str(text), "world");
 
         // Extraction using String (AsRef<str>)
         let string_text = String::from("hello world");
-        let range = RangeValue::new(0, 5);
+        let range = RangeValue::new(0, hello_end);
         assert_eq!(range.extract_str(&string_text), "hello");
 
         // Empty extraction
-        let range = RangeValue::new(5, 5);
+        let range = RangeValue::new(space_pos, space_pos);
         assert_eq!(range.extract_str(text), "");
 
         // Full extraction
-        let range = RangeValue::new(0, 11);
+        let range = RangeValue::new(0, text.len());
         assert_eq!(range.extract_str(text), "hello world");
+
+        // UTF-8 multi-byte characters: byte offsets must align to char boundaries
+        let utf8_text = "héllo wörld";
+        let utf8_hello_end = "héllo".len(); // "é" is 2 bytes, so this is 6
+        let utf8_world_start = utf8_text.find("wörld").unwrap();
+        let utf8_world_end = utf8_world_start + "wörld".len();
+
+        let range = RangeValue::new(0, utf8_hello_end);
+        assert_eq!(range.extract_str(utf8_text), "héllo");
+
+        let range = RangeValue::new(utf8_world_start, utf8_world_end);
+        assert_eq!(range.extract_str(utf8_text), "wörld");
+
+        let range = RangeValue::new(0, utf8_text.len());
+        assert_eq!(range.extract_str(utf8_text), "héllo wörld");
     }
 
     #[test]
