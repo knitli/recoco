@@ -32,6 +32,9 @@ pub struct Spec {
 
 struct Executor {
     root_path: PathBuf,
+    /// Canonicalized (symlink-resolved) form of `root_path`, used to verify that
+    /// resolved file paths stay within the root directory.
+    canonical_root_path: PathBuf,
     binary: bool,
     pattern_matcher: PatternMatcher,
     max_file_size: Option<i64>,
@@ -136,8 +139,8 @@ impl SourceExecutor for Executor {
         let path = key.single_part()?.str_value()?.as_ref();
         let path_obj = Path::new(path);
 
-        // Prevent path traversal vulnerabilities by verifying the path
-        // doesn't contain parent directory or absolute components.
+        // Fast pre-check: reject obvious traversal patterns and non-included files
+        // before touching the filesystem.
         if path_obj.components().any(|c| {
             matches!(
                 c,
@@ -154,37 +157,28 @@ impl SourceExecutor for Executor {
             });
         }
 
-        let path = self.root_path.join(path);
+        let joined_path = self.root_path.join(path);
 
-        // Mitigate symlink-based path traversal by canonicalizing and checking boundaries
-        let root_canon = match std::fs::canonicalize(&self.root_path) {
-            Ok(c) => c,
+        // Resolve symlinks and verify the canonical path stays within root_path.
+        // This prevents symlink-based escape (e.g., a symlink inside root_path
+        // pointing to /etc/passwd).
+        let canonical_path = match tokio::fs::canonicalize(&joined_path).await {
+            Ok(p) => p,
             Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                // Root doesn't exist, so the file cannot exist.
                 return Ok(PartialSourceRowData {
                     value: Some(SourceValue::NonExistence),
                     ordinal: Some(Ordinal::unavailable()),
                     content_version_fp: None,
                 });
             }
-            Err(e) => Err(e)?,
-        };
-
-        let path_canon = match std::fs::canonicalize(&path) {
-            Ok(c) => c,
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                // Target file doesn't exist.
-                return Ok(PartialSourceRowData {
-                    value: Some(SourceValue::NonExistence),
-                    ordinal: Some(Ordinal::unavailable()),
-                    content_version_fp: None,
-                });
+            Err(e) => {
+                return Err(Error::from(e)).context(format!(
+                    "LocalFile source: failed to resolve path '{}'",
+                    joined_path.display()
+                ))?;
             }
-            Err(e) => Err(e)?,
         };
-
-        if !path_canon.starts_with(&root_canon) {
-            // Symlink points outside the allowed root directory.
+        if !canonical_path.starts_with(&self.canonical_root_path) {
             return Ok(PartialSourceRowData {
                 value: Some(SourceValue::NonExistence),
                 ordinal: Some(Ordinal::unavailable()),
@@ -195,7 +189,7 @@ impl SourceExecutor for Executor {
         let mut metadata: Option<Metadata> = None;
         // Check file size limit
         if let Some(max_size) = self.max_file_size
-            && let Ok(metadata) = ensure_metadata(&path, &mut metadata).await
+            && let Ok(metadata) = ensure_metadata(&canonical_path, &mut metadata).await
             && metadata.len() > max_size as u64
         {
             return Ok(PartialSourceRowData {
@@ -205,13 +199,13 @@ impl SourceExecutor for Executor {
             });
         }
         let ordinal = if options.include_ordinal {
-            let metadata = ensure_metadata(&path, &mut metadata).await?;
+            let metadata = ensure_metadata(&canonical_path, &mut metadata).await?;
             Some(metadata.modified()?.try_into()?)
         } else {
             None
         };
         let value = if options.include_value {
-            match std::fs::read(path) {
+            match std::fs::read(&canonical_path) {
                 Ok(content) => {
                     let content = if self.binary {
                         fields_value!(content)
@@ -287,8 +281,17 @@ impl SourceFactoryBase for Factory {
         spec: Spec,
         _context: Arc<FlowInstanceContext>,
     ) -> Result<Box<dyn SourceExecutor>> {
+        let root_path = PathBuf::from(&spec.path);
+        let canonical_root_path = tokio::fs::canonicalize(&root_path)
+            .await
+            .map_err(Error::from)
+            .context(format!(
+                "LocalFile source: failed to resolve root path '{}'",
+                spec.path
+            ))?;
         Ok(Box::new(Executor {
-            root_path: PathBuf::from(spec.path),
+            root_path,
+            canonical_root_path,
             binary: spec.binary,
             pattern_matcher: PatternMatcher::new(spec.included_patterns, spec.excluded_patterns)?,
             max_file_size: spec.max_file_size,
