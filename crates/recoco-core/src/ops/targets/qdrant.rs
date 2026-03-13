@@ -577,22 +577,32 @@ impl TargetFactoryBase for Factory {
         setup_change: Vec<TypedResourceSetupChangeItem<'async_trait, Self>>,
         context: Arc<FlowInstanceContext>,
     ) -> Result<()> {
-        for setup_change in setup_change.iter() {
-            let qdrant_client =
-                self.get_qdrant_client(&setup_change.key.connection, &context.auth_registry)?;
-            setup_change
-                .setup_change
-                .apply_delete(&setup_change.key.collection_name, &qdrant_client)
-                .await?;
-        }
-        for setup_change in setup_change.iter() {
-            let qdrant_client =
-                self.get_qdrant_client(&setup_change.key.connection, &context.auth_registry)?;
-            setup_change
-                .setup_change
-                .apply_create(&setup_change.key.collection_name, &qdrant_client)
-                .await?;
-        }
+        let delete_futures = setup_change.iter().map(|change| {
+            let auth_registry = &context.auth_registry;
+            async move {
+                let qdrant_client =
+                    self.get_qdrant_client(&change.key.connection, auth_registry)?;
+                change
+                    .setup_change
+                    .apply_delete(&change.key.collection_name, &qdrant_client)
+                    .await
+            }
+        });
+        futures::future::try_join_all(delete_futures).await?;
+
+        let create_futures = setup_change.iter().map(|change| {
+            let auth_registry = &context.auth_registry;
+            async move {
+                let qdrant_client =
+                    self.get_qdrant_client(&change.key.connection, auth_registry)?;
+                change
+                    .setup_change
+                    .apply_create(&change.key.collection_name, &qdrant_client)
+                    .await
+            }
+        });
+        futures::future::try_join_all(create_futures).await?;
+
         Ok(())
     }
 }
