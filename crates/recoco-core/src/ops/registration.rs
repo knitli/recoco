@@ -28,6 +28,7 @@ use super::functions;
 use super::sources;
 #[cfg(any(
     feature = "target-kuzu",
+    feature = "target-ladybug",
     feature = "target-neo4j",
     feature = "target-postgres",
     feature = "target-qdrant"
@@ -42,7 +43,7 @@ use std::sync::{LazyLock, RwLock};
 fn register_executor_factories(
     #[allow(unused_variables)] registry: &mut ExecutorFactoryRegistry,
 ) -> Result<()> {
-    #[cfg(feature = "target-kuzu")]
+    #[cfg(any(feature = "target-kuzu", feature = "target-ladybug"))]
     let reqwest_client = reqwest::Client::new();
 
     #[cfg(feature = "source-local-file")]
@@ -74,7 +75,9 @@ fn register_executor_factories(
     #[cfg(feature = "target-qdrant")]
     targets::qdrant::register(registry)?;
     #[cfg(feature = "target-kuzu")]
-    targets::kuzu::register(registry, reqwest_client)?;
+    targets::kuzu::register(registry, reqwest_client.clone())?;
+    #[cfg(feature = "target-ladybug")]
+    targets::ladybug::register(registry, reqwest_client)?;
 
     #[cfg(feature = "target-neo4j")]
     targets::neo4j::Factory::new().register(registry)?;
