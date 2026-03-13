@@ -1725,7 +1725,7 @@ mod tests {
 
     #[test]
     fn test_key_part_to_strs() {
-        let bytes_part = KeyPart::from(vec![1, 2, 3]);
+        let bytes_part = KeyPart::from(vec![1u8, 2, 3]);
         assert_eq!(bytes_part.to_strs(), vec!["AQID"]);
 
         let str_part = KeyPart::from(String::from("hello"));
