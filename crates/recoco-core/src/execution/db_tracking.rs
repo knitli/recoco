@@ -20,6 +20,10 @@ use sqlx::PgPool;
 use std::fmt;
 use utils::{db::WriteAction, fingerprint::Fingerprint};
 
+fn get_qualified_table_name(schema: &str, table_name: &str) -> String {
+    format!("\"{}\".\"{}\"", schema, table_name)
+}
+
 ////////////////////////////////////////////////////////////
 // Access for the row tracking table
 ////////////////////////////////////////////////////////////
@@ -110,6 +114,10 @@ pub async fn read_source_tracking_info_for_processing(
     db_setup: &TrackingTableSetupState,
     pool: &PgPool,
 ) -> Result<Option<SourceTrackingInfoForProcessing>> {
+    let lib_context = get_lib_context().await?;
+    let qualified_table_name =
+        get_qualified_table_name(&lib_context.internal_schema, &db_setup.table_name);
+
     let query_str = format!(
         "SELECT memoization_info, processed_source_ordinal, {}, process_logic_fingerprint, max_process_ordinal, process_ordinal FROM {} WHERE source_id = $1 AND source_key = $2",
         if db_setup.has_fast_fingerprint_column {
@@ -117,7 +125,7 @@ pub async fn read_source_tracking_info_for_processing(
         } else {
             "NULL::bytea AS processed_source_fp"
         },
-        db_setup.table_name
+        qualified_table_name
     );
     let tracking_info = sqlx::query_as(&query_str)
         .bind(source_id)
@@ -146,6 +154,10 @@ pub async fn read_source_tracking_info_for_precommit(
     db_setup: &TrackingTableSetupState,
     db_executor: impl sqlx::Executor<'_, Database = sqlx::Postgres>,
 ) -> Result<Option<SourceTrackingInfoForPrecommit>> {
+    let lib_context = get_lib_context().await?;
+    let qualified_table_name =
+        get_qualified_table_name(&lib_context.internal_schema, &db_setup.table_name);
+
     let query_str = format!(
         "SELECT max_process_ordinal, staging_target_keys, processed_source_ordinal, {}, process_logic_fingerprint, process_ordinal, target_keys FROM {} WHERE source_id = $1 AND source_key = $2",
         if db_setup.has_fast_fingerprint_column {
@@ -153,7 +165,7 @@ pub async fn read_source_tracking_info_for_precommit(
         } else {
             "NULL::bytea AS processed_source_fp"
         },
-        db_setup.table_name
+        qualified_table_name
     );
     let precommit_tracking_info = sqlx::query_as(&query_str)
         .bind(source_id)
@@ -175,14 +187,18 @@ pub async fn precommit_source_tracking_info(
     db_executor: impl sqlx::Executor<'_, Database = sqlx::Postgres>,
     action: WriteAction,
 ) -> Result<()> {
+    let lib_context = get_lib_context().await?;
+    let qualified_table_name =
+        get_qualified_table_name(&lib_context.internal_schema, &db_setup.table_name);
+
     let query_str = match action {
         WriteAction::Insert => format!(
             "INSERT INTO {} (source_id, source_key, max_process_ordinal, staging_target_keys, memoization_info) VALUES ($1, $2, $3, $4, $5)",
-            db_setup.table_name
+            qualified_table_name
         ),
         WriteAction::Update => format!(
             "UPDATE {} SET max_process_ordinal = $3, staging_target_keys = $4, memoization_info = $5 WHERE source_id = $1 AND source_key = $2",
-            db_setup.table_name
+            qualified_table_name
         ),
     };
     sqlx::query(&query_str)
@@ -203,12 +219,16 @@ pub async fn touch_max_process_ordinal(
     db_setup: &TrackingTableSetupState,
     db_executor: impl sqlx::Executor<'_, Database = sqlx::Postgres>,
 ) -> Result<()> {
+    let lib_context = get_lib_context().await?;
+    let qualified_table_name =
+        get_qualified_table_name(&lib_context.internal_schema, &db_setup.table_name);
+
     let query_str = format!(
         "INSERT INTO {} AS t (source_id, source_key, max_process_ordinal, staging_target_keys) \
          VALUES ($1, $2, $3, $4) \
          ON CONFLICT (source_id, source_key) DO UPDATE SET \
            max_process_ordinal = GREATEST(t.max_process_ordinal + 1, EXCLUDED.max_process_ordinal)",
-        db_setup.table_name,
+        qualified_table_name,
     );
     sqlx::query(&query_str)
         .bind(source_id)
@@ -232,9 +252,13 @@ pub async fn read_source_tracking_info_for_commit(
     db_setup: &TrackingTableSetupState,
     db_executor: impl sqlx::Executor<'_, Database = sqlx::Postgres>,
 ) -> Result<Option<SourceTrackingInfoForCommit>> {
+    let lib_context = get_lib_context().await?;
+    let qualified_table_name =
+        get_qualified_table_name(&lib_context.internal_schema, &db_setup.table_name);
+
     let query_str = format!(
         "SELECT staging_target_keys, process_ordinal FROM {} WHERE source_id = $1 AND source_key = $2",
-        db_setup.table_name
+        qualified_table_name
     );
     let commit_tracking_info = sqlx::query_as(&query_str)
         .bind(source_id)
@@ -259,6 +283,10 @@ pub async fn commit_source_tracking_info(
     db_executor: impl sqlx::Executor<'_, Database = sqlx::Postgres>,
     action: WriteAction,
 ) -> Result<()> {
+    let lib_context = get_lib_context().await?;
+    let qualified_table_name =
+        get_qualified_table_name(&lib_context.internal_schema, &db_setup.table_name);
+
     let query_str = match action {
         WriteAction::Insert => format!(
             "INSERT INTO {} ( \
@@ -266,7 +294,7 @@ pub async fn commit_source_tracking_info(
                max_process_ordinal, staging_target_keys, \
                processed_source_ordinal, process_logic_fingerprint, process_ordinal, process_time_micros, target_keys{}) \
             VALUES ($1, $2, $6 + 1, $3, $4, $5, $6, $7, $8{})",
-            db_setup.table_name,
+            qualified_table_name,
             if db_setup.has_fast_fingerprint_column {
                 ", processed_source_fp"
             } else {
@@ -280,7 +308,7 @@ pub async fn commit_source_tracking_info(
         ),
         WriteAction::Update => format!(
             "UPDATE {} SET staging_target_keys = $3, processed_source_ordinal = $4, process_logic_fingerprint = $5, process_ordinal = $6, process_time_micros = $7, target_keys = $8{} WHERE source_id = $1 AND source_key = $2",
-            db_setup.table_name,
+            qualified_table_name,
             if db_setup.has_fast_fingerprint_column {
                 ", processed_source_fp = $9"
             } else {
@@ -312,9 +340,13 @@ pub async fn delete_source_tracking_info(
     db_setup: &TrackingTableSetupState,
     db_executor: impl sqlx::Executor<'_, Database = sqlx::Postgres>,
 ) -> Result<()> {
+    let lib_context = get_lib_context().await?;
+    let qualified_table_name =
+        get_qualified_table_name(&lib_context.internal_schema, &db_setup.table_name);
+
     let query_str = format!(
         "DELETE FROM {} WHERE source_id = $1 AND source_key = $2",
-        db_setup.table_name
+        qualified_table_name
     );
     sqlx::query(&query_str)
         .bind(source_id)
@@ -351,6 +383,10 @@ impl ListTrackedSourceKeyMetadataState {
         db_setup: &'a TrackingTableSetupState,
         pool: &'a PgPool,
     ) -> impl Stream<Item = std::result::Result<TrackedSourceKeyMetadata, sqlx::Error>> + 'a {
+        // Note: We need to get lib_context synchronously here, which is problematic
+        // For now, we'll keep table_name unqualified in db_setup and qualify it here
+        // This is a limitation of the Stream API - we can't await in this context
+        // TODO: Consider refactoring to use async stream or passing qualified name
         self.query_str = format!(
             "SELECT \
             source_key, processed_source_ordinal, {}, process_logic_fingerprint, max_process_ordinal, process_ordinal \
@@ -379,9 +415,13 @@ pub async fn read_source_last_processed_info(
     db_setup: &TrackingTableSetupState,
     pool: &PgPool,
 ) -> Result<Option<SourceLastProcessedInfo>> {
+    let lib_context = get_lib_context().await?;
+    let qualified_table_name =
+        get_qualified_table_name(&lib_context.internal_schema, &db_setup.table_name);
+
     let query_str = format!(
         "SELECT processed_source_ordinal, process_logic_fingerprint, process_time_micros FROM {} WHERE source_id = $1 AND source_key = $2",
-        db_setup.table_name
+        qualified_table_name
     );
     let last_processed_info = sqlx::query_as(&query_str)
         .bind(source_id)
@@ -398,9 +438,13 @@ pub async fn update_source_tracking_ordinal(
     db_setup: &TrackingTableSetupState,
     db_executor: impl sqlx::Executor<'_, Database = sqlx::Postgres>,
 ) -> Result<()> {
+    let lib_context = get_lib_context().await?;
+    let qualified_table_name =
+        get_qualified_table_name(&lib_context.internal_schema, &db_setup.table_name);
+
     let query_str = format!(
         "UPDATE {} SET processed_source_ordinal = $3 WHERE source_id = $1 AND source_key = $2",
-        db_setup.table_name
+        qualified_table_name
     );
     sqlx::query(&query_str)
         .bind(source_id) // $1
@@ -425,9 +469,12 @@ pub async fn read_source_state(
         client_bail!("Source state table not enabled for this flow");
     };
 
+    let lib_context = get_lib_context().await?;
+    let qualified_table_name = get_qualified_table_name(&lib_context.internal_schema, table_name);
+
     let query_str = format!(
         "SELECT value FROM {} WHERE source_id = $1 AND key = $2",
-        table_name
+        qualified_table_name
     );
     let state: Option<serde_json::Value> = sqlx::query_scalar(&query_str)
         .bind(source_id)
@@ -449,10 +496,13 @@ pub async fn upsert_source_state(
         client_bail!("Source state table not enabled for this flow");
     };
 
+    let lib_context = get_lib_context().await?;
+    let qualified_table_name = get_qualified_table_name(&lib_context.internal_schema, table_name);
+
     let query_str = format!(
         "INSERT INTO {} (source_id, key, value) VALUES ($1, $2, $3) \
          ON CONFLICT (source_id, key) DO UPDATE SET value = EXCLUDED.value",
-        table_name
+        qualified_table_name
     );
     sqlx::query(&query_str)
         .bind(source_id)

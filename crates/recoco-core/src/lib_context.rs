@@ -284,6 +284,7 @@ pub struct LibContext {
     pub persistence_ctx: Option<PersistenceContext>,
     pub flows: Mutex<BTreeMap<String, Arc<FlowContext>>>,
     pub app_namespace: String,
+    pub internal_schema: String,
     // When true, failures while dropping target backends are logged and ignored.
     pub ignore_target_drop_failures: bool,
     pub global_concurrency_controller: Arc<concur_control::ConcurrencyController>,
@@ -371,6 +372,7 @@ pub async fn create_lib_context(settings: settings::Settings) -> Result<LibConte
         persistence_ctx,
         flows: Mutex::new(BTreeMap::new()),
         app_namespace: settings.app_namespace,
+        internal_schema: settings.internal_schema,
         ignore_target_drop_failures: settings.ignore_target_drop_failures,
         global_concurrency_controller: Arc::new(concur_control::ConcurrencyController::new(
             &concur_control::Options {

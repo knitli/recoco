@@ -27,6 +27,10 @@ pub struct GlobalExecutionOptions {
     pub source_max_inflight_bytes: Option<usize>,
 }
 
+fn default_internal_schema() -> String {
+    "recoco_state".to_string()
+}
+
 #[derive(Deserialize, Debug, Default)]
 pub struct Settings {
     #[serde(default)]
@@ -34,6 +38,8 @@ pub struct Settings {
     #[serde(default)]
     #[allow(dead_code)] // Used via serialization/deserialization to Python
     pub app_namespace: String,
+    #[serde(default = "default_internal_schema")]
+    pub internal_schema: String,
     #[serde(default)]
     pub global_execution_options: GlobalExecutionOptions,
     #[serde(default)]
@@ -89,6 +95,7 @@ mod tests {
 
         assert!(settings.database.is_none());
         assert_eq!(settings.app_namespace, "");
+        assert_eq!(settings.internal_schema, "recoco_state");
     }
 
     #[test]
