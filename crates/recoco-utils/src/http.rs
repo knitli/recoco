@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::error::{Error, Result};
-use crate::retryable::{self};
+use crate::retryable;
 
 pub async fn request(
     req_builder: impl Fn() -> reqwest::RequestBuilder,
