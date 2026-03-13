@@ -134,7 +134,18 @@ impl SourceExecutor for Executor {
         options: &SourceExecutorReadOptions,
     ) -> Result<PartialSourceRowData> {
         let path = key.single_part()?.str_value()?.as_ref();
-        if !self.pattern_matcher.is_file_included(path) {
+        let path_obj = Path::new(path);
+
+        // Prevent path traversal vulnerabilities by verifying the path
+        // doesn't contain parent directory or absolute components.
+        if path_obj.components().any(|c| {
+            matches!(
+                c,
+                std::path::Component::ParentDir
+                    | std::path::Component::RootDir
+                    | std::path::Component::Prefix(_)
+            )
+        }) || !self.pattern_matcher.is_file_included(path) {
             return Ok(PartialSourceRowData {
                 value: Some(SourceValue::NonExistence),
                 ordinal: Some(Ordinal::unavailable()),
