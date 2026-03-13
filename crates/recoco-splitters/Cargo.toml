@@ -85,8 +85,8 @@ all = [
   "typescript",
   "xml",
   "yaml",
-  "pattern-matching"
 ]
+full = ["all", "pattern-matching"]
 pattern-matching = ["dep:anyhow", "dep:globset"]
 c = ["dep:tree-sitter-c"]
 c-sharp = ["dep:tree-sitter-c-sharp"]
