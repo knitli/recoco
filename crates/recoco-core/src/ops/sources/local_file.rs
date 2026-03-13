@@ -152,7 +152,45 @@ impl SourceExecutor for Executor {
                 content_version_fp: None,
             });
         }
+
         let path = self.root_path.join(path);
+
+        // Mitigate symlink-based path traversal by canonicalizing and checking boundaries
+        let root_canon = match std::fs::canonicalize(&self.root_path) {
+            Ok(c) => c,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                // Root doesn't exist, so the file cannot exist.
+                return Ok(PartialSourceRowData {
+                    value: Some(SourceValue::NonExistence),
+                    ordinal: Some(Ordinal::unavailable()),
+                    content_version_fp: None,
+                });
+            }
+            Err(e) => Err(e)?,
+        };
+
+        let path_canon = match std::fs::canonicalize(&path) {
+            Ok(c) => c,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                // Target file doesn't exist.
+                return Ok(PartialSourceRowData {
+                    value: Some(SourceValue::NonExistence),
+                    ordinal: Some(Ordinal::unavailable()),
+                    content_version_fp: None,
+                });
+            }
+            Err(e) => Err(e)?,
+        };
+
+        if !path_canon.starts_with(&root_canon) {
+            // Symlink points outside the allowed root directory.
+            return Ok(PartialSourceRowData {
+                value: Some(SourceValue::NonExistence),
+                ordinal: Some(Ordinal::unavailable()),
+                content_version_fp: None,
+            });
+        }
+
         let mut metadata: Option<Metadata> = None;
         // Check file size limit
         if let Some(max_size) = self.max_file_size
