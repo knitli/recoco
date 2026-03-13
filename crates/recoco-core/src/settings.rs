@@ -27,10 +27,6 @@ pub struct GlobalExecutionOptions {
     pub source_max_inflight_bytes: Option<usize>,
 }
 
-fn default_internal_schema() -> String {
-    "recoco_state".to_string()
-}
-
 #[derive(Deserialize, Debug, Default)]
 pub struct Settings {
     #[serde(default)]
@@ -44,6 +40,10 @@ pub struct Settings {
     pub global_execution_options: GlobalExecutionOptions,
     #[serde(default)]
     pub ignore_target_drop_failures: bool,
+}
+
+fn default_internal_schema() -> String {
+    "recoco_state".to_string()
 }
 
 #[cfg(test)]

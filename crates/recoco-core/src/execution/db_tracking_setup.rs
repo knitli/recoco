@@ -16,42 +16,41 @@ use crate::setup::{CombinedState, ResourceSetupChange, ResourceSetupInfo, SetupC
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
-fn get_qualified_table_name(schema: &str, table_name: &str) -> String {
+/// Get the fully qualified tracking table name (schema.table)
+async fn get_qualified_tracking_table_name_from_ctx(table_name: &str) -> Result<String> {
+    let lib_context = get_lib_context().await?;
+    Ok(format!(
+        "\"{}\".\"{}\"",
+        lib_context.internal_schema, table_name
+    ))
+}
+
+/// Get the fully qualified tracking table name with explicit schema
+fn get_qualified_tracking_table_name(schema: &str, table_name: &str) -> String {
     format!("\"{}\".\"{}\"", schema, table_name)
 }
 
-fn default_tracking_table_name_unqualified(flow_name: &str) -> String {
+/// Ensure the internal schema exists
+async fn ensure_internal_schema_exists(pool: &PgPool) -> Result<()> {
+    let lib_context = get_lib_context().await?;
+    let schema = &lib_context.internal_schema;
+    let query = format!("CREATE SCHEMA IF NOT EXISTS \"{}\"", schema);
+    sqlx::query(&query).execute(pool).await?;
+    Ok(())
+}
+
+pub fn default_tracking_table_name(flow_name: &str) -> String {
     format!(
         "{}__cocoindex_tracking",
         utils::db::sanitize_identifier(flow_name)
     )
 }
 
-fn default_source_state_table_name_unqualified(flow_name: &str) -> String {
+pub fn default_source_state_table_name(flow_name: &str) -> String {
     format!(
         "{}__cocoindex_srcstate",
         utils::db::sanitize_identifier(flow_name)
     )
-}
-
-pub fn default_tracking_table_name(flow_name: &str) -> String {
-    let unqualified = default_tracking_table_name_unqualified(flow_name);
-    // This function is called during analysis, before lib_context is guaranteed to be initialized
-    // So we just return unqualified name here - qualification happens at creation time
-    unqualified
-}
-
-pub fn default_source_state_table_name(flow_name: &str) -> String {
-    let unqualified = default_source_state_table_name_unqualified(flow_name);
-    // This function is called during analysis, before lib_context is guaranteed to be initialized
-    // So we just return unqualified name here - qualification happens at creation time
-    unqualified
-}
-
-async fn ensure_schema_exists(pool: &PgPool, schema: &str) -> Result<()> {
-    let query = format!("CREATE SCHEMA IF NOT EXISTS \"{}\"", schema);
-    sqlx::query(&query).execute(pool).await?;
-    Ok(())
 }
 
 pub const CURRENT_TRACKING_TABLE_VERSION: i32 = 1;
@@ -62,20 +61,18 @@ async fn upgrade_tracking_table(
     existing_version_id: i32,
 ) -> Result<()> {
     if existing_version_id < 1 && desired_state.version_id >= 1 {
-        let lib_context = get_lib_context().await?;
-        let schema = &lib_context.internal_schema;
+        // Ensure the internal schema exists before creating the table
+        ensure_internal_schema_exists(pool).await?;
 
-        // Ensure schema exists
-        ensure_schema_exists(pool, schema).await?;
-
-        let qualified_table_name = get_qualified_table_name(schema, &desired_state.table_name);
+        let qualified_table_name =
+            get_qualified_tracking_table_name_from_ctx(&desired_state.table_name).await?;
         let opt_fast_fingerprint_column = if desired_state.has_fast_fingerprint_column {
             "processed_source_fp BYTEA,"
         } else {
             ""
         };
         let query =  format!(
-            "CREATE TABLE IF NOT EXISTS {} (
+            "CREATE TABLE IF NOT EXISTS {qualified_table_name} (
                 source_id INTEGER NOT NULL,
                 source_key JSONB NOT NULL,
 
@@ -86,7 +83,7 @@ async fn upgrade_tracking_table(
 
                 -- Update after applying the changes to the target storage.
                 processed_source_ordinal BIGINT,
-                {}
+                {opt_fast_fingerprint_column}
                 process_logic_fingerprint BYTEA,
                 process_ordinal BIGINT,
                 process_time_micros BIGINT,
@@ -94,8 +91,6 @@ async fn upgrade_tracking_table(
 
                 PRIMARY KEY (source_id, source_key)
             );",
-            qualified_table_name,
-            opt_fast_fingerprint_column
         );
         sqlx::query(&query).execute(pool).await?;
     }
@@ -104,22 +99,18 @@ async fn upgrade_tracking_table(
 }
 
 async fn create_source_state_table(pool: &PgPool, table_name: &str) -> Result<()> {
-    let lib_context = get_lib_context().await?;
-    let schema = &lib_context.internal_schema;
+    // Ensure the internal schema exists before creating the table
+    ensure_internal_schema_exists(pool).await?;
 
-    // Ensure schema exists
-    ensure_schema_exists(pool, schema).await?;
-
-    let qualified_table_name = get_qualified_table_name(schema, table_name);
+    let qualified_table_name = get_qualified_tracking_table_name_from_ctx(table_name).await?;
     let query = format!(
-        "CREATE TABLE IF NOT EXISTS {} (
+        "CREATE TABLE IF NOT EXISTS {qualified_table_name} (
             source_id INTEGER NOT NULL,
             key JSONB NOT NULL,
             value JSONB NOT NULL,
 
             PRIMARY KEY (source_id, key)
-        )",
-        qualified_table_name
+        )"
     );
     sqlx::query(&query).execute(pool).await?;
     Ok(())
@@ -130,10 +121,7 @@ async fn delete_source_states_for_sources(
     table_name: &str,
     source_ids: &Vec<i32>,
 ) -> Result<()> {
-    let lib_context = get_lib_context().await?;
-    let schema = &lib_context.internal_schema;
-    let qualified_table_name = get_qualified_table_name(schema, table_name);
-
+    let qualified_table_name = get_qualified_tracking_table_name_from_ctx(table_name).await?;
     let query = format!(
         "DELETE FROM {} WHERE source_id = ANY($1)",
         qualified_table_name
@@ -318,16 +306,12 @@ impl TrackingTableSetupChange {
     pub async fn apply_change(&self) -> Result<()> {
         let lib_context = get_lib_context().await?;
         let pool = lib_context.require_builtin_db_pool()?;
-        let schema = &lib_context.internal_schema;
-
         if let Some(desired) = &self.desired_state {
             for lagacy_name in self.legacy_tracking_table_names.iter() {
-                // Legacy names may be unqualified or in different schema
-                // For simplicity, we assume they're in the same schema now
-                let legacy_qualified = get_qualified_table_name(schema, lagacy_name);
+                let qualified_legacy = get_qualified_tracking_table_name_from_ctx(lagacy_name).await?;
                 let query = format!(
-                    "ALTER TABLE IF EXISTS {} RENAME TO \"{}\"",
-                    legacy_qualified, desired.table_name
+                    "ALTER TABLE IF EXISTS {} RENAME TO {}",
+                    qualified_legacy, desired.table_name
                 );
                 sqlx::query(&query).execute(pool).await?;
             }
@@ -338,8 +322,8 @@ impl TrackingTableSetupChange {
             }
         } else {
             for lagacy_name in self.legacy_tracking_table_names.iter() {
-                let legacy_qualified = get_qualified_table_name(schema, lagacy_name);
-                let query = format!("DROP TABLE IF EXISTS {}", legacy_qualified);
+                let qualified_legacy = get_qualified_tracking_table_name_from_ctx(lagacy_name).await?;
+                let query = format!("DROP TABLE IF EXISTS {}", qualified_legacy);
                 sqlx::query(&query).execute(pool).await?;
             }
         }
@@ -350,10 +334,10 @@ impl TrackingTableSetupChange {
             .and_then(|v| v.source_state_table_name.as_ref());
         if let Some(source_state_table_name) = source_state_table_name {
             for lagacy_name in self.legacy_source_state_table_names.iter() {
-                let legacy_qualified = get_qualified_table_name(schema, lagacy_name);
+                let qualified_legacy = get_qualified_tracking_table_name_from_ctx(lagacy_name).await?;
                 let query = format!(
-                    "ALTER TABLE IF EXISTS {} RENAME TO \"{}\"",
-                    legacy_qualified, source_state_table_name
+                    "ALTER TABLE IF EXISTS {} RENAME TO {}",
+                    qualified_legacy, source_state_table_name
                 );
                 sqlx::query(&query).execute(pool).await?;
             }
@@ -374,8 +358,8 @@ impl TrackingTableSetupChange {
             }
         } else {
             for lagacy_name in self.legacy_source_state_table_names.iter() {
-                let legacy_qualified = get_qualified_table_name(schema, lagacy_name);
-                let query = format!("DROP TABLE IF EXISTS {}", legacy_qualified);
+                let qualified_legacy = get_qualified_tracking_table_name_from_ctx(lagacy_name).await?;
+                let query = format!("DROP TABLE IF EXISTS {}", qualified_legacy);
                 sqlx::query(&query).execute(pool).await?;
             }
         }

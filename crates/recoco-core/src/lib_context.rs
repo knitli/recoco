@@ -353,7 +353,7 @@ pub async fn create_lib_context(settings: settings::Settings) -> Result<LibConte
     #[cfg(feature = "persistence")]
     let persistence_ctx = if let Some(database_spec) = &settings.database {
         let pool = db_pools.get_pool(database_spec).await?;
-        let all_setup_states = setup::get_existing_setup_state(&pool).await?;
+        let all_setup_states = setup::get_existing_setup_state(&pool, &settings.internal_schema).await?;
         Some(PersistenceContext {
             builtin_db_pool: pool,
             setup_ctx: tokio::sync::RwLock::new(LibSetupContext {

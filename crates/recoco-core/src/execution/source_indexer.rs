@@ -313,11 +313,13 @@ impl SourceIndexingContext {
             plan.legacy_fingerprint.clone(),
         )?;
         {
-            let mut key_metadata_stream = list_state.list(
-                setup_execution_ctx.import_ops[source_idx].source_id,
-                &setup_execution_ctx.setup_state.tracking_table,
-                pool,
-            );
+            let mut key_metadata_stream = list_state
+                .list(
+                    setup_execution_ctx.import_ops[source_idx].source_id,
+                    &setup_execution_ctx.setup_state.tracking_table,
+                    pool,
+                )
+                .await;
             while let Some(key_metadata) = key_metadata_stream.next().await {
                 let key_metadata = key_metadata?;
                 let source_pk = value::KeyValue::from_json(
