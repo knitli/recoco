@@ -11,7 +11,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 use crate::error::{Error, Result};
-use crate::retryable::{self, IsRetryable};
+use crate::retryable::{self};
 
 pub async fn request(
     req_builder: impl Fn() -> reqwest::RequestBuilder,
@@ -24,7 +24,7 @@ pub async fn request(
                 return Ok(resp);
             };
 
-            let is_retryable = err.is_retryable();
+            let is_retryable = retryable::IsRetryable::is_retryable(&err);
 
             let mut error: Error = err.into();
             let body = resp.text().await?;
