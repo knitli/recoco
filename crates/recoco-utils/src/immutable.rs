@@ -92,6 +92,9 @@ mod tests {
 
         let items: Vec<&i32> = list4.iter().collect();
         assert_eq!(items, vec![&1, &2, &3]);
+    }
+
+    #[test]
     fn tailn_on_nil() {
         let nil_list: RefList<i32> = RefList::Nil;
         assert_eq!(nil_list.tailn(0), Some(&nil_list));
@@ -129,26 +132,6 @@ mod tests {
 
         assert_eq!(list3.tailn(4), None);
     }
-}
-
-impl<'a, T> Iterator for &'a RefList<'a, T> {
-    type Item = &'a T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let current = *self;
-        match current {
-            RefList::Nil => None,
-            RefList::Cons(head, tail) => {
-                *self = *tail;
-                Some(head)
-            }
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
 
     #[test]
     fn test_headn() {
@@ -166,5 +149,20 @@ mod tests {
         assert_eq!(n1.headn(2), Some(&3));
         assert_eq!(n1.headn(3), None);
         assert_eq!(n1.headn(10), None);
+    }
+}
+
+impl<'a, T> Iterator for &'a RefList<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let current = *self;
+        match current {
+            RefList::Nil => None,
+            RefList::Cons(head, tail) => {
+                *self = *tail;
+                Some(head)
+            }
+        }
     }
 }
