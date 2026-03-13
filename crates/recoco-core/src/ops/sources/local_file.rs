@@ -32,6 +32,7 @@ pub struct Spec {
 
 struct Executor {
     root_path: PathBuf,
+    canonical_root_path: Option<PathBuf>,
     binary: bool,
     pattern_matcher: PatternMatcher,
     max_file_size: Option<i64>,
@@ -134,14 +135,60 @@ impl SourceExecutor for Executor {
         options: &SourceExecutorReadOptions,
     ) -> Result<PartialSourceRowData> {
         let path = key.single_part()?.str_value()?.as_ref();
-        if !self.pattern_matcher.is_file_included(path) {
+        let path_obj = Path::new(path);
+
+        // Prevent path traversal vulnerabilities by verifying the path
+        // doesn't contain parent directory or absolute components.
+        if path_obj.components().any(|c| {
+            matches!(
+                c,
+                std::path::Component::ParentDir
+                    | std::path::Component::RootDir
+                    | std::path::Component::Prefix(_)
+            )
+        }) || !self.pattern_matcher.is_file_included(path)
+        {
             return Ok(PartialSourceRowData {
                 value: Some(SourceValue::NonExistence),
                 ordinal: Some(Ordinal::unavailable()),
                 content_version_fp: None,
             });
         }
+
         let path = self.root_path.join(path);
+
+        // Mitigate symlink-based path traversal by canonicalizing and checking boundaries
+        if let Some(root_canon) = &self.canonical_root_path {
+            let path_canon = match tokio::fs::canonicalize(&path).await {
+                Ok(c) => c,
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                    // Target file doesn't exist.
+                    return Ok(PartialSourceRowData {
+                        value: Some(SourceValue::NonExistence),
+                        ordinal: Some(Ordinal::unavailable()),
+                        content_version_fp: None,
+                    });
+                }
+                Err(e) => Err(e)?,
+            };
+
+            if !path_canon.starts_with(root_canon) {
+                // Symlink points outside the allowed root directory.
+                return Ok(PartialSourceRowData {
+                    value: Some(SourceValue::NonExistence),
+                    ordinal: Some(Ordinal::unavailable()),
+                    content_version_fp: None,
+                });
+            }
+        } else {
+            // Root doesn't exist (failed to canonicalize during setup), so the file cannot exist.
+            return Ok(PartialSourceRowData {
+                value: Some(SourceValue::NonExistence),
+                ordinal: Some(Ordinal::unavailable()),
+                content_version_fp: None,
+            });
+        }
+
         let mut metadata: Option<Metadata> = None;
         // Check file size limit
         if let Some(max_size) = self.max_file_size
@@ -237,8 +284,12 @@ impl SourceFactoryBase for Factory {
         spec: Spec,
         _context: Arc<FlowInstanceContext>,
     ) -> Result<Box<dyn SourceExecutor>> {
+        let root_path = PathBuf::from(spec.path);
+        let canonical_root_path = tokio::fs::canonicalize(&root_path).await.ok();
+
         Ok(Box::new(Executor {
-            root_path: PathBuf::from(spec.path),
+            root_path,
+            canonical_root_path,
             binary: spec.binary,
             pattern_matcher: PatternMatcher::new(spec.included_patterns, spec.excluded_patterns)?,
             max_file_size: spec.max_file_size,
