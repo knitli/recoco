@@ -635,16 +635,6 @@ async fn apply_changes_for_flow(
     )
     .await?;
 
-    if let Some(tracking_table) = &flow_setup_change.tracking_table {
-        maybe_update_resource_setup(
-            "tracking table",
-            write,
-            std::iter::once(tracking_table),
-            |setup_change| setup_change[0].setup_change.apply_change(),
-        )
-        .await?;
-    }
-
     let mut setup_change_by_target_kind = IndexMap::<&str, Vec<_>>::new();
     for target_resource in &flow_setup_change.target_resources {
         setup_change_by_target_kind
@@ -708,6 +698,16 @@ async fn apply_changes_for_flow(
 
                    Ok::<(), Error>(())
                 },
+        )
+        .await?;
+    }
+
+    if let Some(tracking_table) = &flow_setup_change.tracking_table {
+        maybe_update_resource_setup(
+            "tracking table",
+            write,
+            std::iter::once(tracking_table),
+            |setup_change| setup_change[0].setup_change.apply_change(),
         )
         .await?;
     }
