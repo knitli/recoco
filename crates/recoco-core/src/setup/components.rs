@@ -156,21 +156,32 @@ impl<D: SetupOperator + Send + Sync> ResourceSetupChange for SetupChange<D> {
     }
 }
 
+/// Maximum number of component operations (deletes or upserts) that may run concurrently.
+/// Keeping this bounded prevents overwhelming a database connection pool or
+/// network layer when a large number of components change at once.
+const COMPONENT_CONCURRENCY_LIMIT: usize = 16;
+
 pub async fn apply_component_changes<D: SetupOperator>(
     changes: Vec<&SetupChange<D>>,
     context: &D::Context,
 ) -> Result<()> {
-    // First delete components that need to be removed
-    let mut delete_futures = Vec::new();
+    let total_deletes: usize = changes.iter().map(|c| c.keys_to_delete.len()).sum();
+    let total_upserts: usize = changes.iter().map(|c| c.states_to_upsert.len()).sum();
+
+    // First delete components that need to be removed (bounded concurrency)
+    let mut delete_futures = Vec::with_capacity(total_deletes);
     for change in changes.iter() {
         for key in &change.keys_to_delete {
             delete_futures.push(change.desc.delete(key, context));
         }
     }
-    futures::future::try_join_all(delete_futures).await?;
+    futures::stream::iter(delete_futures)
+        .buffer_unordered(COMPONENT_CONCURRENCY_LIMIT)
+        .try_collect::<Vec<_>>()
+        .await?;
 
-    // Then upsert components that need to be updated
-    let mut upsert_futures = Vec::new();
+    // Then upsert components that need to be updated (bounded concurrency)
+    let mut upsert_futures = Vec::with_capacity(total_upserts);
     for change in changes.iter() {
         for state in &change.states_to_upsert {
             if state.already_exists {
@@ -180,7 +191,10 @@ pub async fn apply_component_changes<D: SetupOperator>(
             }
         }
     }
-    futures::future::try_join_all(upsert_futures).await?;
+    futures::stream::iter(upsert_futures)
+        .buffer_unordered(COMPONENT_CONCURRENCY_LIMIT)
+        .try_collect::<Vec<_>>()
+        .await?;
 
     Ok(())
 }
