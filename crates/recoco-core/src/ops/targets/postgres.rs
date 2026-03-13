@@ -1030,9 +1030,11 @@ impl AttachmentSetupChange for SqlCommandSetupChange {
     }
 
     async fn apply_change(&self) -> Result<()> {
-        for teardown_sql in self.teardown_sql_to_run.iter() {
-            sqlx::raw_sql(teardown_sql).execute(&self.db_pool).await?;
-        }
+        let teardown_futs = self
+            .teardown_sql_to_run
+            .iter()
+            .map(|teardown_sql| sqlx::raw_sql(teardown_sql).execute(&self.db_pool));
+        futures::future::try_join_all(teardown_futs).await?;
         if let Some(setup_sql) = &self.setup_sql_to_run {
             sqlx::raw_sql(setup_sql).execute(&self.db_pool).await?;
         }
