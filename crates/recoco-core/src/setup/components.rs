@@ -156,21 +156,27 @@ impl<D: SetupOperator + Send + Sync> ResourceSetupChange for SetupChange<D> {
     }
 }
 
+/// Maximum number of concurrent I/O operations when applying component changes.
+const CONCURRENT_OPERATIONS: usize = 16;
+
 pub async fn apply_component_changes<D: SetupOperator>(
     changes: Vec<&SetupChange<D>>,
     context: &D::Context,
 ) -> Result<()> {
-    // First delete components that need to be removed
-    let delete_futures = changes.iter().flat_map(|change| {
+    // First delete components that need to be removed, with bounded concurrency
+    // to avoid overloading the underlying store or exhausting connection pools.
+    futures::stream::iter(changes.iter().flat_map(|change| {
         change
             .keys_to_delete
             .iter()
             .map(move |key| change.desc.delete(key, context))
-    });
-    futures::future::try_join_all(delete_futures).await?;
+    }))
+    .buffer_unordered(CONCURRENT_OPERATIONS)
+    .try_for_each(|_| async { Ok(()) })
+    .await?;
 
-    // Then upsert components that need to be updated
-    let upsert_futures = changes.iter().flat_map(|change| {
+    // Then upsert components that need to be updated, also with bounded concurrency.
+    futures::stream::iter(changes.iter().flat_map(|change| {
         change.states_to_upsert.iter().map(move |state| async move {
             if state.already_exists {
                 change.desc.update(&state.state, context).await
@@ -178,8 +184,10 @@ pub async fn apply_component_changes<D: SetupOperator>(
                 change.desc.create(&state.state, context).await
             }
         })
-    });
-    futures::future::try_join_all(upsert_futures).await?;
+    }))
+    .buffer_unordered(CONCURRENT_OPERATIONS)
+    .try_for_each(|_| async { Ok(()) })
+    .await?;
 
     Ok(())
 }
