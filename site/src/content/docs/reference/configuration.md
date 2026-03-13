@@ -42,7 +42,7 @@ let settings = Settings {
     }),
 
     // Optional: store internal tracking tables in a dedicated schema
-    // instead of the default public schema
+    // instead of the connection's default schema (often `public`)
     db_schema_name: Some("recoco_state".to_string()),
 
     // Concurrency controls
@@ -86,7 +86,7 @@ Controls concurrency and backpressure during flow execution.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `db_schema_name` | `Option<String>` | `None` | PostgreSQL schema for internal Recoco tracking/metadata tables. When set, a schema is auto-created and all internal tables are placed there, keeping them separate from application tables. When unset, the default schema (usually `public`) is used. |
+| `db_schema_name` | `Option<String>` | `None` | PostgreSQL schema for internal Recoco tracking/metadata tables. When set, a schema is auto-created and all internal tables are placed there, keeping them separate from application tables. When unset, the connection's default schema (often `public`, but determined by `search_path`) is used. |
 | `app_namespace` | `String` | `""` | Namespace prefix for database tables and keys (empty string means no prefix) |
 | `ignore_target_drop_failures` | `bool` | `false` | Suppress errors when dropping target tables during teardown |
 
@@ -103,7 +103,7 @@ let settings = Settings {
 
 - The schema is automatically created (`CREATE SCHEMA IF NOT EXISTS`) when Recoco sets up for the first time.
 - Keeping internal tables in their own schema avoids name collisions with application tables and simplifies DB hygiene in multi-tenant or shared-database environments.
-- When `db_schema_name` is `None` (the default), tables are created in the connection's default schema (typically `public`).
+- When `db_schema_name` is `None` (the default), tables are created in the connection's default schema (the first entry in `search_path`, often `public`).
 
 ## Environment Variables
 

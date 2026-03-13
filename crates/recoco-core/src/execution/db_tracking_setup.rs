@@ -51,12 +51,24 @@ pub fn default_source_state_table_name(flow_name: &str) -> String {
 
 pub const CURRENT_TRACKING_TABLE_VERSION: i32 = 1;
 
+async fn ensure_internal_schema_exists(pool: &PgPool) -> Result<()> {
+    if let Some(schema) = get_internal_db_schema() {
+        let query = format!(
+            "CREATE SCHEMA IF NOT EXISTS {}",
+            utils::db::sanitize_identifier(&schema)
+        );
+        sqlx::query(&query).execute(pool).await?;
+    }
+    Ok(())
+}
+
 async fn upgrade_tracking_table(
     pool: &PgPool,
     desired_state: &TrackingTableSetupState,
     existing_version_id: i32,
 ) -> Result<()> {
     if existing_version_id < 1 && desired_state.version_id >= 1 {
+        ensure_internal_schema_exists(pool).await?;
         let qualified_table_name = qualify_table_name_with_schema(&desired_state.table_name);
         let opt_fast_fingerprint_column = if desired_state.has_fast_fingerprint_column {
             "processed_source_fp BYTEA,"
@@ -91,6 +103,7 @@ async fn upgrade_tracking_table(
 }
 
 async fn create_source_state_table(pool: &PgPool, table_name: &str) -> Result<()> {
+    ensure_internal_schema_exists(pool).await?;
     let table_name = qualify_table_name_with_schema(table_name);
     let query = format!(
         "CREATE TABLE IF NOT EXISTS {table_name} (

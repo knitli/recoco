@@ -344,7 +344,12 @@ static INTERNAL_DB_SCHEMA: LazyLock<std::sync::RwLock<Option<String>>> =
 ///
 /// Tracking and metadata tables will be placed under this schema when set.
 pub fn get_internal_db_schema() -> Option<String> {
-    INTERNAL_DB_SCHEMA.read().unwrap().clone()
+    // Recover from lock poisoning: the inner value is still valid even if another
+    // thread panicked while holding the write lock.
+    INTERNAL_DB_SCHEMA
+        .read()
+        .unwrap_or_else(|e| e.into_inner())
+        .clone()
 }
 
 pub async fn create_lib_context(settings: settings::Settings) -> Result<LibContext> {
@@ -362,7 +367,10 @@ pub async fn create_lib_context(settings: settings::Settings) -> Result<LibConte
     });
 
     // Store the schema name globally so it can be accessed synchronously by DB helpers.
-    *INTERNAL_DB_SCHEMA.write().unwrap() = settings.db_schema_name.clone();
+    // Recover from lock poisoning so a previous panic doesn't permanently break context init.
+    *INTERNAL_DB_SCHEMA
+        .write()
+        .unwrap_or_else(|e| e.into_inner()) = settings.db_schema_name.clone();
 
     let db_pools = DbPools::default();
     #[cfg(feature = "persistence")]
@@ -444,7 +452,9 @@ pub async fn get_lib_context() -> Result<Arc<LibContext>> {
 pub async fn clear_lib_context() {
     let mut lib_context_locked = LIB_CONTEXT.lock().await;
     *lib_context_locked = None;
-    *INTERNAL_DB_SCHEMA.write().unwrap() = None;
+    *INTERNAL_DB_SCHEMA
+        .write()
+        .unwrap_or_else(|e| e.into_inner()) = None;
 }
 
 #[cfg(test)]
