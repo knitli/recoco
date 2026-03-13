@@ -1166,8 +1166,8 @@ impl AnalyzerContext {
         let analyzed_export_ops = export_op_group
             .op_idx
             .iter()
-            .zip(data_collections_output.into_iter())
-            .zip(data_fields_infos.into_iter())
+            .zip(data_collections_output)
+            .zip(data_fields_infos)
             .map(|((idx, data_coll_output), data_fields_info)| {
                 let export_op = &flow_inst.export_ops[*idx];
                 let op_name = export_op.name.clone();

@@ -462,7 +462,7 @@ impl KeyValue {
             Box::from([val.into_key()?])
         } else {
             match value {
-                serde_json::Value::Array(arr) => std::iter::zip(arr.into_iter(), schema)
+                serde_json::Value::Array(arr) => std::iter::zip(arr, schema)
                     .map(|(v, s)| Value::<ScopeValue>::from_json(v, &s.value_type.typ)?.into_key())
                     .collect::<Result<Box<[_]>>>()?,
                 _ => client_bail!("expected array value, but got {}", value),
@@ -1809,9 +1809,7 @@ mod tests {
         let struct_part = KeyPart::from(vec![
             KeyPart::from(String::from("world")),
             KeyPart::from(100i64),
-            KeyPart::from(vec![
-                KeyPart::from(false),
-            ]),
+            KeyPart::from(vec![KeyPart::from(false)]),
         ]);
         assert_eq!(struct_part.to_strs(), vec!["world", "100", "false"]);
     }

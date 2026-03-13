@@ -701,8 +701,8 @@ async fn apply_changes_for_flow(
         )
         .await?;
     }
-
-    // Now after all target changes, set up the tracking table
+    // Apply tracking table setup AFTER all target setup completes.
+    // This ensures the execution plan and target contexts are fully initialized.
     if let Some(tracking_table) = &flow_setup_change.tracking_table {
         maybe_update_resource_setup(
             "tracking table",
