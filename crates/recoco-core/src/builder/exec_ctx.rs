@@ -23,6 +23,7 @@ pub struct ImportOpExecutionContext {
     pub source_id: i32,
 }
 
+#[derive(Debug, Clone)]
 pub struct ExportOpExecutionContext {
     pub target_id: i32,
     pub schema_version_id: usize,
