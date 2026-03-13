@@ -32,6 +32,10 @@ const SELF_CONTAINED_TAG_FIELD_NAME: &str = "__self_contained";
 // Public Types
 ////////////////////////////////////////////////////////////
 
+/// Connection configuration for a Ladybug graph database instance.
+///
+/// This is a serde-deserialized config-only type; populate it via
+/// the auth-entry / YAML configuration rather than direct construction.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConnectionSpec {
     /// The URL of the [Ladybug API server](https://github.com/LadybugDB/ladybug),
@@ -39,6 +43,10 @@ pub struct ConnectionSpec {
     api_server_url: String,
 }
 
+/// Target spec for exporting data to a Ladybug graph database.
+///
+/// This is a serde-deserialized config-only type; populate it via
+/// the auth-entry / YAML configuration rather than direct construction.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Spec {
     connection: spec::AuthEntryReference<ConnectionSpec>,
@@ -248,6 +256,7 @@ fn append_upsert_table(
                 keys.iter()
                     .chain(values.iter())
                     .map(|(name, ladybug_type)| format!("{name} {ladybug_type}"))
+                    .collect::<Vec<_>>()
                     .join(", ")
                     .as_str(),
             );
@@ -256,7 +265,10 @@ fn append_upsert_table(
                     write!(
                         cypher.query_mut(),
                         ", {SELF_CONTAINED_TAG_FIELD_NAME} BOOL, PRIMARY KEY ({})",
-                        keys.iter().map(|(name, _)| name).join(", ")
+                        keys.iter()
+                            .map(|(name, _)| name.as_str())
+                            .collect::<Vec<_>>()
+                            .join(", ")
                     )?;
                 }
                 ElementType::Relationship(_) => {}
