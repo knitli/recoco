@@ -24,8 +24,11 @@ export default defineConfig({
   site: "https://docs.knitli.com",
   base: "/recoco",
   adapter: cloudflare({
+    experimental: {
+      headersAndRedirectsDevModeSupport: true,
+    },
+    configPath: "./wrangler.jsonc",
     imageService: "compile",
-    environment: process.env.NODE_ENV === "development" ? "local" : undefined,
   }),
   favicon: faviconIco,
   // Image optimization
@@ -45,25 +48,31 @@ export default defineConfig({
       "recoco.knitli.com",
     ],
   },
-
+  headingIdCompat: true,
+  preserveScriptOrder: true,
   // Build optimizations
   build: {
     inlineStylesheets: "auto",
     assets: "_astro",
   },
   markdown: {
-    shikiConfig: { theme: "github-dark" },
+    shikiConfig: {
+      themes: {
+        light: "github-light",
+        dark: "github-dark",
+      }
+    },
   },
   trailingSlash: 'always',
   // Vite configuration for better bundling
   vite: {
-     server: {
-    fs: {
-      allow: [
-        searchForWorkspaceRoot(process.cwd())
-      ],
+    server: {
+      fs: {
+        allow: [
+          searchForWorkspaceRoot(process.cwd())
+        ],
+      },
     },
-  },
     assetsInclude: [
       "src/*.webp",
       "src/*.png",
@@ -75,7 +84,6 @@ export default defineConfig({
     build: {
       cssCodeSplit: true,
       cssMinify: "lightningcss",
-
       rolldownOptions: {
         output: {
           experimental: {
@@ -112,8 +120,7 @@ export default defineConfig({
         },
       ],
     },
-    headingIdCompat: true,
-    preserveScriptOrder: true,
+    rustCompiler: true,
   },
   // Static site generation for Cloudflare
   output: "static",
@@ -127,10 +134,10 @@ export default defineConfig({
       },
       plugins: [starlightHeadingBadges(), starlightContextualMenu({
         actions: ["copy", "view", "claude", "chatgpt"]
-      }), 
+      }),
       // We need to configure starlight-tags with a tags.yml.
       //starlightTags(), 
-       starlightLlmsText({
+      starlightLlmsText({
         projectName: "Recoco",
         description: `Recoco is a pure-Rust fork of the popular data processing and ETL framework, [CocoIndex](https://cocoindex.io). Recoco features a highly modular architecture, with all sources, targets, and functions (i.e. transforms) implemented as feature-gated plugins. This allows users to easily customize and extend the framework to fit their specific data processing needs, while keeping the core lightweight and efficient.
         Like CocoIndex, Recoco is fast, efficient, and works on data incrementally. Both libraries are built using a *dataflow architecture*, allowing you to easily define complex data processing pipelines with multiple sources, targets, and transforms in only a few lines of code. CocoIndex is built in Rust, but its entire API is only in Python, and does not allow for choosing integrations. Recoco exposes a robust Rust API that allows you to choose exactly which sources, targets, and transforms you want to use.

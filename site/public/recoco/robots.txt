@@ -28,4 +28,4 @@ Content-Signal: ai-train=yes, search=yes, ai-input=yes
 Allow: /
 Disallow: /cdn-cgi/
 
-Sitemap: https://blog.knitli.com/sitemap-index.xml
+Sitemap: https://docs.knitli.com/recoco/sitemap-index.xml
