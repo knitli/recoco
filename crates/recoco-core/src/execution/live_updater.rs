@@ -26,6 +26,22 @@ pub struct FlowLiveUpdaterUpdates {
     pub active_sources: Vec<String>,
     pub updated_sources: Vec<String>,
 }
+
+/// Progress update information for flow indexing.
+#[derive(Debug, Clone, Serialize)]
+pub struct ProgressUpdate {
+    /// Names of sources currently being indexed.
+    pub active_sources: Vec<String>,
+    /// Total number of sources in the flow.
+    pub total_sources: usize,
+    /// Number of sources completed.
+    pub completed_sources: usize,
+    /// Per-source statistics.
+    pub source_stats: Vec<stats::SourceUpdateInfo>,
+    /// Global operation-level in-process counts.
+    pub operation_in_process: std::collections::HashMap<String, i64>,
+}
+
 struct FlowLiveUpdaterStatus {
     pub active_source_idx: BTreeSet<usize>,
     pub source_updates_num: Vec<usize>,
@@ -45,6 +61,9 @@ pub struct FlowLiveUpdater {
     pub operation_in_process_stats: Arc<stats::OperationInProcessStats>,
     recv_state: tokio::sync::Mutex<UpdateReceiveState>,
     num_remaining_tasks_rx: watch::Receiver<usize>,
+
+    // Progress watching channel
+    progress_tx: watch::Sender<Option<ProgressUpdate>>,
 
     // Hold tx to avoid dropping the sender.
     _status_tx: watch::Sender<FlowLiveUpdaterStatus>,
@@ -481,6 +500,8 @@ impl FlowLiveUpdater {
         let (num_remaining_tasks_tx, num_remaining_tasks_rx) =
             watch::channel(plan.import_ops.len());
 
+        let (progress_tx, _progress_rx) = watch::channel(None);
+
         let mut join_set = JoinSet::new();
         let mut stats_per_task = Vec::new();
         let operation_in_process_stats = Arc::new(stats::OperationInProcessStats::default());
@@ -514,13 +535,115 @@ impl FlowLiveUpdater {
                 is_done: false,
             }),
             num_remaining_tasks_rx,
+            progress_tx,
 
             _status_tx: status_tx,
             _num_remaining_tasks_tx: num_remaining_tasks_tx,
         })
     }
 
+    /// Subscribe to progress updates during flow indexing.
+    /// Returns a receiver that will receive periodic progress updates.
+    pub fn subscribe_progress(&self) -> watch::Receiver<Option<ProgressUpdate>> {
+        self.progress_tx.subscribe()
+    }
+
+    /// Emit a progress update to all subscribers.
+    fn emit_progress_update(&self) {
+        let recv_state = match self.recv_state.try_lock() {
+            Ok(state) => state,
+            Err(_) => return, // Skip if locked
+        };
+
+        let status = recv_state.status_rx.borrow();
+
+        let active_sources: Vec<String> = status
+            .active_source_idx
+            .iter()
+            .map(|&idx| {
+                self.flow_ctx.flow.flow_instance.import_ops[idx]
+                    .name
+                    .clone()
+            })
+            .collect();
+
+        let total_sources = self.stats_per_task.len();
+        let completed_sources = total_sources - status.active_source_idx.len();
+
+        let source_stats: Vec<stats::SourceUpdateInfo> = std::iter::zip(
+            self.flow_ctx.flow.flow_instance.import_ops.iter(),
+            self.stats_per_task.iter(),
+        )
+        .map(|(import_op, stats)| stats::SourceUpdateInfo {
+            source_name: import_op.name.clone(),
+            stats: stats.as_ref().clone(),
+        })
+        .collect();
+
+        let operation_in_process = self
+            .operation_in_process_stats
+            .get_all_operations_in_process();
+
+        let update = ProgressUpdate {
+            active_sources,
+            total_sources,
+            completed_sources,
+            source_stats,
+            operation_in_process,
+        };
+
+        let _ = self.progress_tx.send(Some(update));
+    }
+
     pub async fn wait(&self) -> Result<()> {
+        // Spawn a task to emit periodic progress updates
+        let progress_tx = self.progress_tx.clone();
+        let num_remaining_tasks_rx = self.num_remaining_tasks_rx.clone();
+        let flow_ctx = self.flow_ctx.clone();
+        let stats_per_task = self.stats_per_task.clone();
+        let operation_in_process_stats = self.operation_in_process_stats.clone();
+
+        let progress_emitter = tokio::spawn(async move {
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
+            interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
+
+            loop {
+                interval.tick().await;
+
+                let num_remaining = *num_remaining_tasks_rx.borrow();
+                if num_remaining == 0 {
+                    break;
+                }
+
+                // Emit progress update
+                let total_sources = stats_per_task.len();
+                let completed_sources = total_sources - num_remaining;
+
+                let source_stats: Vec<stats::SourceUpdateInfo> = std::iter::zip(
+                    flow_ctx.flow.flow_instance.import_ops.iter(),
+                    stats_per_task.iter(),
+                )
+                .map(|(import_op, stats)| stats::SourceUpdateInfo {
+                    source_name: import_op.name.clone(),
+                    stats: stats.as_ref().clone(),
+                })
+                .collect();
+
+                let operation_in_process =
+                    operation_in_process_stats.get_all_operations_in_process();
+
+                let update = ProgressUpdate {
+                    active_sources: vec![], // Will be filled if status is available
+                    total_sources,
+                    completed_sources,
+                    source_stats,
+                    operation_in_process,
+                };
+
+                let _ = progress_tx.send(Some(update));
+            }
+        });
+
         {
             let mut rx = self.num_remaining_tasks_rx.clone();
             rx.wait_for(|v| *v == 0).await?;
@@ -533,14 +656,21 @@ impl FlowLiveUpdater {
             match task_result {
                 Ok(Ok(_)) => {}
                 Ok(Err(err)) => {
+                    progress_emitter.abort();
                     return Err(err);
                 }
                 Err(err) if err.is_cancelled() => {}
                 Err(err) => {
+                    progress_emitter.abort();
                     return Err(err.into());
                 }
             }
         }
+
+        // Emit final progress update
+        self.emit_progress_update();
+
+        progress_emitter.abort();
         Ok(())
     }
 

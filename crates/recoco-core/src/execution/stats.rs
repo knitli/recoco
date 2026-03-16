@@ -68,6 +68,35 @@ impl std::fmt::Debug for Counter {
     }
 }
 
+/// Statistics for a single component/operation.
+#[derive(Debug, Serialize, Default, Clone)]
+#[cfg(feature = "persistence")]
+pub struct ComponentStats {
+    pub num_processed: Counter,
+    pub num_errors: Counter,
+    pub processing: ProcessingCounters,
+}
+
+#[cfg(feature = "persistence")]
+impl ComponentStats {
+    /// Record that processing started for a number of items.
+    pub fn start(&self, count: i64) {
+        self.processing.start(count);
+    }
+
+    /// Record that processing completed for a number of items.
+    pub fn complete(&self, count: i64) {
+        self.num_processed.inc(count);
+        self.processing.end(count);
+    }
+
+    /// Record that processing failed for a number of items.
+    pub fn error(&self, count: i64) {
+        self.num_errors.inc(count);
+        self.processing.end(count);
+    }
+}
+
 #[derive(Debug, Serialize, Default, Clone)]
 pub struct ProcessingCounters {
     /// Total number of processing operations started.
@@ -111,7 +140,7 @@ impl ProcessingCounters {
     }
 }
 
-#[derive(Debug, Serialize, Default, Clone)]
+#[derive(Debug, Default)]
 #[cfg(feature = "persistence")]
 pub struct UpdateStats {
     pub num_no_change: Counter,
@@ -124,6 +153,49 @@ pub struct UpdateStats {
     pub num_errors: Counter,
     /// Processing counters for tracking in-process rows.
     pub processing: ProcessingCounters,
+    /// Per-component (operation) stats tracking.
+    /// Maps component/operation names to their individual update stats.
+    pub by_component: std::sync::RwLock<HashMap<String, ComponentStats>>,
+}
+
+#[cfg(feature = "persistence")]
+impl Serialize for UpdateStats {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("UpdateStats", 8)?;
+        state.serialize_field("num_no_change", &self.num_no_change)?;
+        state.serialize_field("num_insertions", &self.num_insertions)?;
+        state.serialize_field("num_deletions", &self.num_deletions)?;
+        state.serialize_field("num_updates", &self.num_updates)?;
+        state.serialize_field("num_reprocesses", &self.num_reprocesses)?;
+        state.serialize_field("num_errors", &self.num_errors)?;
+        state.serialize_field("processing", &self.processing)?;
+        let by_component = self.by_component.read().unwrap();
+        if !by_component.is_empty() {
+            state.serialize_field("by_component", &*by_component)?;
+        }
+        state.end()
+    }
+}
+
+#[cfg(feature = "persistence")]
+impl Clone for UpdateStats {
+    fn clone(&self) -> Self {
+        let by_component = self.by_component.read().unwrap();
+        Self {
+            num_no_change: self.num_no_change.clone(),
+            num_insertions: self.num_insertions.clone(),
+            num_deletions: self.num_deletions.clone(),
+            num_updates: self.num_updates.clone(),
+            num_reprocesses: self.num_reprocesses.clone(),
+            num_errors: self.num_errors.clone(),
+            processing: self.processing.clone(),
+            by_component: std::sync::RwLock::new(by_component.clone()),
+        }
+    }
 }
 
 #[cfg(feature = "persistence")]
@@ -137,6 +209,7 @@ impl UpdateStats {
             num_reprocesses: self.num_reprocesses.delta(&base.num_reprocesses),
             num_errors: self.num_errors.delta(&base.num_errors),
             processing: self.processing.delta(&base.processing),
+            by_component: std::sync::RwLock::new(HashMap::new()), // Delta doesn't track per-component
         }
     }
 
@@ -148,6 +221,15 @@ impl UpdateStats {
         self.num_reprocesses.merge(&delta.num_reprocesses);
         self.num_errors.merge(&delta.num_errors);
         self.processing.merge(&delta.processing);
+        // Merge component stats
+        let delta_components = delta.by_component.read().unwrap();
+        let mut self_components = self.by_component.write().unwrap();
+        for (component_name, delta_stats) in delta_components.iter() {
+            let entry = self_components.entry(component_name.clone()).or_default();
+            entry.num_processed.merge(&delta_stats.num_processed);
+            entry.num_errors.merge(&delta_stats.num_errors);
+            entry.processing.merge(&delta_stats.processing);
+        }
     }
 
     pub fn has_any_change(&self) -> bool {
@@ -156,6 +238,50 @@ impl UpdateStats {
             || self.num_updates.get() > 0
             || self.num_reprocesses.get() > 0
             || self.num_errors.get() > 0
+    }
+
+    /// Get or create a component stats entry for the given component name.
+    pub fn get_component_stats(&self, component_name: &str) -> Arc<ComponentStats> {
+        let components = self.by_component.read().unwrap();
+        if let Some(stats) = components.get(component_name) {
+            return Arc::new(stats.clone());
+        }
+        drop(components);
+
+        let mut components = self.by_component.write().unwrap();
+        Arc::new(
+            components
+                .entry(component_name.to_string())
+                .or_default()
+                .clone(),
+        )
+    }
+
+    /// Record component processing start.
+    pub fn component_start(&self, component_name: &str, count: i64) {
+        let mut components = self.by_component.write().unwrap();
+        components
+            .entry(component_name.to_string())
+            .or_default()
+            .start(count);
+    }
+
+    /// Record component processing completion.
+    pub fn component_complete(&self, component_name: &str, count: i64) {
+        let mut components = self.by_component.write().unwrap();
+        components
+            .entry(component_name.to_string())
+            .or_default()
+            .complete(count);
+    }
+
+    /// Record component processing error.
+    pub fn component_error(&self, component_name: &str, count: i64) {
+        let mut components = self.by_component.write().unwrap();
+        components
+            .entry(component_name.to_string())
+            .or_default()
+            .error(count);
     }
 }
 
@@ -274,7 +400,7 @@ impl std::fmt::Display for UpdateStats {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[cfg(feature = "persistence")]
 pub struct SourceUpdateInfo {
     pub source_name: String,
