@@ -10,6 +10,7 @@
 // Both the upstream CocoIndex code and the Recoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
+use async_stream::try_stream;
 use std::borrow::Cow;
 use std::fs::Metadata;
 use std::path::Path;
@@ -60,12 +61,12 @@ impl SourceExecutor for Executor {
         let mut dirs = Vec::new();
         dirs.push(Cow::Borrowed(&self.root_path));
         let mut new_dirs = Vec::new();
-        let stream = async_stream::stream! {
+        let stream = try_stream! {
             while let Some(dir) = dirs.pop() {
                 let mut entries = match tokio::fs::read_dir(dir.as_ref()).await {
                     Ok(entries) => entries,
                     Err(e) => {
-                        warn!("Failed to read directory {}: {}", dir.as_ref().display(), e);
+                        warn!("Failed to read directory {}: {}", dir.display(), e);
                         continue;
                     }
                 };
@@ -74,7 +75,7 @@ impl SourceExecutor for Executor {
                         Ok(Some(entry)) => entry,
                         Ok(None) => break,
                         Err(e) => {
-                            warn!("Failed to read directory entry in {}: {}", dir.as_ref().display(), e);
+                            warn!("Failed to read directory entry in {}: {}", dir.display(), e);
                             continue;
                         }
                     };
@@ -100,7 +101,7 @@ impl SourceExecutor for Executor {
                     };
                     if file_type.is_symlink()
                         && let Err(e) = ensure_metadata(&path, &mut metadata).await {
-                            warn!("Skipped broken symlink {}: {}", path.display(), e);
+                            warn!("Skipped symlink {}: {}", path.display(), e);
                             continue;
                         }
                     let is_dir = if file_type.is_dir() {
@@ -136,23 +137,23 @@ impl SourceExecutor for Executor {
                                         Ok(ord) => Some(ord),
                                         Err(e) => {
                                             warn!("Failed to convert modification time for {}: {}", path.display(), e);
-                                            continue;
+                                            None
                                         }
                                     },
                                     Err(e) => {
                                         warn!("Failed to get modification time for {}: {}", path.display(), e);
-                                        continue;
+                                        None
                                     }
                                 },
                                 Err(e) => {
                                     warn!("Failed to get metadata for {}: {}", path.display(), e);
-                                    continue;
+                                    None
                                 }
                             }
                         } else {
                             None
                         };
-                        yield Ok(vec![PartialSourceRow {
+                        yield vec![PartialSourceRow {
                             key: KeyValue::from_single_part(relative_path.to_string()),
                             key_aux_info: serde_json::Value::Null,
                             data: PartialSourceRowData {
@@ -160,7 +161,7 @@ impl SourceExecutor for Executor {
                                 content_version_fp: None,
                                 value: None,
                             },
-                        }]);
+                        }];
                     }
                 }
                 dirs.extend(new_dirs.drain(..).rev());
