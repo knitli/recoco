@@ -10,16 +10,15 @@
 // Both the upstream CocoIndex code and the Recoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
-use async_stream::try_stream;
 use std::borrow::Cow;
 use std::fs::Metadata;
 use std::path::Path;
 use std::{path::PathBuf, sync::Arc};
 use tracing::warn;
 
-use recoco_splitters::pattern_matcher::PatternMatcher;
 use crate::base::field_attrs;
 use crate::{fields_value, ops::sdk::*};
+use recoco_splitters::pattern_matcher::PatternMatcher;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Spec {
@@ -61,10 +60,24 @@ impl SourceExecutor for Executor {
         let mut dirs = Vec::new();
         dirs.push(Cow::Borrowed(&self.root_path));
         let mut new_dirs = Vec::new();
-        let stream = try_stream! {
+        let stream = async_stream::stream! {
             while let Some(dir) = dirs.pop() {
-                let mut entries = tokio::fs::read_dir(dir.as_ref()).await?;
-                while let Some(entry) = entries.next_entry().await? {
+                let mut entries = match tokio::fs::read_dir(dir.as_ref()).await {
+                    Ok(entries) => entries,
+                    Err(e) => {
+                        warn!("Failed to read directory {}: {}", dir.as_ref().display(), e);
+                        continue;
+                    }
+                };
+                loop {
+                    let entry = match entries.next_entry().await {
+                        Ok(Some(entry)) => entry,
+                        Ok(None) => break,
+                        Err(e) => {
+                            warn!("Failed to read directory entry in {}: {}", dir.as_ref().display(), e);
+                            continue;
+                        }
+                    };
                     let path = entry.path();
                     let mut path_components = path.components();
                     for _ in 0..root_component_size {
@@ -78,20 +91,29 @@ impl SourceExecutor for Executor {
                     let mut metadata: Option<Metadata> = None;
 
                     // For symlinks, if the target doesn't exist, log and skip.
-                    let file_type = entry.file_type().await?;
+                    let file_type = match entry.file_type().await {
+                        Ok(ft) => ft,
+                        Err(e) => {
+                            warn!("Failed to get file type for {}: {}", path.display(), e);
+                            continue;
+                        }
+                    };
                     if file_type.is_symlink()
                         && let Err(e) = ensure_metadata(&path, &mut metadata).await {
-                            if e.kind() == std::io::ErrorKind::NotFound {
-                                warn!("Skipped broken symlink: {}", path.display());
-                                continue;
-                            }
-                            Err(e)?;
+                            warn!("Skipped broken symlink {}: {}", path.display(), e);
+                            continue;
                         }
                     let is_dir = if file_type.is_dir() {
                         true
                     } else if file_type.is_symlink() {
                         // Follow symlinks to classify the target.
-                        ensure_metadata(&path, &mut metadata).await?.is_dir()
+                        match ensure_metadata(&path, &mut metadata).await {
+                            Ok(md) => md.is_dir(),
+                            Err(e) => {
+                                warn!("Failed to get metadata for symlink {}: {}", path.display(), e);
+                                continue;
+                            }
+                        }
                     } else {
                         false
                     };
@@ -108,12 +130,29 @@ impl SourceExecutor for Executor {
                             continue;
                         }
                         let ordinal: Option<Ordinal> = if options.include_ordinal {
-                            let metadata = ensure_metadata(&path, &mut metadata).await?;
-                            Some(metadata.modified()?.try_into()?)
+                            match ensure_metadata(&path, &mut metadata).await {
+                                Ok(md) => match md.modified() {
+                                    Ok(modified) => match modified.try_into() {
+                                        Ok(ord) => Some(ord),
+                                        Err(e) => {
+                                            warn!("Failed to convert modification time for {}: {}", path.display(), e);
+                                            continue;
+                                        }
+                                    },
+                                    Err(e) => {
+                                        warn!("Failed to get modification time for {}: {}", path.display(), e);
+                                        continue;
+                                    }
+                                },
+                                Err(e) => {
+                                    warn!("Failed to get metadata for {}: {}", path.display(), e);
+                                    continue;
+                                }
+                            }
                         } else {
                             None
                         };
-                        yield vec![PartialSourceRow {
+                        yield Ok(vec![PartialSourceRow {
                             key: KeyValue::from_single_part(relative_path.to_string()),
                             key_aux_info: serde_json::Value::Null,
                             data: PartialSourceRowData {
@@ -121,7 +160,7 @@ impl SourceExecutor for Executor {
                                 content_version_fp: None,
                                 value: None,
                             },
-                        }];
+                        }]);
                     }
                 }
                 dirs.extend(new_dirs.drain(..).rev());
@@ -256,26 +295,28 @@ impl SourceExecutor for Executor {
         let (tx, mut rx) = mpsc::channel::<PathBuf>(100);
 
         let mut watcher = RecommendedWatcher::new(
-            move |res: notify::Result<notify::Event>| {
-                match res {
-                    Ok(event) => {
-                        for path in event.paths {
-                            if let Err(err) = tx.try_send(path) {
-                                use tokio::sync::mpsc::error::TrySendError;
-                                match err {
-                                    TrySendError::Full(_) => {
-                                        warn!("File watcher channel is full; dropping file change event");
-                                    }
-                                    TrySendError::Closed(_) => {
-                                        warn!("File watcher channel is closed; dropping file change event");
-                                    }
+            move |res: notify::Result<notify::Event>| match res {
+                Ok(event) => {
+                    for path in event.paths {
+                        if let Err(err) = tx.try_send(path) {
+                            use tokio::sync::mpsc::error::TrySendError;
+                            match err {
+                                TrySendError::Full(_) => {
+                                    warn!(
+                                        "File watcher channel is full; dropping file change event"
+                                    );
+                                }
+                                TrySendError::Closed(_) => {
+                                    warn!(
+                                        "File watcher channel is closed; dropping file change event"
+                                    );
                                 }
                             }
                         }
                     }
-                    Err(e) => {
-                        warn!("File watcher error: {}", e);
-                    }
+                }
+                Err(e) => {
+                    warn!("File watcher error: {}", e);
                 }
             },
             Config::default(),
