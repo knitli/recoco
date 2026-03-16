@@ -132,7 +132,21 @@ impl SourceExecutor for Executor {
                             else {
                                 continue;
                             };
-                            Some(metadata.modified()?.try_into()?)
+                            let modified = match metadata.modified() {
+                                Ok(mtime) => mtime,
+                                Err(e) => {
+                                    warn!("Failed to get modification time for {}: {e}", path.display());
+                                    continue;
+                                }
+                            };
+                            let ordinal = match modified.try_into() {
+                                Ok(ord) => ord,
+                                Err(e) => {
+                                    warn!("Failed to convert modification time for {} into Ordinal: {e}", path.display());
+                                    continue;
+                                }
+                            };
+                            Some(ordinal)
                         } else {
                             None
                         };
