@@ -18,7 +18,16 @@
 //! - Recursive text chunking with syntax awareness
 //! - Pattern matching for file filtering
 
+mod by_separators;
+mod output_positions;
 #[cfg(feature = "pattern-matching")]
 pub mod pattern_matcher;
 pub mod prog_langs;
+mod recursive;
 pub mod split;
+
+// Re-export split functionality at crate level for convenience
+pub use by_separators::{KeepSeparator, SeparatorSplitConfig, SeparatorSplitter};
+pub use recursive::{
+    CustomLanguageConfig, RecursiveChunkConfig, RecursiveChunker, RecursiveSplitConfig,
+};

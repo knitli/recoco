@@ -12,18 +12,7 @@
 
 //! Text splitting utilities.
 //!
-//! This module provides text splitting functionality including:
-//! - Splitting by regex separators
-//! - Recursive syntax-aware chunking
-
-mod by_separators;
-mod output_positions;
-mod recursive;
-
-pub use by_separators::{KeepSeparator, SeparatorSplitConfig, SeparatorSplitter};
-pub use recursive::{
-    CustomLanguageConfig, RecursiveChunkConfig, RecursiveChunker, RecursiveSplitConfig,
-};
+//! This module provides common types for text splitting.
 
 /// A text range specified by byte offsets.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
