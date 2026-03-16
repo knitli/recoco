@@ -246,7 +246,17 @@ impl SourceExecutor for Executor {
             while let Some(path) = rx.recv().await {
                 // Skip directory paths - notify can emit events for directories,
                 // and reading a directory as a file would produce an EISDIR error.
-                if !path.is_file() {
+                let is_dir = match std::fs::metadata(&path) {
+                    Ok(metadata) => metadata.is_dir(),
+                    Err(err) => {
+                        // If the file no longer exists, this may be a deletion event; do not skip it.
+                        if err.kind() != std::io::ErrorKind::NotFound {
+                            warn!("Failed to read metadata for path {:?}: {}", path, err);
+                        }
+                        false
+                    }
+                };
+                if is_dir {
                     continue;
                 }
 
