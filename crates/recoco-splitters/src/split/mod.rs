@@ -12,7 +12,14 @@
 
 //! Text splitting utilities.
 //!
-//! This module provides common types for text splitting.
+//! This module provides text splitting functionality including:
+//! - Splitting by regex separators
+//! - Recursive syntax-aware chunking
+
+pub use crate::by_separators::{KeepSeparator, SeparatorSplitConfig, SeparatorSplitter};
+pub use crate::recursive::{
+    CustomLanguageConfig, RecursiveChunkConfig, RecursiveChunker, RecursiveSplitConfig,
+};
 
 /// A text range specified by byte offsets.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
