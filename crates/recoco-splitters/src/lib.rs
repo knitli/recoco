@@ -22,3 +22,6 @@
 pub mod pattern_matcher;
 pub mod prog_langs;
 pub mod split;
+pub mod by_separators;
+pub(crate) mod output_positions;
+pub mod recursive;

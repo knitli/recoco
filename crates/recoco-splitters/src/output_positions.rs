@@ -10,9 +10,9 @@
 // Both the upstream CocoIndex code and the Recoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
-//! Internal module for computing output positions from byte offsets.
+//! Utilities for computing output positions from byte offsets.
 
-use super::OutputPosition;
+use crate::split::OutputPosition;
 
 /// Position tracking helper that converts byte offsets to character positions.
 pub(crate) struct Position {

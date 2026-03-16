@@ -16,12 +16,8 @@
 //! - Splitting by regex separators
 //! - Recursive syntax-aware chunking
 
-mod by_separators;
-mod output_positions;
-mod recursive;
-
-pub use by_separators::{KeepSeparator, SeparatorSplitConfig, SeparatorSplitter};
-pub use recursive::{
+pub use crate::by_separators::{KeepSeparator, SeparatorSplitConfig, SeparatorSplitter};
+pub use crate::recursive::{
     CustomLanguageConfig, RecursiveChunkConfig, RecursiveChunker, RecursiveSplitConfig,
 };
 
