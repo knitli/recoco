@@ -43,7 +43,6 @@ config = { workspace = true, optional = true }
 const_format = { workspace = true }  # compile time
 derive-where = { workspace = true }  # compile time
 futures = { workspace = true }
-globset = { workspace = true, optional = true }
 google-cloud-aiplatform-v1 = { workspace = true, optional = true }
 google-cloud-gax = { workspace = true, optional = true }
 google-drive3 = { workspace = true, optional = true }
@@ -124,6 +123,7 @@ all-sources = [
 all-splitter-languages = ["recoco-splitters/all"]
 all-targets = [
   "target-kuzu",
+  "target-ladybug",
   "target-neo4j",
   "target-postgres",
   "target-qdrant",
@@ -227,19 +227,21 @@ source-azure = [
   "dep:azure_identity",
   "dep:azure_storage",
   "dep:azure_storage_blobs",
-  "dep:globset",
+  "dep:recoco-splitters",
+  "recoco-splitters/pattern-matching",
   "recoco-utils/azure",
   "recoco-utils/bytes_decode"
 ]
 source-gdrive = [
   "batching",
-  "dep:globset",
   "dep:google-drive3",
   "dep:http-body-util",
   "dep:hyper-rustls",
   "dep:hyper-util",
+  "dep:recoco-splitters",
   "dep:rustls",
   "dep:yup-oauth2",
+  "recoco-splitters/pattern-matching",
   "recoco-utils/bytes_decode",
   "recoco-utils/google-drive"
 ]
@@ -247,8 +249,8 @@ source-gdrive = [
 source-local-file = [
   "batching",
   "dep:async-stream",
-  "dep:globset",
-  "dep:notify",
+  "dep:recoco-splitters",
+  "recoco-splitters/pattern-matching",
   "recoco-utils/bytes_decode",
   "recoco-utils/local-file"
 ]
@@ -259,10 +261,11 @@ source-s3 = [
   "dep:aws-config",
   "dep:aws-sdk-s3",
   "dep:aws-sdk-sqs",
-  "dep:globset",
+  "dep:recoco-splitters",
   "dep:redis",
   "dep:rustls",
   "dep:urlencoding",
+  "recoco-splitters/pattern-matching",
   "recoco-utils/bytes_decode",
   "recoco-utils/redis",
   "recoco-utils/s3"
@@ -296,6 +299,7 @@ splitter-language-xml = ["recoco-splitters/xml"]
 splitter-language-yaml = ["recoco-splitters/yaml"]
 # Targets
 target-kuzu = ["dep:reqwest", "recoco-utils/reqwest", "target-neo4j"]
+target-ladybug = ["dep:reqwest", "recoco-utils/reqwest", "target-neo4j"]
 target-neo4j = ["dep:neo4rs", "recoco-utils/neo4rs", "recoco-utils/retryable"]
 target-postgres = ["dep:itertools", "source-postgres"]
 target-qdrant = ["dep:qdrant-client", "recoco-utils/qdrant"]

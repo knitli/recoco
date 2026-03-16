@@ -156,27 +156,47 @@ impl<D: SetupOperator + Send + Sync> ResourceSetupChange for SetupChange<D> {
     }
 }
 
+/// Maximum number of concurrent component I/O operations (deletes or upserts) in flight at once.
+/// Caps fan-out to avoid exhausting connection pools while still processing in parallel.
+const COMPONENT_IO_CONCURRENCY_LIMIT: usize = 16;
+
+/// Drive an iterator of `Result<()>` futures with bounded concurrency, discarding `()` outputs.
+async fn run_bounded<I, F>(futures: I) -> Result<()>
+where
+    I: IntoIterator<Item = F>,
+    F: Future<Output = Result<()>>,
+{
+    futures::stream::iter(futures)
+        .buffer_unordered(COMPONENT_IO_CONCURRENCY_LIMIT)
+        .try_for_each(|_| futures::future::ready(Ok(())))
+        .await
+}
+
 pub async fn apply_component_changes<D: SetupOperator>(
     changes: Vec<&SetupChange<D>>,
     context: &D::Context,
 ) -> Result<()> {
-    // First delete components that need to be removed
-    for change in changes.iter() {
-        for key in &change.keys_to_delete {
-            change.desc.delete(key, context).await?;
-        }
-    }
+    // First delete components that need to be removed, with bounded concurrency
+    // to avoid overloading the underlying store or exhausting connection pools.
+    run_bounded(changes.iter().flat_map(|change| {
+        change
+            .keys_to_delete
+            .iter()
+            .map(move |key| change.desc.delete(key, context))
+    }))
+    .await?;
 
-    // Then upsert components that need to be updated
-    for change in changes.iter() {
-        for state in &change.states_to_upsert {
+    // Then upsert components that need to be updated, also with bounded concurrency.
+    run_bounded(changes.iter().flat_map(|change| {
+        change.states_to_upsert.iter().map(move |state| async move {
             if state.already_exists {
-                change.desc.update(&state.state, context).await?;
+                change.desc.update(&state.state, context).await
             } else {
-                change.desc.create(&state.state, context).await?;
+                change.desc.create(&state.state, context).await
             }
-        }
-    }
+        })
+    }))
+    .await?;
 
     Ok(())
 }

@@ -552,6 +552,24 @@ mod tests {
     use std::collections::HashSet;
 
     #[test]
+    fn test_fingerprint_to_base64() {
+        let bytes = [0u8; 16];
+        let fp = Fingerprint(bytes);
+        assert_eq!(fp.to_base64(), "AAAAAAAAAAAAAAAAAAAAAA==");
+
+        let bytes_ones = [0xFFu8; 16];
+        let fp_ones = Fingerprint(bytes_ones);
+        assert_eq!(fp_ones.to_base64(), "/////////////////////w==");
+
+        let bytes_mixed = [
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e,
+            0x0f, 0x10,
+        ];
+        let fp_mixed = Fingerprint(bytes_mixed);
+        assert_eq!(fp_mixed.to_base64(), "AQIDBAUGBwgJCgsMDQ4PEA==");
+    }
+
+    #[test]
     fn test_fingerprint_from_base64_standard() {
         let bytes = [0u8; 16];
         let base64_str = BASE64_STANDARD.encode(bytes);

@@ -32,6 +32,8 @@ pub struct Settings {
     #[serde(default)]
     pub database: Option<DatabaseConnectionSpec>,
     #[serde(default)]
+    pub db_schema_name: Option<String>,
+    #[serde(default)]
     #[allow(dead_code)] // Used via serialization/deserialization to Python
     pub app_namespace: String,
     #[serde(default)]
@@ -130,5 +132,25 @@ mod tests {
         assert_eq!(db_spec.password, Some("testpass".to_string()));
         assert_eq!(db_spec.min_connections, 1);
         assert_eq!(db_spec.max_connections, 10);
+    }
+
+    #[test]
+    fn test_settings_deserialize_with_schema() {
+        let json = r#"{
+            "db_schema_name": "custom_schema"
+        }"#;
+
+        let settings: Settings = serde_json::from_str(json).unwrap();
+
+        assert_eq!(settings.db_schema_name, Some("custom_schema".to_string()));
+    }
+
+    #[test]
+    fn test_settings_deserialize_without_schema() {
+        let json = r#"{}"#;
+
+        let settings: Settings = serde_json::from_str(json).unwrap();
+
+        assert_eq!(settings.db_schema_name, None);
     }
 }

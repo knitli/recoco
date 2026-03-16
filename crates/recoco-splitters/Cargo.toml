@@ -18,7 +18,9 @@ license = { workspace = true }
 categories = ["parser-implementations", "parsing", "text-processing"]
 
 [dependencies]
+anyhow = { workspace = true, optional = true }
 cfg-if = { workspace = true }  # compile time
+globset = { workspace = true, optional = true }
 regex = { workspace = true }
 tree-sitter = "0.25.10"
 # Per language tree-sitter parsers
@@ -34,9 +36,9 @@ tree-sitter-javascript = { version = "0.23.1", optional = true }
 tree-sitter-json = { version = "0.24.8", optional = true }
 # The other more popular crate tree-sitter-kotlin requires tree-sitter < 0.23 for now
 tree-sitter-kotlin-ng = { version = "1.1.0", optional = true }
-tree-sitter-language = { version = "0.1.5" }
-tree-sitter-md = { version = "0.5.1", optional = true }
-tree-sitter-pascal = { version = "0.10.0", optional = true }
+tree-sitter-language = { version = "0.1.7" }
+tree-sitter-md = { version = "0.5.3", optional = true }
+tree-sitter-pascal = { version = "0.10.2", optional = true }
 tree-sitter-php = { version = "0.23.11", optional = true }
 tree-sitter-python = { version = "0.23.6", optional = true }
 tree-sitter-r = { version = "1.2.0", optional = true }
@@ -82,8 +84,10 @@ all = [
   "toml",
   "typescript",
   "xml",
-  "yaml"
+  "yaml",
 ]
+full = ["all", "pattern-matching"]
+pattern-matching = ["dep:anyhow", "dep:globset"]
 c = ["dep:tree-sitter-c"]
 c-sharp = ["dep:tree-sitter-c-sharp"]
 cpp = ["dep:tree-sitter-cpp"]

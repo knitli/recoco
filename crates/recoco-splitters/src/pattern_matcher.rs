@@ -10,7 +10,7 @@
 // Both the upstream CocoIndex code and the Recoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
-use crate::ops::sdk::*;
+use anyhow::Result;
 use globset::{Glob, GlobSet, GlobSetBuilder};
 
 /// Builds a GlobSet from a vector of pattern strings

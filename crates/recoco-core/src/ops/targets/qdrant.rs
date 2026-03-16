@@ -26,6 +26,9 @@ use qdrant_client::qdrant::{
 const DEFAULT_VECTOR_SIMILARITY_METRIC: spec::VectorSimilarityMetric =
     spec::VectorSimilarityMetric::CosineSimilarity;
 const DEFAULT_URL: &str = "http://localhost:6334/";
+/// Maximum number of setup operations (deletes or creates) to run concurrently.
+/// Bounds the number of simultaneous Qdrant client requests during collection setup.
+const MAX_CONCURRENT_SETUP_OPS: usize = 16;
 
 ////////////////////////////////////////////////////////////
 // Public Types
@@ -577,23 +580,45 @@ impl TargetFactoryBase for Factory {
         setup_change: Vec<TypedResourceSetupChangeItem<'async_trait, Self>>,
         context: Arc<FlowInstanceContext>,
     ) -> Result<()> {
-        for setup_change in setup_change.iter() {
-            let qdrant_client =
-                self.get_qdrant_client(&setup_change.key.connection, &context.auth_registry)?;
-            setup_change
-                .setup_change
-                .apply_delete(&setup_change.key.collection_name, &qdrant_client)
-                .await?;
+        let auth_registry = &context.auth_registry;
+        // Each item in setup_change has a unique CollectionKey (enforced by the setup
+        // orchestration layer), so concurrent operations across items are race-free.
+
+        // Delete phase: collect futures first, then run with bounded concurrency.
+        let mut delete_futures = Vec::with_capacity(setup_change.len());
+        for change in setup_change.iter() {
+            let client_result = self.get_qdrant_client(&change.key.connection, auth_registry);
+            delete_futures.push(async move {
+                let client = client_result?;
+                change
+                    .setup_change
+                    .apply_delete(&change.key.collection_name, &client)
+                    .await
+            });
         }
-        for setup_change in setup_change.iter() {
-            let qdrant_client =
-                self.get_qdrant_client(&setup_change.key.connection, &context.auth_registry)?;
-            setup_change
-                .setup_change
-                .apply_create(&setup_change.key.collection_name, &qdrant_client)
-                .await?;
+        futures::stream::iter(delete_futures)
+            .buffer_unordered(MAX_CONCURRENT_SETUP_OPS)
+            .try_collect::<Vec<_>>()
+            .await
+            .map(|_| ())?;
+
+        // Create phase: collect futures first, then run with bounded concurrency.
+        let mut create_futures = Vec::with_capacity(setup_change.len());
+        for change in setup_change.iter() {
+            let client_result = self.get_qdrant_client(&change.key.connection, auth_registry);
+            create_futures.push(async move {
+                let client = client_result?;
+                change
+                    .setup_change
+                    .apply_create(&change.key.collection_name, &client)
+                    .await
+            });
         }
-        Ok(())
+        futures::stream::iter(create_futures)
+            .buffer_unordered(MAX_CONCURRENT_SETUP_OPS)
+            .try_collect::<Vec<_>>()
+            .await
+            .map(|_| ())
     }
 }
 

@@ -26,3 +26,41 @@ pub fn sanitize_identifier(s: &str) -> String {
     }
     result
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sanitize_identifier_empty() {
+        assert_eq!(sanitize_identifier(""), "");
+    }
+
+    #[test]
+    fn test_sanitize_identifier_alphanumeric() {
+        assert_eq!(sanitize_identifier("HelloWorld123"), "HelloWorld123");
+    }
+
+    #[test]
+    fn test_sanitize_identifier_underscores() {
+        assert_eq!(sanitize_identifier("hello_world_123"), "hello_world_123");
+    }
+
+    #[test]
+    fn test_sanitize_identifier_non_alphanumeric() {
+        assert_eq!(sanitize_identifier("hello-world.123"), "hello__world__123");
+    }
+
+    #[test]
+    fn test_sanitize_identifier_only_non_alphanumeric() {
+        assert_eq!(sanitize_identifier("!@#"), "______");
+    }
+
+    #[test]
+    fn test_sanitize_identifier_unicode() {
+        // '🚀' is not alphanumeric, should be replaced by "__"
+        assert_eq!(sanitize_identifier("hello🚀"), "hello__");
+        // 'ö' is alphanumeric according to rust's char::is_alphanumeric
+        assert_eq!(sanitize_identifier("helloö"), "helloö");
+    }
+}

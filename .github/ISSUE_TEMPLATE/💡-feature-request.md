@@ -1,13 +1,14 @@
----
-# SPDX-FileCopyrightText: 2025-2026 CocoIndex (upstream)
-# SPDX-FileCopyrightText: 2026 Knitli Inc.
-# SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
-# SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
-# SPDX-FileContributor: CocoIndex Contributors
-#
-# SPDX-License-Identifier: Apache-2.0
+<!--
+SPDX-FileCopyrightText: 2025-2026 CocoIndex (upstream)
+SPDX-FileCopyrightText: 2026 Knitli Inc.
+SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
+SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
+SPDX-FileContributor: CocoIndex Contributors
 
-name: "\U0001F4A1 Feature request"
+SPDX-License-Identifier: Apache-2.0
+-->
+---
+name: "💡 Feature request"
 about: Suggest an idea for this project
 title: "[FEATURE]"
 labels: ''
