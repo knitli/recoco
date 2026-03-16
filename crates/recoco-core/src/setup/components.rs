@@ -178,25 +178,26 @@ pub async fn apply_component_changes<D: SetupOperator>(
 ) -> Result<()> {
     // First delete components that need to be removed, with bounded concurrency
     // to avoid overloading the underlying store or exhausting connection pools.
-    run_bounded(changes.iter().flat_map(|change| {
-        change
-            .keys_to_delete
-            .iter()
-            .map(move |key| change.desc.delete(key, context))
-    }))
-    .await?;
+    let mut delete_futs = Vec::new();
+    for change in changes.iter().copied() {
+        for key in change.keys_to_delete.iter() {
+            delete_futs.push(change.desc.delete(key, context));
+        }
+    }
+    run_bounded(delete_futs).await?;
 
     // Then upsert components that need to be updated, also with bounded concurrency.
-    run_bounded(changes.iter().flat_map(|change| {
-        change.states_to_upsert.iter().map(move |state| async move {
-            if state.already_exists {
-                change.desc.update(&state.state, context).await
+    let mut upsert_futs = Vec::new();
+    for change in changes.iter().copied() {
+        for state in change.states_to_upsert.iter() {
+            upsert_futs.push(if state.already_exists {
+                change.desc.update(&state.state, context)
             } else {
-                change.desc.create(&state.state, context).await
-            }
-        })
-    }))
-    .await?;
+                change.desc.create(&state.state, context)
+            });
+        }
+    }
+    run_bounded(upsert_futs).await?;
 
     Ok(())
 }

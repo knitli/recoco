@@ -67,12 +67,10 @@ pub async fn read_setup_metadata(pool: &PgPool) -> Result<Option<Vec<SetupMetada
             // Use to_regclass to check existence: it respects the connection's search_path
             // and schema qualification, so it works correctly regardless of whether a custom
             // db_schema_name is configured or the connection uses a non-public default schema.
-            let exists: Option<bool> = sqlx::query_scalar(
-                "SELECT to_regclass($1) IS NOT NULL",
-            )
-            .bind(&table_name)
-            .fetch_one(&mut *db_conn)
-            .await?;
+            let exists: Option<bool> = sqlx::query_scalar("SELECT to_regclass($1) IS NOT NULL")
+                .bind(&table_name)
+                .fetch_one(&mut *db_conn)
+                .await?;
             if !exists.unwrap_or(false) {
                 None
             } else {
