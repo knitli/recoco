@@ -15,11 +15,12 @@ use std::time::Duration;
 
 use crate::prelude::*;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use tokio::sync::watch;
 
 const BAR_WIDTH: u64 = 40;
 const PROGRESS_REPORT_INTERVAL: Duration = Duration::from_secs(1);
 
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct ProcessingStatsGroup {
     pub num_execution_starts: u64,
     pub num_unchanged: u64,
@@ -104,29 +105,81 @@ impl std::fmt::Display for ProcessingStatsGroup {
     }
 }
 
-#[derive(Default, Clone)]
+/// A snapshot of processing statistics for all components at a point in time.
+///
+/// This is the public-facing type for observing progress updates. It is produced by
+/// [`ProcessingStats::subscribe`] and [`ProcessingStats::snapshot_stats`], and is the
+/// payload of the watch channel exposed on [`UpdateHandle`](super::app::UpdateHandle).
+#[derive(Debug, Default, Clone)]
+pub struct UpdateStats {
+    /// Per-component statistics, keyed by component name.
+    pub by_component: IndexMap<String, ProcessingStatsGroup>,
+}
+
+struct ProcessingStatsInner {
+    stats: Mutex<IndexMap<String, ProcessingStatsGroup>>,
+    stats_tx: watch::Sender<UpdateStats>,
+}
+
+/// Internal mutable processing statistics, shared across an update run.
+///
+/// Call [`subscribe`](ProcessingStats::subscribe) to receive a [`watch::Receiver<UpdateStats>`]
+/// that is notified whenever any component's stats change.
+#[derive(Clone)]
 pub struct ProcessingStats {
-    pub stats: Arc<Mutex<IndexMap<String, ProcessingStatsGroup>>>,
+    inner: Arc<ProcessingStatsInner>,
+}
+
+impl Default for ProcessingStats {
+    fn default() -> Self {
+        let (stats_tx, _) = watch::channel(UpdateStats::default());
+        Self {
+            inner: Arc::new(ProcessingStatsInner {
+                stats: Mutex::new(IndexMap::new()),
+                stats_tx,
+            }),
+        }
+    }
 }
 
 impl ProcessingStats {
     pub fn update(&self, operation_name: &str, mutator: impl FnOnce(&mut ProcessingStatsGroup)) {
-        let mut stats = self.stats.lock().unwrap();
-        if let Some(group) = stats.get_mut(operation_name) {
-            mutator(group);
-        } else {
-            let mut group = ProcessingStatsGroup::default();
-            mutator(&mut group);
-            stats.insert(operation_name.to_string(), group);
-        }
+        let snapshot = {
+            let mut stats = self.inner.stats.lock().unwrap();
+            if let Some(group) = stats.get_mut(operation_name) {
+                mutator(group);
+            } else {
+                let mut group = ProcessingStatsGroup::default();
+                mutator(&mut group);
+                stats.insert(operation_name.to_string(), group);
+            }
+            UpdateStats {
+                by_component: stats.clone(),
+            }
+        };
+        // Notify watchers; ignore error if all receivers dropped.
+        let _ = self.inner.stats_tx.send(snapshot);
     }
 
     pub fn snapshot(&self) -> IndexMap<String, ProcessingStatsGroup> {
-        self.stats.lock().unwrap().clone()
+        self.inner.stats.lock().unwrap().clone()
+    }
+
+    /// Return a snapshot of the current stats as an [`UpdateStats`].
+    pub fn snapshot_stats(&self) -> UpdateStats {
+        UpdateStats {
+            by_component: self.snapshot(),
+        }
+    }
+
+    /// Subscribe to stats updates. The returned receiver is notified whenever any
+    /// component's stats change, and always holds the latest snapshot.
+    pub fn subscribe(&self) -> watch::Receiver<UpdateStats> {
+        self.inner.stats_tx.subscribe()
     }
 
     pub fn format_stats(&self, start_time: Option<std::time::Instant>) -> String {
-        let stats = self.stats.lock().unwrap();
+        let stats = self.inner.stats.lock().unwrap();
         let mut result = String::new();
         for (name, group) in stats.iter() {
             if !result.is_empty() {
