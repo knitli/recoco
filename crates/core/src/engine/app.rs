@@ -47,7 +47,9 @@ pub struct AppDropOptions {
 /// # Backward compatibility
 ///
 /// `UpdateHandle<R>` implements [`std::future::IntoFuture`], so existing code that does
-/// `let result = app.update(...).await?` continues to work without modification.
+/// `let result = handle.await?` continues to work. When using [`App::update`], which
+/// now returns `Result<UpdateHandle<_>>`, callers should write
+/// `let result = app.update(...)?.await?;`.
 pub struct UpdateHandle<R> {
     stats_rx: watch::Receiver<UpdateStats>,
     join_handle: tokio::task::JoinHandle<Result<R>>,
@@ -120,7 +122,7 @@ impl<Prof: EngineProfile> App<Prof> {
     /// Start an update and return an [`UpdateHandle`] for tracking progress and awaiting the result.
     ///
     /// The handle is also [`IntoFuture`](std::future::IntoFuture), so
-    /// `let result = app.update(...).await?` works for backward compatibility.
+    /// `let result = app.update(...)?.await?` is the correct calling convention.
     ///
     /// # Errors
     ///
@@ -148,7 +150,6 @@ impl<Prof: EngineProfile> App<Prof> {
         let join_handle = tokio::task::spawn(async move {
             let run_fut = async move {
                 root_component
-                    .clone()
                     .run(root_processor, context)
                     .await?
                     .result(None)
