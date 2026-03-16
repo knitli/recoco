@@ -10,7 +10,6 @@
 // Both the upstream CocoIndex code and the Recoco modifications are licensed under the Apache-2.0 License.
 // SPDX-License-Identifier: Apache-2.0
 
-use recoco_splitters::pattern_matcher::PatternMatcher;
 use chrono::Duration;
 use google_drive3::{
     DriveHub,
@@ -21,6 +20,7 @@ use http_body_util::BodyExt;
 use hyper_rustls::HttpsConnector;
 use hyper_util::client::legacy::connect::HttpConnector;
 use phf::phf_map;
+use recoco_splitters::pattern_matcher::PatternMatcher;
 
 use crate::base::field_attrs;
 use crate::ops::sdk::*;

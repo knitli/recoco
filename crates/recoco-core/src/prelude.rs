@@ -38,6 +38,7 @@ pub use std::sync::{Arc, LazyLock, Mutex, OnceLock, RwLock, Weak};
 pub use crate::base::{self, schema, spec, value};
 pub use crate::builder::{self, exec_ctx, plan};
 pub use crate::execution;
+pub use crate::execution::stats;
 pub use crate::lib_context::{FlowContext, LibContext, get_lib_context, get_runtime};
 pub use crate::ops::interface;
 pub use crate::setup;

@@ -22,9 +22,6 @@ pub(crate) mod memoization;
 pub(crate) mod row_indexer;
 #[cfg(feature = "persistence")]
 pub(crate) mod source_indexer;
-
-// Export stats types for progress watching API
-#[cfg(feature = "persistence")]
 pub mod stats;
 
 #[cfg(feature = "persistence")]

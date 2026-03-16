@@ -18,10 +18,10 @@ use azure_storage_blobs::prelude::*;
 use futures::StreamExt;
 use std::sync::Arc;
 
-use recoco_splitters::pattern_matcher::PatternMatcher;
 use crate::base::field_attrs;
 use crate::ops::sdk::*;
 use crate::prelude::*;
+use recoco_splitters::pattern_matcher::PatternMatcher;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Spec {

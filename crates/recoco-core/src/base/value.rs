@@ -1809,9 +1809,7 @@ mod tests {
         let struct_part = KeyPart::from(vec![
             KeyPart::from(String::from("world")),
             KeyPart::from(100i64),
-            KeyPart::from(vec![
-                KeyPart::from(false),
-            ]),
+            KeyPart::from(vec![KeyPart::from(false)]),
         ]);
         assert_eq!(struct_part.to_strs(), vec!["world", "100", "false"]);
     }
