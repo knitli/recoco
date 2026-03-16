@@ -58,7 +58,7 @@ export default defineConfig({
   markdown: {
     shikiConfig: {
       themes: {
-        light: "github-light",
+        light: "catppuccin-latte",
         dark: "github-dark",
       }
     },
