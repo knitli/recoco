@@ -17,9 +17,9 @@ use std::path::Path;
 use std::{path::PathBuf, sync::Arc};
 use tracing::warn;
 
-use recoco_splitters::pattern_matcher::PatternMatcher;
 use crate::base::field_attrs;
 use crate::{fields_value, ops::sdk::*};
+use recoco_splitters::pattern_matcher::PatternMatcher;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Spec {
@@ -256,26 +256,28 @@ impl SourceExecutor for Executor {
         let (tx, mut rx) = mpsc::channel::<PathBuf>(100);
 
         let mut watcher = RecommendedWatcher::new(
-            move |res: notify::Result<notify::Event>| {
-                match res {
-                    Ok(event) => {
-                        for path in event.paths {
-                            if let Err(err) = tx.try_send(path) {
-                                use tokio::sync::mpsc::error::TrySendError;
-                                match err {
-                                    TrySendError::Full(_) => {
-                                        warn!("File watcher channel is full; dropping file change event");
-                                    }
-                                    TrySendError::Closed(_) => {
-                                        warn!("File watcher channel is closed; dropping file change event");
-                                    }
+            move |res: notify::Result<notify::Event>| match res {
+                Ok(event) => {
+                    for path in event.paths {
+                        if let Err(err) = tx.try_send(path) {
+                            use tokio::sync::mpsc::error::TrySendError;
+                            match err {
+                                TrySendError::Full(_) => {
+                                    warn!(
+                                        "File watcher channel is full; dropping file change event"
+                                    );
+                                }
+                                TrySendError::Closed(_) => {
+                                    warn!(
+                                        "File watcher channel is closed; dropping file change event"
+                                    );
                                 }
                             }
                         }
                     }
-                    Err(e) => {
-                        warn!("File watcher error: {}", e);
-                    }
+                }
+                Err(e) => {
+                    warn!("File watcher error: {}", e);
                 }
             },
             Config::default(),
