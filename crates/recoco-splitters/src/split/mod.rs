@@ -16,7 +16,9 @@
 //! - Splitting by regex separators
 //! - Recursive syntax-aware chunking
 
+#[cfg(feature = "splitter-separator")]
 pub use crate::by_separators::{KeepSeparator, SeparatorSplitConfig, SeparatorSplitter};
+#[cfg(feature = "splitter-recursive")]
 pub use crate::recursive::{
     CustomLanguageConfig, RecursiveChunkConfig, RecursiveChunker, RecursiveSplitConfig,
 };
