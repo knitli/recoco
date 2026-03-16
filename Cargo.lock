@@ -4136,7 +4136,6 @@ dependencies = [
  "derive-where",
  "expect-test",
  "futures",
- "globset",
  "google-cloud-aiplatform-v1",
  "google-cloud-gax",
  "google-drive3",
@@ -4182,7 +4181,9 @@ dependencies = [
 name = "recoco-splitters"
 version = "0.2.1"
 dependencies = [
+ "anyhow",
  "cfg-if",
+ "globset",
  "regex",
  "tree-sitter",
  "tree-sitter-c",
