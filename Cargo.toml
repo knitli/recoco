@@ -81,6 +81,7 @@ itertools = "0.14.0"
 json5 = "1.3.0"
 log = "0.4.29"
 neo4rs = "0.8.0"
+notify = "8.2.0"
 pgvector = { version = "0.4.1", features = ["halfvec", "sqlx"] }
 phf = { version = "0.12.1", features = ["macros"] }
 qdrant-client = "1.16.0"
