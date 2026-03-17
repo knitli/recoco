@@ -30,6 +30,19 @@ ROOT = Path(__file__).parent.parent
 RESULTS_DIR = Path(__file__).parent / "results"
 CRITERION_DIR = ROOT / "target" / "criterion"
 
+# Map Criterion directory prefixes to Python benchmark key prefixes.
+# Criterion joins group name parts with underscores in directory names:
+#   group "separator_split/paragraph" -> dir "separator_split_paragraph"
+# We map these back to the slash-separated form used by Python benchmarks.
+PREFIX_MAP = {
+    "recursive_chunk_markdown": "recursive_chunk/markdown",
+    "recursive_chunk_prose": "recursive_chunk/prose",
+    "recursive_chunk_python": "recursive_chunk/python",
+    "recursive_chunk_rust": "recursive_chunk/rust",
+    "separator_split_paragraph": "separator_split/paragraph",
+    "separator_split_sentence": "separator_split/sentence",
+    "separator_split_line": "separator_split/line",
+}
 
 # ---------------------------------------------------------------------------
 # Parse Criterion JSON estimates
@@ -96,11 +109,26 @@ def load_python_results() -> dict:
 def normalize_key(key: str) -> str:
     """Normalize benchmark keys for cross-language matching.
 
-    Rust criterion keys look like: separator_split/paragraph/prose/small
-    Python keys look like:        separator_split/paragraph/prose/small
+    Criterion (Rust) group names use underscores where the Python side uses slashes:
+      Rust:   separator_split_paragraph/prose/small
+      Python: separator_split/paragraph/prose/small
+
+    Criterion also joins tier and chunk_size with underscore:
+      Rust:   recursive_chunk_prose/no_lang/medium_cs=1024
+      Python: recursive_chunk/prose/no_lang/medium/cs=1024
     """
-    # Strip any leading/trailing slashes and whitespace
-    return key.strip("/").strip()
+    k = key.strip("/").strip()
+
+    for crit_prefix, py_prefix in PREFIX_MAP.items():
+        if k.startswith(crit_prefix):
+            k = py_prefix + k[len(crit_prefix):]
+            break
+
+    # Convert tier_cs= to tier/cs=  (e.g. medium_cs=1024 -> medium/cs=1024)
+    for tier in ["small", "medium", "large"]:
+        k = k.replace(f"{tier}_cs=", f"{tier}/cs=")
+
+    return k
 
 
 def match_benchmarks(rust_results: dict, python_results: dict) -> list[dict]:

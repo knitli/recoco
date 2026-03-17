@@ -52,6 +52,25 @@ For [Knitli](https://knitli.com), **I needed dependency control**. I wanted to u
 
 We will regularly merge in upstream fixes and changes, particularly sources, targets, and functions.
 
+## Performance
+
+Recoco started from the same Rust engine as CocoIndex, but the two have diverged. Recoco is faster for three reasons: no Python/PyO3 FFI boundary, Rust-side micro-optimizations (inlined hot paths, tighter allocations), and blake3 fingerprinting instead of blake2.
+
+Benchmarks run on the same machine, same data, same operations ([details](benchmarks/)):
+
+| Operation | Input | Recoco | CocoIndex | Speedup |
+|-----------|-------|--------|-----------|---------|
+| Paragraph split | 1 KB | 924 ns | 176 us | **191x** |
+| Line split | 1 KB | 1.9 us | 198 us | **102x** |
+| Recursive chunk (prose) | 1 KB | 3.0 us | 155 us | **51x** |
+| Paragraph split | 100 KB | 82 us | 376 us | **4.6x** |
+| Recursive chunk (prose) | 100 KB | 475 us | 971 us | **2.0x** |
+| Recursive chunk (Rust code, tree-sitter) | 100 KB | 15.0 ms | 18.6 ms | **1.2x** |
+| Line split | 10 MB | 18.9 ms | 574 ms | **30x** |
+| Recursive chunk (Rust code, tree-sitter) | 10 MB | 1.53 s | 1.66 s | **1.1x** |
+
+Small, frequent operations show the largest gains — the PyO3 round-trip alone costs ~170us per call, and in a pipeline processing thousands of chunks, that compounds fast. Even on heavy computation where tree-sitter parsing dominates, Recoco's Rust-side optimizations still provide a measurable edge.
+
 ## ✨ Key Features
 
 - 🦀 **Pure Rust**: No Python dependencies, interpreters, or build tools required

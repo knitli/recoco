@@ -1,3 +1,5 @@
-# Python dependencies for benchmark comparison.
-# cocoindex is optional — without it, benchmarks fall back to Python stdlib.
-cocoindex>=1.0.0a30
+# CocoIndex Python SDK — required for benchmarks.
+# Both Recoco and CocoIndex use the same Rust splitting engine internally.
+# This benchmark measures the full round-trip: Python → PyO3 → Rust → PyO3 → Python
+# vs Recoco's direct Rust → Rust path.
+cocoindex==0.3.30
