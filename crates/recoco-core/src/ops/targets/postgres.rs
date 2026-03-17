@@ -555,8 +555,24 @@ fn quote_identifier(s: &str) -> String {
 
 fn qualified_table_name(table_id: &TableId) -> String {
     match &table_id.schema {
-        Some(schema) => format!("{}.{}", quote_identifier(schema), quote_identifier(&table_id.table_name)),
-        None => quote_identifier(&table_id.table_name),
+        Some(schema) => {
+            format!(
+                "{}.{}",
+                quote_identifier(schema),
+                quote_identifier(&table_id.table_name)
+            )
+        }
+        None => {
+            let table_name = &table_id.table_name;
+            if table_name.contains('.') {
+                table_name
+                    .split('.')
+                    .map(quote_identifier)
+                    .join(".")
+            } else {
+                quote_identifier(table_name)
+            }
+        }
     }
 }
 
