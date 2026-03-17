@@ -474,6 +474,9 @@ mod tests {
         }
     }
 
+    static MOCK_PROC_INFO: LazyLock<ComponentProcessorInfo> =
+        LazyLock::new(|| ComponentProcessorInfo::new("mock".to_string()));
+
     struct MockComponentProc;
 
     impl ComponentProcessor<MockProfile> for MockComponentProc {
@@ -490,9 +493,7 @@ mod tests {
         }
 
         fn processor_info(&self) -> &ComponentProcessorInfo {
-            static INFO: LazyLock<ComponentProcessorInfo> =
-                LazyLock::new(|| ComponentProcessorInfo::new("mock".to_string()));
-            &INFO
+            &MOCK_PROC_INFO
         }
     }
 
