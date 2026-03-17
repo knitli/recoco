@@ -802,7 +802,13 @@ full = ["engine", "macros", "all-sources", "all-functions", "all-targets"]
 2. Direct function calls without any engine context
 3. Maintain backward compatibility with standalone usage of functions
 
-### Phase 5: FlowBuilder Compatibility Layer (Optional)
+### Phase 5: Query Handlers & Graph Mappings
+
+1. Query handler registration on apps (search endpoints)
+2. Graph DB mapping types for Neo4j/Kuzu (Node, Relationship, NodeFromFields)
+3. `transform_flow` equivalent — reusable transforms shared between indexing and querying
+
+### Phase 6: FlowBuilder Compatibility Layer (Optional)
 
 If needed for gradual migration:
 1. Thin `FlowBuilder` that translates to component mounting under the hood
