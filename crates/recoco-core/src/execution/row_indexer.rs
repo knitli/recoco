@@ -15,6 +15,7 @@ use crate::prelude::*;
 
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
+use futures::Future;
 use futures::future::join_all;
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
@@ -33,6 +34,31 @@ use crate::ops::interface::{
 };
 use utils::db::WriteAction;
 use utils::fingerprint::{Fingerprint, Fingerprinter};
+
+/// Awaits all mutation futures concurrently, logs each failure, and returns the
+/// first error in the iterator/input order (if any), not necessarily the first
+/// one to complete. Using `join_all` guarantees that **every** future is driven
+/// to completion before we inspect the results, so a failing target never
+/// prevents other targets from receiving their mutations.
+pub(crate) async fn collect_mutation_results<F>(futs: impl IntoIterator<Item = F>) -> Result<()>
+where
+    F: Future<Output = (String, Result<()>)>,
+{
+    let results = join_all(futs).await;
+    let mut first_error = None;
+    for (export_key, result) in results {
+        if let Err(e) = result {
+            error!(%export_key, %e, "Failed to apply mutation to target");
+            if first_error.is_none() {
+                first_error = Some(e);
+            }
+        }
+    }
+    if let Some(e) = first_error {
+        return Err(e);
+    }
+    Ok(())
+}
 
 pub fn extract_primary_key_for_export(
     primary_key_def: &AnalyzedPrimaryKeyDef,
@@ -417,19 +443,7 @@ impl<'a> RowIndexer<'a> {
                     })
                 });
 
-        let results = join_all(apply_futs).await;
-        let mut first_error = None;
-        for (export_key, result) in results {
-            if let Err(e) = result {
-                error!(%export_key, %e, "Failed to apply mutation to target");
-                if first_error.is_none() {
-                    first_error = Some(e);
-                }
-            }
-        }
-        if let Some(e) = first_error {
-            return Err(e);
-        }
+        collect_mutation_results(apply_futs).await?;
 
         // Phase 4: Update the tracking record.
         self.commit_source_tracking_info(source_version, source_fp, precommit_output.metadata)
@@ -1099,5 +1113,105 @@ mod tests {
             after_optimization.should_skip(&after_github_checkout, None),
             "After optimization, same ordinal should be skipped"
         );
+    }
+
+    // -----------------------------------------------------------------------
+    // Tests for collect_mutation_results
+    // -----------------------------------------------------------------------
+
+    /// Helper: build a future that increments a shared counter and then returns the
+    /// given result.  The counter lets tests assert that every future was awaited.
+    fn counted_fut(
+        counter: Arc<std::sync::atomic::AtomicUsize>,
+        export_key: &'static str,
+        result: Result<()>,
+    ) -> impl Future<Output = (String, Result<()>)> {
+        async move {
+            counter.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            (export_key.to_string(), result)
+        }
+    }
+
+    #[tokio::test]
+    async fn test_all_mutations_attempted_when_first_target_fails() {
+        // Even though target-A fails, target-B must still be attempted.
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+
+        let result = collect_mutation_results([
+            counted_fut(calls.clone(), "export/target-a", Err(internal_error!("target-a failed"))),
+            counted_fut(calls.clone(), "export/target-b", Ok(())),
+        ])
+        .await;
+
+        assert_eq!(
+            calls.load(std::sync::atomic::Ordering::Relaxed),
+            2,
+            "both mutations must be attempted even when the first fails"
+        );
+        assert!(result.is_err(), "overall result should be Err when a target fails");
+    }
+
+    #[tokio::test]
+    async fn test_all_mutations_attempted_when_last_target_fails() {
+        // Even though target-B fails, both futures must be driven to completion.
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+
+        let result = collect_mutation_results([
+            counted_fut(calls.clone(), "export/target-a", Ok(())),
+            counted_fut(calls.clone(), "export/target-b", Err(internal_error!("target-b failed"))),
+        ])
+        .await;
+
+        assert_eq!(
+            calls.load(std::sync::atomic::Ordering::Relaxed),
+            2,
+            "both mutations must be attempted even when the last fails"
+        );
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_first_error_preserved_when_multiple_targets_fail() {
+        // When several targets fail the *first* error (by order) must be returned.
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+
+        let result = collect_mutation_results([
+            counted_fut(calls.clone(), "export/target-a", Err(internal_error!("first error"))),
+            counted_fut(calls.clone(), "export/target-b", Err(internal_error!("second error"))),
+            counted_fut(calls.clone(), "export/target-c", Ok(())),
+        ])
+        .await;
+
+        assert_eq!(
+            calls.load(std::sync::atomic::Ordering::Relaxed),
+            3,
+            "all three mutations must be attempted"
+        );
+        let err_msg = format!("{}", result.unwrap_err());
+        assert!(
+            err_msg.contains("first error"),
+            "the first error should be preserved; got: {err_msg}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_success_when_all_targets_succeed() {
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+
+        let result = collect_mutation_results([
+            counted_fut(calls.clone(), "export/target-a", Ok(())),
+            counted_fut(calls.clone(), "export/target-b", Ok(())),
+        ])
+        .await;
+
+        assert_eq!(calls.load(std::sync::atomic::Ordering::Relaxed), 2);
+        assert!(result.is_ok(), "should succeed when all targets succeed");
+    }
+
+    #[tokio::test]
+    async fn test_empty_target_list_succeeds() {
+        // Edge-case: no targets → should return Ok without panicking.
+        let result = collect_mutation_results(Vec::<futures::future::Ready<(String, Result<()>)>>::new()).await;
+        assert!(result.is_ok());
     }
 }
