@@ -15,7 +15,7 @@ use crate::prelude::*;
 
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
-use futures::future::try_join_all;
+use futures::future::{join_all, try_join_all};
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
 
@@ -412,13 +412,24 @@ impl<'a> RowIndexer<'a> {
                                 op_stats.finish_processing(&export_key, 1);
                             }
 
-                            result
+                            (export_key, result)
                         }
                     })
                 });
 
-        // TODO: Handle errors.
-        try_join_all(apply_futs).await?;
+        let results = join_all(apply_futs).await;
+        let mut first_error = None;
+        for (export_key, result) in results {
+            if let Err(e) = result {
+                error!(%export_key, %e, "Failed to apply mutation to target");
+                if first_error.is_none() {
+                    first_error = Some(e);
+                }
+            }
+        }
+        if let Some(e) = first_error {
+            return Err(e);
+        }
 
         // Phase 4: Update the tracking record.
         self.commit_source_tracking_info(source_version, source_fp, precommit_output.metadata)
