@@ -36,9 +36,10 @@ use utils::db::WriteAction;
 use utils::fingerprint::{Fingerprint, Fingerprinter};
 
 /// Awaits all mutation futures concurrently, logs each failure, and returns the
-/// first error encountered (if any).  Using `join_all` guarantees that **every**
-/// future is driven to completion before we inspect the results, so a failing
-/// target never prevents other targets from receiving their mutations.
+/// first error in the iterator/input order (if any), not necessarily the first
+/// one to complete. Using `join_all` guarantees that **every** future is driven
+/// to completion before we inspect the results, so a failing target never
+/// prevents other targets from receiving their mutations.
 pub(crate) async fn collect_mutation_results<F>(futs: impl IntoIterator<Item = F>) -> Result<()>
 where
     F: Future<Output = (String, Result<()>)>,
