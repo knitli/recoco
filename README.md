@@ -52,6 +52,25 @@ For [Knitli](https://knitli.com), **I needed dependency control**. I wanted to u
 
 We will regularly merge in upstream fixes and changes, particularly sources, targets, and functions.
 
+## Performance
+
+Recoco and CocoIndex share the same Rust splitting/chunking engine. The difference is how you reach it: CocoIndex routes every call through Python → PyO3 → Rust → PyO3 → Python. Recoco calls the engine directly.
+
+Benchmarks run on the same machine, same data, same operations ([details](benchmarks/)):
+
+| Operation | Input | Recoco | CocoIndex | Speedup |
+|-----------|-------|--------|-----------|---------|
+| Paragraph split | 1 KB | 924 ns | 176 us | **191x** |
+| Line split | 1 KB | 1.9 us | 198 us | **102x** |
+| Recursive chunk (prose) | 1 KB | 3.0 us | 155 us | **51x** |
+| Paragraph split | 100 KB | 82 us | 376 us | **4.6x** |
+| Recursive chunk (prose) | 100 KB | 475 us | 971 us | **2.0x** |
+| Recursive chunk (Rust code, tree-sitter) | 100 KB | 15.0 ms | 18.6 ms | **1.2x** |
+| Line split | 10 MB | 18.9 ms | 574 ms | **30x** |
+| Recursive chunk (Rust code, tree-sitter) | 10 MB | 1.53 s | 1.66 s | **1.1x** |
+
+Small, frequent operations (the kind that happen thousands of times in a real pipeline) show the largest gains because the ~170us PyO3 round-trip overhead dominates. Heavy computation (tree-sitter parsing on large files) converges toward parity since both sides run the same Rust code.
+
 ## ✨ Key Features
 
 - 🦀 **Pure Rust**: No Python dependencies, interpreters, or build tools required
