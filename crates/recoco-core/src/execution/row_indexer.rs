@@ -15,7 +15,7 @@ use crate::prelude::*;
 
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
-use futures::future::{join_all, try_join_all};
+use futures::future::join_all;
 use sqlx::PgPool;
 use std::collections::{HashMap, HashSet};
 
