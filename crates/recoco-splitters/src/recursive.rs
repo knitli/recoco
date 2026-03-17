@@ -17,9 +17,9 @@ use std::collections::HashMap;
 use std::sync::{Arc, LazyLock};
 use unicase::UniCase;
 
-use super::output_positions::{Position, set_output_positions};
-use super::{Chunk, TextRange};
+use crate::output_positions::{Position, set_output_positions};
 use crate::prog_langs::{self, TreeSitterLanguageInfo};
+use crate::split::{Chunk, TextRange};
 
 const SYNTAX_LEVEL_GAP_COST: usize = 512;
 const MISSING_OVERLAP_COST: usize = 512;

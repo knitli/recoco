@@ -12,7 +12,7 @@
 
 //! Internal module for computing output positions from byte offsets.
 
-use super::OutputPosition;
+use crate::split::OutputPosition;
 
 /// Position tracking helper that converts byte offsets to character positions.
 pub(crate) struct Position {

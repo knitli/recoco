@@ -21,8 +21,8 @@ categories = ["parser-implementations", "parsing", "text-processing"]
 anyhow = { workspace = true, optional = true }
 cfg-if = { workspace = true }  # compile time
 globset = { workspace = true, optional = true }
-regex = { workspace = true }
-tree-sitter = "0.25.10"
+regex = { workspace = true, optional = true }
+tree-sitter = { version = "0.25.10", optional = true }
 # Per language tree-sitter parsers
 tree-sitter-c = { version = "0.24.1", optional = true }
 tree-sitter-c-sharp = { version = "0.23.1", optional = true }
@@ -36,7 +36,7 @@ tree-sitter-javascript = { version = "0.23.1", optional = true }
 tree-sitter-json = { version = "0.24.8", optional = true }
 # The other more popular crate tree-sitter-kotlin requires tree-sitter < 0.23 for now
 tree-sitter-kotlin-ng = { version = "1.1.0", optional = true }
-tree-sitter-language = { version = "0.1.7" }
+tree-sitter-language = { version = "0.1.7", optional = true }
 tree-sitter-md = { version = "0.5.3", optional = true }
 tree-sitter-pascal = { version = "0.10.2", optional = true }
 tree-sitter-php = { version = "0.23.11", optional = true }
@@ -52,7 +52,7 @@ tree-sitter-toml-ng = { version = "0.7.0", optional = true }
 tree-sitter-typescript = { version = "0.23.2", optional = true }
 tree-sitter-xml = { version = "0.7.0", optional = true }
 tree-sitter-yaml = { version = "0.7.2", optional = true }
-unicase = { workspace = true }
+unicase = { workspace = true, optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports"] }
@@ -62,8 +62,17 @@ name = "splitting"
 harness = false
 
 [features]
-default = []
+default = ["splitter-separator", "splitter-recursive"]
+splitter-separator = ["dep:regex"]
+splitter-recursive = [
+  "dep:regex",
+  "dep:tree-sitter",
+  "dep:tree-sitter-language",
+  "dep:unicase",
+]
 all = [
+  "splitter-separator",
+  "splitter-recursive",
   "c",
   "c-sharp",
   "cpp",

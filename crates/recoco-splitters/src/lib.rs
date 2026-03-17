@@ -18,7 +18,14 @@
 //! - Recursive text chunking with syntax awareness
 //! - Pattern matching for file filtering
 
+#[cfg(feature = "splitter-separator")]
+mod by_separators;
+#[cfg(any(feature = "splitter-separator", feature = "splitter-recursive"))]
+mod output_positions;
 #[cfg(feature = "pattern-matching")]
 pub mod pattern_matcher;
+#[cfg(feature = "splitter-recursive")]
 pub mod prog_langs;
+#[cfg(feature = "splitter-recursive")]
+mod recursive;
 pub mod split;
