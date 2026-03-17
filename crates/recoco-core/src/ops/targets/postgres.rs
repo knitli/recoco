@@ -200,16 +200,22 @@ impl ExportContext {
 
         let key_fields = key_fields_schema
             .iter()
-            .map(|f| format!("\"{}\"", f.name))
+            .map(|f| quote_identifier(&f.name))
             .collect::<Vec<_>>()
             .join(", ");
         let all_fields = (key_fields_schema.iter().chain(value_fields_schema.iter()))
-            .map(|f| format!("\"{}\"", f.name))
+            .map(|f| quote_identifier(&f.name))
             .collect::<Vec<_>>()
             .join(", ");
         let set_value_fields = value_fields_schema
             .iter()
-            .map(|f| format!("\"{}\" = EXCLUDED.\"{}\"", f.name, f.name))
+            .map(|f| {
+                format!(
+                    "{} = EXCLUDED.{}",
+                    quote_identifier(&f.name),
+                    quote_identifier(&f.name)
+                )
+            })
             .collect::<Vec<_>>()
             .join(", ");
 
@@ -307,9 +313,7 @@ impl ExportContext {
                 if i > 0 {
                     query_builder.push(", ");
                 }
-                query_builder.push("\"");
-                query_builder.push(schema.name.as_str());
-                query_builder.push("\"");
+                query_builder.push(quote_identifier(&schema.name));
             }
             if num_parameters > 1 {
                 query_builder.push(")");
@@ -545,10 +549,30 @@ fn to_column_type_sql(column_type: &ValueType) -> String {
     }
 }
 
+fn quote_identifier(s: &str) -> String {
+    format!("\"{}\"", s.replace('"', "\"\""))
+}
+
 fn qualified_table_name(table_id: &TableId) -> String {
     match &table_id.schema {
-        Some(schema) => format!("\"{}\".{}", schema, table_id.table_name),
-        None => table_id.table_name.clone(),
+        Some(schema) => {
+            format!(
+                "{}.{}",
+                quote_identifier(schema),
+                quote_identifier(&table_id.table_name)
+            )
+        }
+        None => {
+            let table_name = &table_id.table_name;
+            if table_name.contains('.') {
+                table_name
+                    .split('.')
+                    .map(quote_identifier)
+                    .join(".")
+            } else {
+                quote_identifier(table_name)
+            }
+        }
     }
 }
 
@@ -703,7 +727,7 @@ fn to_index_spec_sql(index_spec: &ExtendedVectorIndexDef) -> Cow<'static, str> {
     };
     format!(
         "USING {method} ({} {}){}",
-        index_spec.index_def.field_name,
+        quote_identifier(&index_spec.index_def.field_name),
         to_vector_similarity_metric_sql(index_spec.index_def.metric, &index_spec.type_spec),
         with_clause
     )
@@ -788,7 +812,7 @@ impl SetupChange {
                 .await?;
         }
         for index_name in self.actions.indexes_to_delete.iter() {
-            let sql = format!("DROP INDEX IF EXISTS {index_name}");
+            let sql = format!("DROP INDEX IF EXISTS {}", quote_identifier(index_name));
             sqlx::query(&sql).execute(db_pool).await?;
         }
         if let Some(table_upsertion) = &self.actions.table_action.table_upsertion {
@@ -796,18 +820,20 @@ impl SetupChange {
                 TableUpsertionAction::Create { keys, values } => {
                     // Create schema if specified
                     if let Some(schema) = &table_id.schema {
-                        let sql = format!("CREATE SCHEMA IF NOT EXISTS \"{}\"", schema);
+                        let sql = format!("CREATE SCHEMA IF NOT EXISTS {}", quote_identifier(schema));
                         sqlx::query(&sql).execute(db_pool).await?;
                     }
 
-                    let mut fields = (keys
-                        .iter()
-                        .map(|(name, typ)| format!("\"{name}\" {typ} NOT NULL")))
-                    .chain(values.iter().map(|(name, typ)| format!("\"{name}\" {typ}")));
+                    let mut fields = (keys.iter().map(|(name, typ)| {
+                        format!("{} {typ} NOT NULL", quote_identifier(name))
+                    }))
+                    .chain(values.iter().map(|(name, typ)| {
+                        format!("{} {typ}", quote_identifier(name))
+                    }));
                     let sql = format!(
                         "CREATE TABLE IF NOT EXISTS {table_name} ({}, PRIMARY KEY ({}))",
                         fields.join(", "),
-                        keys.keys().join(", ")
+                        keys.keys().map(|k| quote_identifier(k)).join(", ")
                     );
                     sqlx::query(&sql).execute(db_pool).await?;
                 }
@@ -817,13 +843,16 @@ impl SetupChange {
                 } => {
                     for column_name in columns_to_delete.iter() {
                         let sql = format!(
-                            "ALTER TABLE {table_name} DROP COLUMN IF EXISTS \"{column_name}\"",
+                            "ALTER TABLE {table_name} DROP COLUMN IF EXISTS {}",
+                            quote_identifier(column_name)
                         );
                         sqlx::query(&sql).execute(db_pool).await?;
                     }
                     for (column_name, column_type) in columns_to_upsert.iter() {
                         let sql = format!(
-                            "ALTER TABLE {table_name} DROP COLUMN IF EXISTS \"{column_name}\", ADD COLUMN \"{column_name}\" {column_type}"
+                            "ALTER TABLE {table_name} DROP COLUMN IF EXISTS {}, ADD COLUMN {} {column_type}",
+                            quote_identifier(column_name),
+                            quote_identifier(column_name)
                         );
                         sqlx::query(&sql).execute(db_pool).await?;
                     }
@@ -832,7 +861,8 @@ impl SetupChange {
         }
         for (index_name, index_spec) in self.actions.indexes_to_create.iter() {
             let sql = format!(
-                "CREATE INDEX IF NOT EXISTS {index_name} ON {table_name} {}",
+                "CREATE INDEX IF NOT EXISTS {} ON {table_name} {}",
+                quote_identifier(index_name),
                 to_index_spec_sql(index_spec)
             );
             sqlx::query(&sql).execute(db_pool).await?;
