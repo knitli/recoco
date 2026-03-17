@@ -8,6 +8,8 @@
 4. [CocoIndex v1 Python API Reference](#4-cocoindex-v1-python-api-reference)
 5. [Proposed Recoco v1 Rust API](#5-proposed-recoco-v1-rust-api)
 6. [Migration Path](#6-migration-path)
+7. [Appendix A: Comparison with Issue #1667 (Approved Revision)](#appendix-a-comparison-with-issue-1667-approved-revision)
+8. [Appendix B: Code Hash Constant Design](#appendix-b-code-hash-constant-design)
 
 ---
 
@@ -274,12 +276,59 @@ fn process_item(ctx: &Ctx, text: &str) -> Result<()> {
 }
 ```
 
+#### Ctx Methods
+
+```rust
+impl Ctx {
+    /// Get a shared resource by typed key.
+    pub fn use_resource<T: Send + Sync + 'static>(&self, key: &ContextKey<T>) -> &T;
+
+    /// Create a named sub-scope. Scopes track what changed between runs.
+    pub async fn scope<T>(&self, key: &impl Display, f: impl FnOnce(Ctx) -> Future<Output = Result<T>>) -> Result<T>;
+
+    /// Memoized computation. Skips the closure if the key hasn't changed since last run.
+    pub async fn memo<K: Serialize, T: Persist>(&self, key: &K, f: impl FnOnce() -> Future<Output = Result<T>>) -> Result<T>;
+
+    /// Batch-process items with per-item memoization.
+    /// Cache hits return stored values. Cache misses are collected and passed to `f`
+    /// as a single batch. Results stored back and merged in original order.
+    pub async fn batch<Item, K, T>(
+        &self,
+        items: impl IntoIterator<Item = Item>,
+        key_fn: impl Fn(&Item) -> K,
+        f: impl FnOnce(Vec<Item>) -> Future<Output = Result<Vec<T>>>,
+    ) -> Result<Vec<T>>
+    where
+        K: Serialize,
+        T: Persist;
+
+    /// Run a processor concurrently for each item, creating a child scope per item.
+    pub async fn mount_each<Item, K, T>(
+        &self,
+        items: impl IntoIterator<Item = Item>,
+        key_fn: impl Fn(&Item) -> K,
+        f: impl Fn(Ctx, Item) -> Future<Output = Result<T>>,
+    ) -> Result<Vec<T>>
+    where
+        K: Serialize + Display;
+
+    /// Run a closure concurrently for each item within the current scope (no child scopes).
+    pub async fn map<Item, T>(
+        &self,
+        items: impl IntoIterator<Item = Item>,
+        f: impl Fn(Item) -> Future<Output = Result<T>>,
+    ) -> Result<Vec<T>>;
+}
+```
+
 ### 5.2 Processing Functions
 
 #### The `#[recoco::function]` Proc Macro
 
+A unified macro with parameters that control behavior. The framework applies features in a fixed ordering: **caller → memo → batching → runner → core_fn**.
+
 ```rust
-/// Simple function — tracked for incremental updates
+/// Base: tracked for incremental updates, emits code hash constant
 #[recoco::function]
 async fn process_file(ctx: &Ctx, file: FileEntry, table: &TableTarget) -> Result<()> {
     let text = file.read_text().await?;
@@ -289,19 +338,72 @@ async fn process_file(ctx: &Ctx, file: FileEntry, table: &TableTarget) -> Result
     ctx.map(process_chunk, chunks.iter(), &file.path, table).await?;
     Ok(())
 }
+// Emits: pub const __RECOCO_FN_HASH_PROCESS_FILE: u64 = 0x...;
 
-/// Memoized function — skips re-execution when inputs unchanged
-#[recoco::function(memo = true)]
+/// Memoized: skips re-execution when inputs unchanged.
+/// All non-ctx parameters become the cache key. Code hash included automatically.
+#[recoco::function(memo)]
 async fn embed_text(ctx: &Ctx, text: &str) -> Result<Vec<f32>> {
     let embedder = ctx.use_resource(&EMBEDDER);
     embedder.embed(text).await
 }
 
-/// The proc macro expands to:
-/// - A struct implementing ComponentProcessor
-/// - Fingerprint computation from arguments
-/// - Memoization key generation (when memo=true)
-/// - Proper error propagation
+/// Batching without caching: first non-ctx param is items collection.
+/// Body receives all items every time — no per-item cache probing.
+#[recoco::function(batching)]
+async fn embed_all(ctx: &Ctx, texts: Vec<String>) -> Result<Vec<Vec<f32>>> {
+    let embedder = ctx.use_resource(&EMBEDDER);
+    embedder.embed_batch(&texts).await
+}
+
+/// Memo + batching: per-item memoization with batch processing.
+/// Cache hits return stored values. Cache misses are collected and passed
+/// to the body as a single batch. Code hash included in per-item keys.
+#[recoco::function(memo, batching)]
+async fn extract_files(ctx: &Ctx, files: Vec<FileEntry>) -> Result<Vec<Info>> {
+    let client = ctx.use_resource(&LLM_CLIENT).clone();
+    // `files` here is only cache misses — unchanged files are served from cache
+    let mut results = Vec::with_capacity(files.len());
+    for file in &files {
+        results.push(client.analyze(&file.content_str()?).await?);
+    }
+    Ok(results)
+}
+
+/// Manual version bust when you need to invalidate cache without changing the body
+#[recoco::function(memo, version = 2)]
+async fn analyze(ctx: &Ctx, file: &FileEntry) -> Result<Info> { /* ... */ }
+```
+
+The macro generates:
+- A `__RECOCO_FN_HASH_<NAME>` compile-time constant (hash of function body tokens)
+- `ComponentProcessor` impl with fingerprint computation
+- Memoization wrapping (when `memo`)
+- Batch collection wrapping (when `batching`)
+- Proper error propagation
+
+**Expansion example for `#[recoco::function(memo, batching)]`:**
+
+```rust
+pub const __RECOCO_FN_HASH_EXTRACT_FILES: u64 = 0x...;
+
+async fn extract_files(ctx: &Ctx, files: Vec<FileEntry>) -> Result<Vec<Info>> {
+    ctx.batch(
+        files,
+        |item| (__RECOCO_FN_HASH_EXTRACT_FILES, item.clone()),
+        move |files| async move { /* original body */ }
+    ).await
+}
+```
+
+Extra parameters beyond the items collection are cloned into the closure and included in per-item cache keys:
+
+```rust
+#[recoco::function(memo, batching)]
+async fn extract(ctx: &Ctx, files: Vec<FileEntry>, model: String) -> Result<Vec<Info>> {
+    // `model` is included in each item's key: (hash, &model, item.clone())
+    // ...
+}
 ```
 
 #### Manual Implementation (Without Proc Macro)
@@ -467,7 +569,7 @@ struct DocEmbedding {
     embedding: Vec<f32>,
 }
 
-#[recoco::function(memo = true)]
+#[recoco::function(memo)]
 async fn process_file(ctx: &Ctx, file: FileEntry, table: &TableTarget) -> Result<()> {
     let text = file.read_text().await?;
     let splitter = RecursiveSplitter::default();
@@ -582,7 +684,7 @@ recoco::ops::register_factory("ReverseString".to_string(),
 
 ```rust
 // ~10 lines for the same operation
-#[recoco::function(memo = true)]
+#[recoco::function(memo)]
 fn reverse_string(_ctx: &Ctx, text: &str) -> Result<String> {
     Ok(text.chars().rev().collect())
 }
@@ -706,7 +808,7 @@ The FlowBuilder pattern from main is fundamentally a **declarative graph builder
 Without proc macros, implementing `ComponentProcessor` requires ~30 lines of boilerplate per function. The `#[recoco::function]` macro:
 - Generates the `ComponentProcessor` impl
 - Computes fingerprints from function arguments
-- Handles `memo = true` for memoization
+- Handles `memo` for memoization
 - Wraps return values in `FunctionData`
 - Is **optional** — manual impl always available
 
@@ -781,7 +883,7 @@ full = ["engine", "macros", "all-sources", "all-functions", "all-targets"]
 
 1. Create `recoco-macros` crate
 2. Implement `#[recoco::function]` — generates `ComponentProcessor` impl
-3. Implement `#[recoco::function(memo = true)]` — adds fingerprint computation
+3. Implement `#[recoco::function(memo)]` — adds fingerprint computation
 4. Handle argument extraction and serialization
 
 ### Phase 3: Port Operations
@@ -816,18 +918,96 @@ If needed for gradual migration:
 
 ---
 
-## Appendix: Comparison with Issue #1667 Proposal
+## Appendix A: Comparison with Issue #1667 (Approved Revision)
 
-The upstream [issue #1667](https://github.com/cocoindex-io/cocoindex/issues/1667) proposes an ergonomic Rust SDK with `#[cocoindex::cached]` and `#[cocoindex::component]` macros. Our proposal aligns in spirit but differs in details:
+Upstream [issue #1667](https://github.com/cocoindex-io/cocoindex/issues/1667) proposes an ergonomic Rust SDK. The original proposal used `#[cocoindex::cached]` and `#[cocoindex::component]` macros. After feedback from **georgeh0** (CocoIndex team member), the proposal was **revised to a unified `#[cocoindex::function]` macro with parameters** — and that revision was approved.
 
-| Aspect | Issue #1667 | Our Proposal |
-|--------|------------|--------------|
-| Entry point | `App::open("name", "db_path")` | `App::new("name", &env)` |
-| Context | `&Ctx` parameter | `&Ctx` parameter (same) |
-| Memoization | `#[cocoindex::cached]` | `#[recoco::function(memo = true)]` |
-| Components | `#[cocoindex::component]` | `#[recoco::function]` (all functions are components) |
-| File walking | `ctx.walk_dir()` | `local_file::walk_dir()` (standalone) |
-| Resource sharing | Not addressed | `ContextKey` + `use_resource()` |
-| Targets | `ctx.write_file()` | `table.declare_row()`, `declare_file()` |
+### What georgeh0 Asked For
 
-Our proposal is more comprehensive and accounts for the full breadth of operations (sources, functions, targets) while maintaining the ergonomic spirit of #1667.
+1. **Unified macro**: `#[cocoindex::function]` with parameters (`memo`, `batching`) instead of separate macros, so the framework controls application ordering (caller → memo → batching → runner → core_fn)
+2. **Caller-side component scoping**: Components are decided by the caller (via `ctx.scope()`, `ctx.mount_each()`), not decorated on the function definition
+
+### Approved Upstream Design (Revised #1667)
+
+| Aspect | Approved #1667 | Our Proposal | Difference |
+|--------|---------------|--------------|------------|
+| Entry point | `App::builder("name").db_path().provide().build()` | `Environment::open()` + `App::new("name", &env)` | We separate env from app — more flexible for multi-app |
+| Context | `&Ctx` parameter | `&Ctx` parameter | Same |
+| Base function | `#[cocoindex::function]` — tracked, code hash emitted | `#[recoco::function]` — tracked | **We adopt code hashing** |
+| Memoized | `#[cocoindex::function(memo)]` | `#[recoco::function(memo)]` | Same |
+| Batching | `#[cocoindex::function(batching)]` | `#[recoco::function(batching)]` | **We adopt this** |
+| Memo+batch | `#[cocoindex::function(memo, batching)]` | `#[recoco::function(memo, batching)]` | **We adopt this** |
+| Code hash | `__COCO_FN_HASH_<NAME>` compile-time constant | `__RECOCO_FN_HASH_<NAME>` | **We adopt this pattern** |
+| Version bust | `#[cocoindex::function(memo, version = 2)]` | `#[recoco::function(memo, version = 2)]` | **We adopt this** |
+| Resource access | `ctx.get::<T>()` — type-based lookup | `ctx.use_resource(&KEY)` — key-based | **We diverge** (see rationale below) |
+| Scoping | `ctx.scope(key, \|ctx\| ...)` | `ctx.mount(key, processor)` | Equivalent |
+| Parallel items | `ctx.mount_each(items, key_fn, f)` | `ctx.mount_each(fn, items, ...)` | Same concept, signature differs |
+| Batch ctx method | `ctx.batch(items, key_fn, f)` | `ctx.batch(items, key_fn, f)` | **We adopt this** |
+| File walking | `cocoindex::fs::walk(&dir, &patterns)` | `local_file::walk_dir(path, opts)` | Both standalone |
+| File output | `ctx.write_file(path, content)` | `table.declare_row()`, `declare_file()` | We use target abstraction |
+| Stats | `RunStats { processed, skipped, written, deleted, elapsed }` | `UpdateStats` (from engine) | Similar |
+
+### Key Design Decisions Where We Diverge
+
+**Resource access: `ContextKey` vs `ctx.get::<T>()`**
+
+The approved #1667 uses type-based lookup (`ctx.get::<T>()`) which panics if not provided. We use `ContextKey<T>` because:
+- Multiple instances of the same type are common (e.g., two `PgDatabase` connections)
+- Keys are named and discoverable in code
+- Compile-time checking — `ContextKey` is a static, not a runtime type query
+- Testable — swap resources by providing different values for the same key
+
+**Targets: `ctx.write_file()` vs `declare_row()`/`declare_file()`**
+
+The approved #1667 only shows `ctx.write_file()` for output. We use the richer target abstraction because:
+- Vector DBs, graph DBs, and relational DBs need structured declaration
+- The engine handles insert/update/delete reconciliation
+- `declare_row()` pattern integrates with LMDB state tracking
+
+**Entry point: `App::builder()` vs `Environment` + `App`**
+
+The approved #1667 bundles everything into `App::builder()`. We separate `Environment` from `App` because:
+- Multiple apps can share one LMDB environment
+- Resources are environment-scoped, not app-scoped
+- Aligns with the upstream engine's actual architecture (`Environment<Prof>` + `App<Prof>`)
+
+### Upstream Priority Assessment
+
+- **Issue #1372**: badmonster0 (CocoIndex founder) confirmed "we do plan to support Rust natively"
+- **Issue #1667**: georgeh0 (team member) approved the revised API design
+- **Reality**: CocoIndex is not published to crates.io, no Rust SDK work has started, and the team appears focused on the Python SDK. Recoco has an opportunity to ship this first.
+
+## Appendix B: Code Hash Constant Design
+
+The `#[recoco::function]` proc macro emits a compile-time constant for cache invalidation:
+
+```rust
+// User writes:
+#[recoco::function]
+async fn analyze(ctx: &Ctx, file: &FileEntry) -> Result<Info> {
+    // body
+}
+
+// Macro emits:
+pub const __RECOCO_FN_HASH_ANALYZE: u64 = 0x...; // hash of the function body tokens
+
+async fn analyze(ctx: &Ctx, file: &FileEntry) -> Result<Info> {
+    // body
+}
+```
+
+The hash is computed from the token stream of the function body at compile time. When `memo` is enabled, this hash is automatically prepended to the cache key. For bare `#[recoco::function]`, the constant is available for manual inclusion in `ctx.memo()` keys:
+
+```rust
+#[recoco::function]
+async fn analyze(ctx: &Ctx, file: &FileEntry) -> Result<Info> {
+    let client = ctx.use_resource(&LLM_CLIENT).clone();
+    ctx.memo(&(__RECOCO_FN_HASH_ANALYZE, file.fingerprint()), move || async move {
+        client.call(&file.content_str()?).await
+    }).await
+}
+```
+
+This gives users the best of both worlds:
+- **`#[recoco::function(memo)]`**: Fully automatic — all args become the key, code hash included
+- **`#[recoco::function]` + manual `ctx.memo()`**: Selective — user controls what's in the key, but gets automatic invalidation when the function body changes
