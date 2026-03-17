@@ -54,7 +54,7 @@ We will regularly merge in upstream fixes and changes, particularly sources, tar
 
 ## Performance
 
-Recoco and CocoIndex share the same Rust splitting/chunking engine. The difference is how you reach it: CocoIndex routes every call through Python → PyO3 → Rust → PyO3 → Python. Recoco calls the engine directly.
+Recoco started from the same Rust engine as CocoIndex, but the two have diverged. Recoco is faster for three reasons: no Python/PyO3 FFI boundary, Rust-side micro-optimizations (inlined hot paths, tighter allocations), and blake3 fingerprinting instead of blake2.
 
 Benchmarks run on the same machine, same data, same operations ([details](benchmarks/)):
 
@@ -69,7 +69,7 @@ Benchmarks run on the same machine, same data, same operations ([details](benchm
 | Line split | 10 MB | 18.9 ms | 574 ms | **30x** |
 | Recursive chunk (Rust code, tree-sitter) | 10 MB | 1.53 s | 1.66 s | **1.1x** |
 
-Small, frequent operations (the kind that happen thousands of times in a real pipeline) show the largest gains because the ~170us PyO3 round-trip overhead dominates. Heavy computation (tree-sitter parsing on large files) converges toward parity since both sides run the same Rust code.
+Small, frequent operations show the largest gains — the PyO3 round-trip alone costs ~170us per call, and in a pipeline processing thousands of chunks, that compounds fast. Even on heavy computation where tree-sitter parsing dominates, Recoco's Rust-side optimizations still provide a measurable edge.
 
 ## ✨ Key Features
 
