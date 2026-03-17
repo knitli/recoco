@@ -249,6 +249,7 @@ source-gdrive = [
 source-local-file = [
   "batching",
   "dep:async-stream",
+  "dep:notify",
   "dep:recoco-splitters",
   "recoco-splitters/pattern-matching",
   "recoco-utils/bytes_decode",
