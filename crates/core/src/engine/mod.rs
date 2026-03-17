@@ -22,3 +22,6 @@ pub mod runtime;
 pub mod stats;
 pub mod target_state;
 pub mod txn_batcher;
+
+pub use app::UpdateHandle;
+pub use stats::UpdateStats;
