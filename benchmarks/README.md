@@ -35,14 +35,15 @@ python3 benchmarks/compare.py --run-all
 
 ## What's Benchmarked
 
-Both sides execute the same operations through their respective transient flow
-evaluation paths:
+Both sides exercise the same underlying Rust splitting engine, but through
+different entry points: Recoco calls the splitters directly in Rust, while
+CocoIndex goes through its transient-flow-based SDK:
 
 | Category | Operation | Recoco | CocoIndex |
 |----------|-----------|--------|-----------|
-| **Separator Split** | Paragraph (`\n\n+`) | `evaluate_transient_flow()` | `_engine.TransientFlow.evaluate_async()` |
-| **Separator Split** | Sentence (`[.!?]\s+`) | `evaluate_transient_flow()` | `_engine.TransientFlow.evaluate_async()` |
-| **Separator Split** | Line (`\n`) | `evaluate_transient_flow()` | `_engine.TransientFlow.evaluate_async()` |
+| **Separator Split** | Paragraph (`\n\n+`) | `SeparatorSplitter::split()` | `_engine.TransientFlow.evaluate_async()` |
+| **Separator Split** | Sentence (`[.!?]\s+`) | `SeparatorSplitter::split()` | `_engine.TransientFlow.evaluate_async()` |
+| **Separator Split** | Line (`\n`) | `SeparatorSplitter::split()` | `_engine.TransientFlow.evaluate_async()` |
 | **Recursive Chunk** | Prose (no language) | `RecursiveChunker::split()` | `SplitRecursively` via engine |
 | **Recursive Chunk** | Rust code (tree-sitter) | `RecursiveChunker::split()` | `SplitRecursively` via engine |
 | **Recursive Chunk** | Python code (tree-sitter) | `RecursiveChunker::split()` | `SplitRecursively` via engine |

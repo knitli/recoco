@@ -2,4 +2,4 @@
 # Both Recoco and CocoIndex use the same Rust splitting engine internally.
 # This benchmark measures the full round-trip: Python → PyO3 → Rust → PyO3 → Python
 # vs Recoco's direct Rust → Rust path.
-cocoindex>=0.3.30
+cocoindex==0.3.30
