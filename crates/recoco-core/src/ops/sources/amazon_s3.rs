@@ -19,9 +19,9 @@ use redis::Client as RedisClient;
 use std::sync::Arc;
 use urlencoding;
 
-use recoco_splitters::pattern_matcher::PatternMatcher;
 use crate::base::field_attrs;
 use crate::ops::sdk::*;
+use recoco_splitters::pattern_matcher::PatternMatcher;
 
 /// Decode a form-encoded URL string, treating '+' as spaces
 fn decode_form_encoded_url(input: &str) -> Result<Arc<str>> {

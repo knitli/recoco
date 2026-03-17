@@ -17,9 +17,9 @@ use std::path::Path;
 use std::{path::PathBuf, sync::Arc};
 use tracing::warn;
 
-use recoco_splitters::pattern_matcher::PatternMatcher;
 use crate::base::field_attrs;
 use crate::{fields_value, ops::sdk::*};
+use recoco_splitters::pattern_matcher::PatternMatcher;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Spec {
@@ -51,6 +51,24 @@ async fn ensure_metadata<'a>(
     Ok(metadata.as_ref().unwrap())
 }
 
+async fn try_ensure_metadata<'a>(
+    path: &Path,
+    metadata: &'a mut Option<Metadata>,
+) -> Option<&'a Metadata> {
+    if metadata.is_none() {
+        // Follow symlinks.
+        match tokio::fs::metadata(path).await {
+            Ok(m) => {
+                *metadata = Some(m);
+            }
+            Err(e) => {
+                warn!("Failed to get metadata for {}: {e}", path.display());
+            }
+        }
+    }
+    metadata.as_ref()
+}
+
 #[async_trait]
 impl SourceExecutor for Executor {
     async fn list(
@@ -78,20 +96,21 @@ impl SourceExecutor for Executor {
                     let mut metadata: Option<Metadata> = None;
 
                     // For symlinks, if the target doesn't exist, log and skip.
-                    let file_type = entry.file_type().await?;
-                    if file_type.is_symlink()
-                        && let Err(e) = ensure_metadata(&path, &mut metadata).await {
-                            if e.kind() == std::io::ErrorKind::NotFound {
-                                warn!("Skipped broken symlink: {}", path.display());
-                                continue;
-                            }
-                            Err(e)?;
+                    let file_type = match entry.file_type().await {
+                        Ok(ft) => ft,
+                        Err(e) => {
+                            warn!("Failed to get file type for {}: {e}", path.display());
+                            continue;
                         }
+                    };
                     let is_dir = if file_type.is_dir() {
                         true
                     } else if file_type.is_symlink() {
                         // Follow symlinks to classify the target.
-                        ensure_metadata(&path, &mut metadata).await?.is_dir()
+                        let Some(m) = try_ensure_metadata(&path, &mut metadata).await else {
+                            continue;
+                        };
+                        m.is_dir()
                     } else {
                         false
                     };
@@ -102,14 +121,32 @@ impl SourceExecutor for Executor {
                     } else if self.pattern_matcher.is_file_included(relative_path) {
                         // Check file size limit
                         if let Some(max_size) = self.max_file_size
-                            && let Ok(metadata) = ensure_metadata(&path, &mut metadata).await
-                            && metadata.len() > max_size as u64
+                            && try_ensure_metadata(&path, &mut metadata)
+                                .await
+                                .is_none_or(|m| m.len() > max_size as u64)
                         {
                             continue;
                         }
                         let ordinal: Option<Ordinal> = if options.include_ordinal {
-                            let metadata = ensure_metadata(&path, &mut metadata).await?;
-                            Some(metadata.modified()?.try_into()?)
+                            let Some(metadata) = try_ensure_metadata(&path, &mut metadata).await
+                            else {
+                                continue;
+                            };
+                            let modified = match metadata.modified() {
+                                Ok(mtime) => mtime,
+                                Err(e) => {
+                                    warn!("Failed to get modification time for {}: {e}", path.display());
+                                    continue;
+                                }
+                            };
+                            let ordinal = match modified.try_into() {
+                                Ok(ord) => ord,
+                                Err(e) => {
+                                    warn!("Failed to convert modification time for {} into Ordinal: {e}", path.display());
+                                    continue;
+                                }
+                            };
+                            Some(ordinal)
                         } else {
                             None
                         };
@@ -256,26 +293,28 @@ impl SourceExecutor for Executor {
         let (tx, mut rx) = mpsc::channel::<PathBuf>(100);
 
         let mut watcher = RecommendedWatcher::new(
-            move |res: notify::Result<notify::Event>| {
-                match res {
-                    Ok(event) => {
-                        for path in event.paths {
-                            if let Err(err) = tx.try_send(path) {
-                                use tokio::sync::mpsc::error::TrySendError;
-                                match err {
-                                    TrySendError::Full(_) => {
-                                        warn!("File watcher channel is full; dropping file change event");
-                                    }
-                                    TrySendError::Closed(_) => {
-                                        warn!("File watcher channel is closed; dropping file change event");
-                                    }
+            move |res: notify::Result<notify::Event>| match res {
+                Ok(event) => {
+                    for path in event.paths {
+                        if let Err(err) = tx.try_send(path) {
+                            use tokio::sync::mpsc::error::TrySendError;
+                            match err {
+                                TrySendError::Full(_) => {
+                                    warn!(
+                                        "File watcher channel is full; dropping file change event"
+                                    );
+                                }
+                                TrySendError::Closed(_) => {
+                                    warn!(
+                                        "File watcher channel is closed; dropping file change event"
+                                    );
                                 }
                             }
                         }
                     }
-                    Err(e) => {
-                        warn!("File watcher error: {}", e);
-                    }
+                }
+                Err(e) => {
+                    warn!("File watcher error: {}", e);
                 }
             },
             Config::default(),
