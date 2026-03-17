@@ -385,3 +385,45 @@ run = "cargo +1.89 check --all-features"
 [tasks."msrv:install"]
 description = "Install MSRV toolchain"
 run = "rustup install 1.89"
+
+# =============================================================================
+# BENCHMARK TASKS
+# =============================================================================
+
+[tasks."bench:data"]
+description = "Generate benchmark test data (1KB, 100KB, 10MB tiers)"
+run = "python3 benchmarks/generate_data.py"
+
+[tasks."bench:splitters"]
+description = "Run recoco-splitters criterion benchmarks"
+depends = ["bench:data"]
+run = "cargo bench -p recoco-splitters --features rust,python,markdown"
+
+[tasks."bench:flows"]
+description = "Run transient flow criterion benchmarks"
+depends = ["bench:data"]
+run = "cargo bench -p recoco-core --bench transient_flow --features function-split"
+
+[tasks."bench:rust"]
+description = "Run all Rust criterion benchmarks"
+depends = ["bench:splitters", "bench:flows"]
+run = "echo 'All Rust benchmarks complete.'"
+
+[tasks."bench:python"]
+description = "Run Python/cocoindex comparison benchmarks"
+depends = ["bench:data"]
+run = """
+mkdir -p benchmarks/results
+python3 benchmarks/python/bench_cocoindex.py --json > benchmarks/results/python.json
+python3 benchmarks/python/bench_cocoindex.py
+"""
+
+[tasks."bench:compare"]
+description = "Generate cross-language comparison report"
+depends = ["bench:rust", "bench:python"]
+run = "python3 benchmarks/compare.py"
+
+[tasks.bench]
+description = "Run all benchmarks and generate comparison report"
+depends = ["bench:compare"]
+run = "echo 'Full benchmark suite complete. See benchmarks/results/RESULTS.md'"

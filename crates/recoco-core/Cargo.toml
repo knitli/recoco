@@ -92,7 +92,13 @@ yup-oauth2 = { workspace = true, optional = true }
 
 [dev-dependencies]
 async-openai = { workspace = true }
+criterion = { version = "0.5", features = ["html_reports", "async_tokio"] }
 expect-test = { workspace = true }
+tokio = { workspace = true }
+
+[[bench]]
+name = "transient_flow"
+harness = false
 
 [features]
 default = ["persistence", "server", "source-local-file"]

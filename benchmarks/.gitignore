@@ -1,0 +1,5 @@
+# Generated benchmark data (reproducible via generate_data.py)
+data/
+
+# Benchmark results (generated, not committed)
+results/

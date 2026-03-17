@@ -55,6 +55,11 @@ tree-sitter-yaml = { version = "0.7.2", optional = true }
 unicase = { workspace = true }
 
 [dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "splitting"
+harness = false
 
 [features]
 default = []

@@ -1,0 +1,3 @@
+# Python dependencies for benchmark comparison.
+# cocoindex is optional — without it, benchmarks fall back to Python stdlib.
+cocoindex>=1.0.0a30
