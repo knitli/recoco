@@ -110,18 +110,14 @@ fn bench_transient_split_by_separators(c: &mut Criterion) {
             builder.build_transient_flow().await.unwrap()
         });
 
-        group.bench_with_input(
-            BenchmarkId::new("evaluate", tier),
-            content,
-            |b, text| {
-                b.to_async(&rt).iter(|| async {
-                    let input = value::Value::Basic(value::BasicValue::Str(text.clone().into()));
-                    evaluate_transient_flow(&flow.0, &vec![input])
-                        .await
-                        .unwrap()
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("evaluate", tier), content, |b, text| {
+            b.to_async(&rt).iter(|| async {
+                let input = value::Value::Basic(value::BasicValue::Str(text.clone().into()));
+                evaluate_transient_flow(&flow.0, &vec![input])
+                    .await
+                    .unwrap()
+            });
+        });
     }
 
     group.finish();
@@ -208,18 +204,36 @@ fn bench_transient_split_recursively(c: &mut Criterion) {
                 )
                 .unwrap();
 
+            // SplitRecursively: spec is empty, chunk_size/overlap/language are extra args
+            let chunk_size = builder
+                .constant(
+                    schema::make_output_type(schema::BasicValueType::Int64),
+                    serde_json::Value::Number(1024.into()),
+                )
+                .unwrap();
+            let chunk_overlap = builder
+                .constant(
+                    schema::make_output_type(schema::BasicValueType::Int64),
+                    serde_json::Value::Number(100.into()),
+                )
+                .unwrap();
+            let language = builder
+                .constant(
+                    schema::make_output_type(schema::BasicValueType::Str),
+                    serde_json::Value::String("rust".to_string()),
+                )
+                .unwrap();
+
             let output = builder
                 .transform(
                     "SplitRecursively".to_string(),
-                    json!({
-                        "chunk_size": 1024,
-                        "chunk_overlap": 100,
-                        "language": "rust"
-                    })
-                    .as_object()
-                    .unwrap()
-                    .clone(),
-                    vec![(input, Some("text".to_string()))],
+                    json!({}).as_object().unwrap().clone(),
+                    vec![
+                        (input, Some("text".to_string())),
+                        (chunk_size, Some("chunk_size".to_string())),
+                        (chunk_overlap, Some("chunk_overlap".to_string())),
+                        (language, Some("language".to_string())),
+                    ],
                     None,
                     "chunker".to_string(),
                 )
@@ -230,18 +244,14 @@ fn bench_transient_split_recursively(c: &mut Criterion) {
             builder.build_transient_flow().await.unwrap()
         });
 
-        group.bench_with_input(
-            BenchmarkId::new("evaluate", tier),
-            content,
-            |b, text| {
-                b.to_async(&rt).iter(|| async {
-                    let input = value::Value::Basic(value::BasicValue::Str(text.clone().into()));
-                    evaluate_transient_flow(&flow.0, &vec![input])
-                        .await
-                        .unwrap()
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("evaluate", tier), content, |b, text| {
+            b.to_async(&rt).iter(|| async {
+                let input = value::Value::Basic(value::BasicValue::Str(text.clone().into()));
+                evaluate_transient_flow(&flow.0, &vec![input])
+                    .await
+                    .unwrap()
+            });
+        });
     }
 
     group.finish();
