@@ -160,9 +160,6 @@ impl UpdateStats {
 }
 
 /// Per-operation tracking of in-process row counts.
-///
-/// This provides granular visibility into which operations are actively processing rows,
-/// useful for progress monitoring and debugging long-running flows.
 #[derive(Debug, Default)]
 pub struct OperationInProcessStats {
     /// Maps operation names to their processing counters.
@@ -209,6 +206,85 @@ impl OperationInProcessStats {
             .values()
             .map(|counter| counter.get_in_process())
             .sum()
+    }
+}
+
+/// Sentinel version indicating the processing task has terminated.
+#[cfg(feature = "persistence")]
+pub const TERMINATED_VERSION: u64 = u64::MAX;
+
+/// A versioned snapshot of component update stats, combining the stats map with a version counter.
+/// This provides an atomic view of all component statistics at a specific point in time.
+#[derive(Default, Clone, Serialize)]
+#[cfg(feature = "persistence")]
+pub struct VersionedComponentUpdateStats {
+    /// Statistics grouped by component name (renamed from by_processor)
+    pub by_component: std::collections::HashMap<String, UpdateStats>,
+    /// Monotonically increasing version number for change detection
+    pub version: u64,
+}
+
+/// Thread-safe container for component update stats with version tracking and change notification.
+/// Enables progress watching by allowing subscribers to be notified when stats change.
+#[derive(Clone)]
+#[cfg(feature = "persistence")]
+pub struct ComponentUpdateStats {
+    inner: Arc<std::sync::RwLock<VersionedComponentUpdateStats>>,
+    version_tx: tokio::sync::watch::Sender<u64>,
+    version_rx: tokio::sync::watch::Receiver<u64>,
+}
+
+#[cfg(feature = "persistence")]
+impl Default for ComponentUpdateStats {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(feature = "persistence")]
+impl ComponentUpdateStats {
+    /// Creates a new ComponentUpdateStats with version 0
+    pub fn new() -> Self {
+        let (version_tx, version_rx) = tokio::sync::watch::channel(0u64);
+        Self {
+            inner: Arc::new(std::sync::RwLock::new(
+                VersionedComponentUpdateStats::default(),
+            )),
+            version_tx,
+            version_rx,
+        }
+    }
+
+    /// Updates the stats for a specific component using the provided mutator function.
+    /// Increments the version and notifies subscribers.
+    pub fn update(&self, component_name: &str, mutator: impl FnOnce(&mut UpdateStats)) {
+        let mut guard = self.inner.write().unwrap();
+        let stats = guard
+            .by_component
+            .entry(component_name.to_string())
+            .or_default();
+        mutator(stats);
+        guard.version += 1;
+        let version = guard.version;
+        drop(guard);
+        let _ = self.version_tx.send(version);
+    }
+
+    /// Returns an atomic snapshot of (version, stats).
+    pub fn snapshot(&self) -> VersionedComponentUpdateStats {
+        self.inner.read().unwrap().clone()
+    }
+
+    /// Signal that the processing task has terminated.
+    /// Sends TERMINATED_VERSION to all subscribers.
+    pub fn notify_terminated(&self) {
+        let _ = self.version_tx.send(TERMINATED_VERSION);
+    }
+
+    /// Subscribe to version change notifications.
+    /// Returns a watch receiver that can be used with .changed().await
+    pub fn subscribe(&self) -> tokio::sync::watch::Receiver<u64> {
+        self.version_rx.clone()
     }
 }
 
@@ -697,33 +773,70 @@ mod tests {
 
         assert_eq!(op_stats.get_operation_in_process_count("test_op"), 10); // 15-5
     }
-}
 
-/// Progress snapshot for a single component/source.
-///
-/// Provides a point-in-time view of processing progress for observability.
-#[derive(Debug, Clone, Serialize)]
-#[cfg(feature = "persistence")]
-pub struct ComponentProgress {
-    /// Name of the component (source, transform, or target).
-    pub component_name: String,
-    /// Current update statistics for this component.
-    pub stats: UpdateStats,
-    /// Number of rows currently being processed by this component.
-    pub in_process_count: i64,
-}
+    #[cfg(feature = "persistence")]
+    #[test]
+    fn test_component_update_stats_versioning() {
+        let stats = ComponentUpdateStats::new();
+        assert_eq!(stats.snapshot().version, 0);
 
-/// Overall progress snapshot for a flow execution.
-///
-/// Aggregates progress information across all components in a flow,
-/// useful for displaying progress bars, dashboards, or logging.
-#[derive(Debug, Clone, Serialize)]
-#[cfg(feature = "persistence")]
-pub struct FlowProgress {
-    /// Per-component progress breakdown.
-    pub components: Vec<ComponentProgress>,
-    /// Total number of rows processed across all components.
-    pub total_processed: i64,
-    /// Total number of rows currently in-process across all components.
-    pub total_in_process: i64,
+        stats.update("component_a", |g| g.num_insertions.inc(1));
+        assert_eq!(stats.snapshot().version, 1);
+
+        stats.update("component_a", |g| g.num_updates.inc(1));
+        stats.update("component_b", |g| g.num_deletions.inc(1));
+        let snap = stats.snapshot();
+        assert_eq!(snap.version, 3);
+        assert_eq!(snap.by_component["component_a"].num_insertions.get(), 1);
+        assert_eq!(snap.by_component["component_a"].num_updates.get(), 1);
+        assert_eq!(snap.by_component["component_b"].num_deletions.get(), 1);
+    }
+
+    #[cfg(feature = "persistence")]
+    #[test]
+    fn test_component_update_stats_snapshot_consistency() {
+        let stats = ComponentUpdateStats::new();
+        stats.update("a", |g| g.num_insertions.inc(1));
+        let snap1 = stats.snapshot();
+        assert_eq!(snap1.version, 1);
+        assert_eq!(snap1.by_component.len(), 1);
+
+        stats.update("b", |g| g.num_deletions.inc(1));
+        let snap2 = stats.snapshot();
+        assert_eq!(snap2.version, 2);
+        assert_eq!(snap2.by_component.len(), 2);
+
+        // snap1 is still the old snapshot
+        assert_eq!(snap1.version, 1);
+        assert_eq!(snap1.by_component.len(), 1);
+    }
+
+    #[cfg(feature = "persistence")]
+    #[tokio::test]
+    async fn test_component_update_stats_watch() {
+        let stats = ComponentUpdateStats::new();
+        let mut rx = stats.subscribe();
+
+        stats.update("component", |g| g.num_insertions.inc(1));
+        rx.changed().await.unwrap();
+        assert_eq!(*rx.borrow(), 1);
+
+        stats.update("component", |g| g.num_insertions.inc(1));
+        rx.changed().await.unwrap();
+        assert_eq!(*rx.borrow(), 2);
+    }
+
+    #[cfg(feature = "persistence")]
+    #[tokio::test]
+    async fn test_notify_terminated_sends_max_version() {
+        let stats = ComponentUpdateStats::new();
+        let mut rx = stats.subscribe();
+
+        stats.update("component", |g| g.num_insertions.inc(1));
+        rx.changed().await.unwrap();
+
+        stats.notify_terminated();
+        rx.changed().await.unwrap();
+        assert_eq!(*rx.borrow(), TERMINATED_VERSION);
+    }
 }
