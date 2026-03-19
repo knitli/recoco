@@ -550,9 +550,13 @@ impl FlowLiveUpdater {
 
     /// Emit a progress update to all subscribers.
     fn emit_progress_update(&self) {
-        let recv_state = match self.recv_state.try_lock() {
+        // Always wait for the recv_state lock so we don't silently drop updates,
+        // especially the final completion snapshot.
+        let recv_state = match self.recv_state.lock() {
             Ok(state) => state,
-            Err(_) => return, // Skip if locked
+            // If the mutex is poisoned, recover the inner state and still emit
+            // a best-effort progress update instead of silently skipping it.
+            Err(poisoned) => poisoned.into_inner(),
         };
 
         let status = recv_state.status_rx.borrow();
@@ -603,6 +607,9 @@ impl FlowLiveUpdater {
         let stats_per_task = self.stats_per_task.clone();
         let operation_in_process_stats = self.operation_in_process_stats.clone();
 
+        // Clone the status receiver so we can derive active_sources for periodic updates.
+        let mut status_rx = self.status_rx.clone();
+
         let progress_emitter = tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
             interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
@@ -632,8 +639,11 @@ impl FlowLiveUpdater {
                 let operation_in_process =
                     operation_in_process_stats.get_all_operations_in_process();
 
+                // Derive active_sources from the latest FlowLiveUpdaterStatus.
+                let active_sources = status_rx.borrow().active_sources.clone();
+
                 let update = ProgressUpdate {
-                    active_sources: vec![], // Will be filled if status is available
+                    active_sources,
                     total_sources,
                     completed_sources,
                     source_stats,
