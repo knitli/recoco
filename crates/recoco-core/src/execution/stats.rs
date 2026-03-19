@@ -111,7 +111,14 @@ impl ProcessingCounters {
     }
 }
 
-#[derive(Debug, Serialize, Default, Clone)]
+#[cfg(feature = "persistence")]
+fn is_by_component_empty(
+    v: &std::sync::Arc<std::sync::RwLock<std::collections::HashMap<String, UpdateStats>>>,
+) -> bool {
+    v.read().unwrap().is_empty()
+}
+
+#[derive(Debug, Serialize, Clone)]
 #[cfg(feature = "persistence")]
 pub struct UpdateStats {
     pub num_no_change: Counter,
@@ -124,11 +131,50 @@ pub struct UpdateStats {
     pub num_errors: Counter,
     /// Processing counters for tracking in-process rows.
     pub processing: ProcessingCounters,
+    /// Per-component tracking of statistics.
+    /// Maps component names to their individual UpdateStats.
+    #[serde(skip_serializing_if = "is_by_component_empty")]
+    pub by_component:
+        std::sync::Arc<std::sync::RwLock<std::collections::HashMap<String, UpdateStats>>>,
+}
+
+#[cfg(feature = "persistence")]
+impl Default for UpdateStats {
+    fn default() -> Self {
+        Self {
+            num_no_change: Counter::default(),
+            num_insertions: Counter::default(),
+            num_deletions: Counter::default(),
+            num_updates: Counter::default(),
+            num_reprocesses: Counter::default(),
+            num_errors: Counter::default(),
+            processing: ProcessingCounters::default(),
+            by_component: std::sync::Arc::new(std::sync::RwLock::new(
+                std::collections::HashMap::new(),
+            )),
+        }
+    }
 }
 
 #[cfg(feature = "persistence")]
 impl UpdateStats {
     pub fn delta(&self, base: &Self) -> Self {
+        let by_component_delta = {
+            let self_components = self.by_component.read().unwrap();
+            let base_components = base.by_component.read().unwrap();
+            let mut result = std::collections::HashMap::new();
+
+            for (name, self_stats) in self_components.iter() {
+                if let Some(base_stats) = base_components.get(name) {
+                    result.insert(name.clone(), self_stats.delta(base_stats));
+                } else {
+                    result.insert(name.clone(), self_stats.clone());
+                }
+            }
+
+            std::sync::Arc::new(std::sync::RwLock::new(result))
+        };
+
         UpdateStats {
             num_no_change: self.num_no_change.delta(&base.num_no_change),
             num_insertions: self.num_insertions.delta(&base.num_insertions),
@@ -137,6 +183,7 @@ impl UpdateStats {
             num_reprocesses: self.num_reprocesses.delta(&base.num_reprocesses),
             num_errors: self.num_errors.delta(&base.num_errors),
             processing: self.processing.delta(&base.processing),
+            by_component: by_component_delta,
         }
     }
 
@@ -148,6 +195,17 @@ impl UpdateStats {
         self.num_reprocesses.merge(&delta.num_reprocesses);
         self.num_errors.merge(&delta.num_errors);
         self.processing.merge(&delta.processing);
+
+        // Merge per-component stats
+        let mut self_components = self.by_component.write().unwrap();
+        let delta_components = delta.by_component.read().unwrap();
+        for (name, delta_stats) in delta_components.iter() {
+            if let Some(self_stats) = self_components.get(name) {
+                self_stats.merge(delta_stats);
+            } else {
+                self_components.insert(name.clone(), delta_stats.clone());
+            }
+        }
     }
 
     pub fn has_any_change(&self) -> bool {
@@ -156,6 +214,65 @@ impl UpdateStats {
             || self.num_updates.get() > 0
             || self.num_reprocesses.get() > 0
             || self.num_errors.get() > 0
+    }
+
+    /// Get or create stats for a specific component.
+    pub fn get_component_stats(&self, component_name: &str) -> UpdateStats {
+        let components = self.by_component.read().unwrap();
+        if let Some(stats) = components.get(component_name) {
+            stats.clone()
+        } else {
+            drop(components);
+            let mut components = self.by_component.write().unwrap();
+            // Create a new UpdateStats without nested components to avoid infinite recursion
+            let new_stats = Self {
+                num_no_change: Counter::default(),
+                num_insertions: Counter::default(),
+                num_deletions: Counter::default(),
+                num_updates: Counter::default(),
+                num_reprocesses: Counter::default(),
+                num_errors: Counter::default(),
+                processing: ProcessingCounters::default(),
+                by_component: std::sync::Arc::new(std::sync::RwLock::new(
+                    std::collections::HashMap::new(),
+                )),
+            };
+            components
+                .entry(component_name.to_string())
+                .or_insert(new_stats)
+                .clone()
+        }
+    }
+
+    /// Update stats for a specific component.
+    pub fn update_component_stats<F>(&self, component_name: &str, f: F)
+    where
+        F: FnOnce(&UpdateStats),
+    {
+        let mut components = self.by_component.write().unwrap();
+        let stats = components
+            .entry(component_name.to_string())
+            .or_insert_with(|| {
+                // Create a new UpdateStats without nested components to avoid infinite recursion
+                Self {
+                    num_no_change: Counter::default(),
+                    num_insertions: Counter::default(),
+                    num_deletions: Counter::default(),
+                    num_updates: Counter::default(),
+                    num_reprocesses: Counter::default(),
+                    num_errors: Counter::default(),
+                    processing: ProcessingCounters::default(),
+                    by_component: std::sync::Arc::new(std::sync::RwLock::new(
+                        std::collections::HashMap::new(),
+                    )),
+                }
+            });
+        f(stats);
+    }
+
+    /// Get a snapshot of all component stats.
+    pub fn get_all_component_stats(&self) -> std::collections::HashMap<String, UpdateStats> {
+        self.by_component.read().unwrap().clone()
     }
 }
 
@@ -274,7 +391,7 @@ impl std::fmt::Display for UpdateStats {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[cfg(feature = "persistence")]
 pub struct SourceUpdateInfo {
     pub source_name: String,
@@ -288,7 +405,7 @@ impl std::fmt::Display for SourceUpdateInfo {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 #[cfg(feature = "persistence")]
 pub struct IndexUpdateInfo {
     pub sources: Vec<SourceUpdateInfo>,

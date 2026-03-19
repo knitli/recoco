@@ -11,6 +11,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #[cfg(feature = "persistence")]
+pub mod app;
+#[cfg(feature = "persistence")]
 pub(crate) mod db_tracking_setup;
 #[cfg(feature = "persistence")]
 pub mod dumper;
