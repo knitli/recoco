@@ -178,7 +178,7 @@ pub async fn apply_component_changes<D: SetupOperator>(
 ) -> Result<()> {
     // First delete components that need to be removed, with bounded concurrency
     // to avoid overloading the underlying store or exhausting connection pools.
-    run_bounded(changes.iter().flat_map(|change| {
+    run_bounded(changes.iter().copied().flat_map(|change| {
         change
             .keys_to_delete
             .iter()
@@ -187,7 +187,7 @@ pub async fn apply_component_changes<D: SetupOperator>(
     .await?;
 
     // Then upsert components that need to be updated, also with bounded concurrency.
-    run_bounded(changes.iter().flat_map(|change| {
+    run_bounded(changes.iter().copied().flat_map(|change| {
         change.states_to_upsert.iter().map(move |state| async move {
             if state.already_exists {
                 change.desc.update(&state.state, context).await

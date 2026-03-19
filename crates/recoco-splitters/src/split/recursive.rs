@@ -419,11 +419,9 @@ impl<'t, 's: 't> InternalRecursiveChunker<'s> {
     }
 
     fn get_overlap_cost_base(&self, offset: usize) -> usize {
-        if self.chunk_overlap == 0 {
-            0
-        } else {
-            (self.full_text.len() - offset) * MISSING_OVERLAP_COST / self.chunk_overlap
-        }
+        ((self.full_text.len() - offset) * MISSING_OVERLAP_COST)
+            .checked_div(self.chunk_overlap)
+            .unwrap_or(0)
     }
 
     fn merge_atom_chunks(&self, atom_chunks: Vec<AtomChunk>) -> Vec<ChunkOutput> {
