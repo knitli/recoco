@@ -52,10 +52,8 @@
 //! - `get_all_operations_in_process()`: Get snapshot of all operations
 //! - `get_total_in_process_count()`: Get total in-process rows across all operations
 
-#[cfg(feature = "persistence")]
 use recoco::prelude::*;
 
-#[cfg(feature = "persistence")]
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Note: In a real application, you would set up tracing with tracing_subscriber
