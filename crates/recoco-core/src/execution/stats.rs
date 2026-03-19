@@ -13,6 +13,7 @@
 use crate::prelude::*;
 
 use std::{
+    fmt::Write,
     ops::AddAssign,
     sync::atomic::{AtomicI64, Ordering::Relaxed},
 };
@@ -206,85 +207,6 @@ impl OperationInProcessStats {
             .values()
             .map(|counter| counter.get_in_process())
             .sum()
-    }
-}
-
-/// Sentinel version indicating the processing task has terminated.
-#[cfg(feature = "persistence")]
-pub const TERMINATED_VERSION: u64 = u64::MAX;
-
-/// A versioned snapshot of component update stats, combining the stats map with a version counter.
-/// This provides an atomic view of all component statistics at a specific point in time.
-#[derive(Default, Clone, Serialize)]
-#[cfg(feature = "persistence")]
-pub struct VersionedComponentUpdateStats {
-    /// Statistics grouped by component name (renamed from by_processor)
-    pub by_component: std::collections::HashMap<String, UpdateStats>,
-    /// Monotonically increasing version number for change detection
-    pub version: u64,
-}
-
-/// Thread-safe container for component update stats with version tracking and change notification.
-/// Enables progress watching by allowing subscribers to be notified when stats change.
-#[derive(Clone)]
-#[cfg(feature = "persistence")]
-pub struct ComponentUpdateStats {
-    inner: Arc<std::sync::RwLock<VersionedComponentUpdateStats>>,
-    version_tx: tokio::sync::watch::Sender<u64>,
-    version_rx: tokio::sync::watch::Receiver<u64>,
-}
-
-#[cfg(feature = "persistence")]
-impl Default for ComponentUpdateStats {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-#[cfg(feature = "persistence")]
-impl ComponentUpdateStats {
-    /// Creates a new ComponentUpdateStats with version 0
-    pub fn new() -> Self {
-        let (version_tx, version_rx) = tokio::sync::watch::channel(0u64);
-        Self {
-            inner: Arc::new(std::sync::RwLock::new(
-                VersionedComponentUpdateStats::default(),
-            )),
-            version_tx,
-            version_rx,
-        }
-    }
-
-    /// Updates the stats for a specific component using the provided mutator function.
-    /// Increments the version and notifies subscribers.
-    pub fn update(&self, component_name: &str, mutator: impl FnOnce(&mut UpdateStats)) {
-        let mut guard = self.inner.write().unwrap();
-        let stats = guard
-            .by_component
-            .entry(component_name.to_string())
-            .or_default();
-        mutator(stats);
-        guard.version += 1;
-        let version = guard.version;
-        drop(guard);
-        let _ = self.version_tx.send(version);
-    }
-
-    /// Returns an atomic snapshot of (version, stats).
-    pub fn snapshot(&self) -> VersionedComponentUpdateStats {
-        self.inner.read().unwrap().clone()
-    }
-
-    /// Signal that the processing task has terminated.
-    /// Sends TERMINATED_VERSION to all subscribers.
-    pub fn notify_terminated(&self) {
-        let _ = self.version_tx.send(TERMINATED_VERSION);
-    }
-
-    /// Subscribe to version change notifications.
-    /// Returns a watch receiver that can be used with .changed().await
-    pub fn subscribe(&self) -> tokio::sync::watch::Receiver<u64> {
-        self.version_rx.clone()
     }
 }
 
@@ -773,70 +695,365 @@ mod tests {
 
         assert_eq!(op_stats.get_operation_in_process_count("test_op"), 10); // 15-5
     }
+}
 
-    #[cfg(feature = "persistence")]
-    #[test]
-    fn test_component_update_stats_versioning() {
-        let stats = ComponentUpdateStats::new();
-        assert_eq!(stats.snapshot().version, 0);
+// ============================================================================
+// Progress Watching API (from upstream PR #1767)
+// ============================================================================
 
-        stats.update("component_a", |g| g.num_insertions.inc(1));
-        assert_eq!(stats.snapshot().version, 1);
+// Note: BAR_WIDTH constant is already defined at line 226 above
+// PROGRESS_REPORT_INTERVAL is not used in recoco's API (upstream uses it for ProgressReporter)
 
-        stats.update("component_a", |g| g.num_updates.inc(1));
-        stats.update("component_b", |g| g.num_deletions.inc(1));
-        let snap = stats.snapshot();
-        assert_eq!(snap.version, 3);
-        assert_eq!(snap.by_component["component_a"].num_insertions.get(), 1);
-        assert_eq!(snap.by_component["component_a"].num_updates.get(), 1);
-        assert_eq!(snap.by_component["component_b"].num_deletions.get(), 1);
+/// Sentinel version indicating the processing task has terminated.
+pub const TERMINATED_VERSION: u64 = u64::MAX;
+
+/// Per-component processing statistics.
+#[derive(Default, Clone, Serialize, Deserialize)]
+pub struct ProcessingStatsGroup {
+    pub num_execution_starts: u64,
+    pub num_unchanged: u64,
+    pub num_adds: u64,
+    pub num_deletes: u64,
+    pub num_reprocesses: u64,
+    pub num_errors: u64,
+}
+
+impl ProcessingStatsGroup {
+    /// Number of successfully processed items (excludes errors).
+    pub fn num_processed(&self) -> u64 {
+        self.num_unchanged + self.num_adds + self.num_deletes + self.num_reprocesses
     }
 
-    #[cfg(feature = "persistence")]
-    #[test]
-    fn test_component_update_stats_snapshot_consistency() {
-        let stats = ComponentUpdateStats::new();
-        stats.update("a", |g| g.num_insertions.inc(1));
-        let snap1 = stats.snapshot();
-        assert_eq!(snap1.version, 1);
-        assert_eq!(snap1.by_component.len(), 1);
-
-        stats.update("b", |g| g.num_deletions.inc(1));
-        let snap2 = stats.snapshot();
-        assert_eq!(snap2.version, 2);
-        assert_eq!(snap2.by_component.len(), 2);
-
-        // snap1 is still the old snapshot
-        assert_eq!(snap1.version, 1);
-        assert_eq!(snap1.by_component.len(), 1);
+    /// Number of items that have finished (including errors).
+    pub fn num_finished(&self) -> u64 {
+        self.num_processed() + self.num_errors
     }
 
-    #[cfg(feature = "persistence")]
+    pub fn num_in_progress(&self) -> u64 {
+        self.num_execution_starts
+            .saturating_sub(self.num_finished())
+    }
+
+    pub fn has_errors(&self) -> bool {
+        self.num_errors > 0
+    }
+}
+
+impl std::fmt::Display for ProcessingStatsGroup {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let processed = self.num_processed();
+        let total = self.num_execution_starts;
+
+        if total == 0 {
+            return write!(f, "No activity");
+        }
+
+        // Progress bar shows processed (successful) items, not including errors
+        let bar_filled = if total > 0 {
+            (processed * BAR_WIDTH) / total
+        } else {
+            0
+        };
+
+        write!(f, "▕")?;
+        for _ in 0..bar_filled {
+            write!(f, "█")?;
+        }
+        for _ in bar_filled..BAR_WIDTH {
+            write!(f, " ")?;
+        }
+        // Show processed/total (errors are not counted as processed)
+        write!(f, "▏{processed}/{total}")?;
+
+        let finished = self.num_finished();
+        if finished > 0 {
+            let mut delimiter = ':';
+            if self.num_adds > 0 {
+                write!(f, "{delimiter} {} added", self.num_adds)?;
+                delimiter = ',';
+            }
+            if self.num_reprocesses > 0 {
+                write!(f, "{delimiter} {} reprocessed", self.num_reprocesses)?;
+                delimiter = ',';
+            }
+            if self.num_deletes > 0 {
+                write!(f, "{delimiter} {} deleted", self.num_deletes)?;
+                delimiter = ',';
+            }
+            if self.num_unchanged > 0 {
+                write!(f, "{delimiter} {} unchanged", self.num_unchanged)?;
+                delimiter = ',';
+            }
+            if self.num_errors > 0 {
+                write!(f, "{delimiter} {} errors", self.num_errors)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl std::fmt::Debug for ProcessingStatsGroup {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ProcessingStatsGroup")
+            .field("num_execution_starts", &self.num_execution_starts)
+            .field("num_unchanged", &self.num_unchanged)
+            .field("num_adds", &self.num_adds)
+            .field("num_deletes", &self.num_deletes)
+            .field("num_reprocesses", &self.num_reprocesses)
+            .field("num_errors", &self.num_errors)
+            .finish()
+    }
+}
+
+/// A versioned snapshot of processing stats, combining the stats map with a version counter.
+#[derive(Default, Clone, Serialize, Deserialize)]
+pub struct VersionedProcessingStats {
+    pub stats: IndexMap<String, ProcessingStatsGroup>,
+    pub version: u64,
+}
+
+/// Thread-safe container for processing stats with version tracking and change notification.
+#[derive(Clone)]
+pub struct ProcessingStats {
+    inner: Arc<Mutex<VersionedProcessingStats>>,
+    version_tx: tokio::sync::watch::Sender<u64>,
+    version_rx: tokio::sync::watch::Receiver<u64>,
+}
+
+impl Default for ProcessingStats {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ProcessingStats {
+    pub fn new() -> Self {
+        let (version_tx, version_rx) = tokio::sync::watch::channel(0u64);
+        Self {
+            inner: Arc::new(Mutex::new(VersionedProcessingStats::default())),
+            version_tx,
+            version_rx,
+        }
+    }
+
+    pub fn update(&self, component_name: &str, mutator: impl FnOnce(&mut ProcessingStatsGroup)) {
+        let mut guard = self.inner.lock().unwrap();
+        if let Some(group) = guard.stats.get_mut(component_name) {
+            mutator(group);
+        } else {
+            let mut group = ProcessingStatsGroup::default();
+            mutator(&mut group);
+            guard.stats.insert(component_name.to_string(), group);
+        }
+        guard.version += 1;
+        let version = guard.version;
+        drop(guard);
+        let _ = self.version_tx.send(version);
+    }
+
+    /// Returns an atomic snapshot of (version, stats).
+    pub fn snapshot(&self) -> VersionedProcessingStats {
+        self.inner.lock().unwrap().clone()
+    }
+
+    /// Signal that the processing task has terminated.
+    pub fn notify_terminated(&self) {
+        let _ = self.version_tx.send(TERMINATED_VERSION);
+    }
+
+    /// Subscribe to version change notifications.
+    pub fn subscribe(&self) -> tokio::sync::watch::Receiver<u64> {
+        self.version_rx.clone()
+    }
+
+    pub fn format_stats(&self, start_time: Option<std::time::Instant>) -> String {
+        let guard = self.inner.lock().unwrap();
+        let mut result = String::new();
+        for (name, group) in guard.stats.iter() {
+            if !result.is_empty() {
+                result.push('\n');
+            }
+            write!(&mut result, "{name}: {group}").expect("write to string should not fail");
+        }
+        if let Some(start_time) = start_time {
+            if !result.is_empty() {
+                write!(
+                    &mut result,
+                    " [elapsed: {:.1}s]",
+                    start_time.elapsed().as_secs_f64()
+                )
+                .expect("write to string should not fail");
+            }
+        }
+        result
+    }
+}
+
+impl std::fmt::Display for ProcessingStats {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.format_stats(None))
+    }
+}
+
+#[cfg(test)]
+mod progress_watching_tests {
+    use super::*;
+
+    #[test]
+    fn test_processing_stats_group_empty() {
+        let group = ProcessingStatsGroup::default();
+        assert_eq!(group.num_processed(), 0);
+        assert_eq!(group.num_finished(), 0);
+        assert_eq!(group.num_in_progress(), 0);
+        assert!(!group.has_errors());
+        assert_eq!(format!("{}", group), "No activity");
+    }
+
+    #[test]
+    fn test_processing_stats_group_in_progress() {
+        let mut group = ProcessingStatsGroup::default();
+        group.num_execution_starts = 10;
+        group.num_adds = 3;
+        group.num_unchanged = 2;
+
+        assert_eq!(group.num_processed(), 5); // 3 + 2
+        assert_eq!(group.num_finished(), 5);
+        assert_eq!(group.num_in_progress(), 5); // 10 - 5
+        assert!(!group.has_errors());
+    }
+
+    #[test]
+    fn test_processing_stats_group_with_errors() {
+        let mut group = ProcessingStatsGroup::default();
+        group.num_execution_starts = 10;
+        group.num_adds = 3;
+        group.num_errors = 2;
+
+        assert_eq!(group.num_processed(), 3);
+        assert_eq!(group.num_finished(), 5); // 3 + 2
+        assert_eq!(group.num_in_progress(), 5); // 10 - 5
+        assert!(group.has_errors());
+    }
+
+    #[test]
+    fn test_processing_stats_group_display() {
+        let mut group = ProcessingStatsGroup::default();
+        group.num_execution_starts = 10;
+        group.num_adds = 3;
+        group.num_unchanged = 2;
+        group.num_errors = 1;
+
+        let display = format!("{}", group);
+        // Should show progress bar and stats
+        assert!(display.contains("6/10")); // 6 finished out of 10
+        assert!(display.contains("3 added"));
+        assert!(display.contains("2 unchanged"));
+        assert!(display.contains("1 errors"));
+    }
+
+    #[test]
+    fn test_processing_stats_update() {
+        let stats = ProcessingStats::new();
+
+        // Update component1
+        stats.update("component1", |group| {
+            group.num_execution_starts = 5;
+            group.num_adds = 3;
+        });
+
+        // Update component2
+        stats.update("component2", |group| {
+            group.num_execution_starts = 10;
+            group.num_unchanged = 8;
+        });
+
+        let snapshot = stats.snapshot();
+        assert_eq!(snapshot.stats.len(), 2);
+        assert_eq!(snapshot.stats["component1"].num_adds, 3);
+        assert_eq!(snapshot.stats["component2"].num_unchanged, 8);
+        assert!(snapshot.version > 0);
+    }
+
+    #[test]
+    fn test_processing_stats_version_tracking() {
+        let stats = ProcessingStats::new();
+
+        let initial_snapshot = stats.snapshot();
+        assert_eq!(initial_snapshot.version, 0);
+
+        stats.update("component1", |group| {
+            group.num_execution_starts = 5;
+        });
+
+        let updated_snapshot = stats.snapshot();
+        assert_eq!(updated_snapshot.version, 1);
+
+        stats.update("component1", |group| {
+            group.num_adds = 3;
+        });
+
+        let second_update = stats.snapshot();
+        assert_eq!(second_update.version, 2);
+    }
+
     #[tokio::test]
-    async fn test_component_update_stats_watch() {
-        let stats = ComponentUpdateStats::new();
+    async fn test_processing_stats_subscribe() {
+        let stats = ProcessingStats::new();
         let mut rx = stats.subscribe();
 
-        stats.update("component", |g| g.num_insertions.inc(1));
+        // Initial version should be 0
+        assert_eq!(*rx.borrow(), 0);
+
+        // Update should trigger notification
+        stats.update("component1", |group| {
+            group.num_execution_starts = 5;
+        });
+
+        // Wait for change
         rx.changed().await.unwrap();
         assert_eq!(*rx.borrow(), 1);
 
-        stats.update("component", |g| g.num_insertions.inc(1));
+        // Another update
+        stats.update("component2", |group| {
+            group.num_execution_starts = 10;
+        });
+
         rx.changed().await.unwrap();
         assert_eq!(*rx.borrow(), 2);
     }
 
-    #[cfg(feature = "persistence")]
     #[tokio::test]
-    async fn test_notify_terminated_sends_max_version() {
-        let stats = ComponentUpdateStats::new();
+    async fn test_processing_stats_notify_terminated() {
+        let stats = ProcessingStats::new();
         let mut rx = stats.subscribe();
 
-        stats.update("component", |g| g.num_insertions.inc(1));
-        rx.changed().await.unwrap();
-
         stats.notify_terminated();
+
         rx.changed().await.unwrap();
         assert_eq!(*rx.borrow(), TERMINATED_VERSION);
+    }
+
+    #[test]
+    fn test_processing_stats_format() {
+        let stats = ProcessingStats::new();
+
+        stats.update("import_users", |group| {
+            group.num_execution_starts = 10;
+            group.num_adds = 8;
+            group.num_unchanged = 2;
+        });
+
+        stats.update("transform_data", |group| {
+            group.num_execution_starts = 5;
+            group.num_reprocesses = 3;
+            group.num_errors = 1;
+        });
+
+        let formatted = stats.format_stats(None);
+        assert!(formatted.contains("import_users"));
+        assert!(formatted.contains("transform_data"));
+        assert!(formatted.contains("8 added"));
+        assert!(formatted.contains("3 reprocessed"));
     }
 }

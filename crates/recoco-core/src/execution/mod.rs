@@ -22,11 +22,7 @@ pub(crate) mod memoization;
 pub(crate) mod row_indexer;
 #[cfg(feature = "persistence")]
 pub(crate) mod source_indexer;
-pub(crate) mod stats;
-
-// Re-export progress watching API types
-#[cfg(feature = "persistence")]
-pub use stats::{ComponentUpdateStats, TERMINATED_VERSION, VersionedComponentUpdateStats};
+pub mod stats;
 
 #[cfg(feature = "persistence")]
 mod live_updater;

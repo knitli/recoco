@@ -43,6 +43,8 @@ pub struct FlowLiveUpdater {
     stats_per_task: Vec<Arc<stats::UpdateStats>>,
     /// Global tracking of in-process rows per operation
     pub operation_in_process_stats: Arc<stats::OperationInProcessStats>,
+    /// Progress watching API - per-component processing statistics with version tracking
+    pub processing_stats: stats::ProcessingStats,
     recv_state: tokio::sync::Mutex<UpdateReceiveState>,
     num_remaining_tasks_rx: watch::Receiver<usize>,
 
@@ -508,6 +510,7 @@ impl FlowLiveUpdater {
             join_set: Mutex::new(Some(join_set)),
             stats_per_task,
             operation_in_process_stats,
+            processing_stats: stats::ProcessingStats::new(),
             recv_state: tokio::sync::Mutex::new(UpdateReceiveState {
                 status_rx,
                 last_num_source_updates: vec![0; plan.import_ops.len()],
@@ -565,47 +568,6 @@ impl FlowLiveUpdater {
         }
     }
 
-    /// Get a progress snapshot for all components in this flow.
-    ///
-    /// Returns detailed progress information including per-component statistics
-    /// and in-process counts. Useful for displaying progress in UIs or logging.
-    pub fn get_progress_snapshot(&self) -> stats::FlowProgress {
-        let components: Vec<stats::ComponentProgress> = std::iter::zip(
-            self.flow_ctx.flow.flow_instance.import_ops.iter(),
-            self.stats_per_task.iter(),
-        )
-        .map(|(import_op, stats)| {
-            let in_process_count = self
-                .operation_in_process_stats
-                .get_operation_in_process_count(&import_op.name);
-            stats::ComponentProgress {
-                component_name: import_op.name.clone(),
-                stats: stats.as_ref().clone(),
-                in_process_count,
-            }
-        })
-        .collect();
-
-        let total_processed: i64 = components
-            .iter()
-            .map(|c| {
-                c.stats.num_insertions.get()
-                    + c.stats.num_updates.get()
-                    + c.stats.num_deletions.get()
-                    + c.stats.num_reprocesses.get()
-                    + c.stats.num_no_change.get()
-            })
-            .sum();
-
-        let total_in_process: i64 = components.iter().map(|c| c.in_process_count).sum();
-
-        stats::FlowProgress {
-            components,
-            total_processed,
-            total_in_process,
-        }
-    }
-
     pub async fn next_status_updates(&self) -> Result<FlowLiveUpdaterUpdates> {
         let mut recv_state = self.recv_state.lock().await;
         let recv_state = &mut *recv_state;
@@ -651,5 +613,46 @@ impl FlowLiveUpdater {
             recv_state.is_done = true;
         }
         Ok(updates)
+    }
+
+    // ============================================================================
+    // Progress Watching API (from upstream PR #1767)
+    // ============================================================================
+
+    /// Returns an atomic snapshot of (version, stats).
+    ///
+    /// This provides a consistent view of per-component processing statistics
+    /// at a specific point in time. The version number increments with each update.
+    pub fn stats_snapshot(&self) -> stats::VersionedProcessingStats {
+        self.processing_stats.snapshot()
+    }
+
+    /// Returns the underlying `ProcessingStats` (Arc-based, safe to clone).
+    ///
+    /// This allows direct access to the processing stats for custom monitoring.
+    pub fn stats(&self) -> &stats::ProcessingStats {
+        &self.processing_stats
+    }
+
+    /// Subscribe to processing stats version changes.
+    ///
+    /// Returns a watch receiver that notifies when stats are updated.
+    /// Use this to build custom progress monitoring logic.
+    pub fn subscribe_stats(&self) -> tokio::sync::watch::Receiver<u64> {
+        self.processing_stats.subscribe()
+    }
+
+    /// Waits for the stats version to change. Returns the new version.
+    ///
+    /// Returns `TERMINATED_VERSION` when processing completes.
+    /// This is useful for polling-style progress monitoring.
+    pub async fn wait_for_stats_change(
+        &self,
+        rx: &mut tokio::sync::watch::Receiver<u64>,
+    ) -> Result<u64> {
+        rx.changed()
+            .await
+            .map_err(|_| api_error!("stats watch channel closed"))?;
+        Ok(*rx.borrow())
     }
 }

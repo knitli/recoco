@@ -38,10 +38,8 @@ pub use std::sync::{Arc, LazyLock, Mutex, OnceLock, RwLock, Weak};
 pub use crate::base::{self, schema, spec, value};
 pub use crate::builder::{self, exec_ctx, plan};
 pub use crate::execution;
-// Progress watching API for observability in long-running flows
-#[cfg(feature = "persistence")]
-pub use crate::execution::{
-    ComponentUpdateStats, TERMINATED_VERSION, VersionedComponentUpdateStats,
+pub use crate::execution::stats::{
+    ProcessingStats, ProcessingStatsGroup, TERMINATED_VERSION, VersionedProcessingStats,
 };
 pub use crate::lib_context::{FlowContext, LibContext, get_lib_context, get_runtime};
 pub use crate::ops::interface;
