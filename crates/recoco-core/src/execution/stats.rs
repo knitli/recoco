@@ -160,6 +160,9 @@ impl UpdateStats {
 }
 
 /// Per-operation tracking of in-process row counts.
+///
+/// This provides granular visibility into which operations are actively processing rows,
+/// useful for progress monitoring and debugging long-running flows.
 #[derive(Debug, Default)]
 pub struct OperationInProcessStats {
     /// Maps operation names to their processing counters.
@@ -694,4 +697,33 @@ mod tests {
 
         assert_eq!(op_stats.get_operation_in_process_count("test_op"), 10); // 15-5
     }
+}
+
+/// Progress snapshot for a single component/source.
+///
+/// Provides a point-in-time view of processing progress for observability.
+#[derive(Debug, Clone, Serialize)]
+#[cfg(feature = "persistence")]
+pub struct ComponentProgress {
+    /// Name of the component (source, transform, or target).
+    pub component_name: String,
+    /// Current update statistics for this component.
+    pub stats: UpdateStats,
+    /// Number of rows currently being processed by this component.
+    pub in_process_count: i64,
+}
+
+/// Overall progress snapshot for a flow execution.
+///
+/// Aggregates progress information across all components in a flow,
+/// useful for displaying progress bars, dashboards, or logging.
+#[derive(Debug, Clone, Serialize)]
+#[cfg(feature = "persistence")]
+pub struct FlowProgress {
+    /// Per-component progress breakdown.
+    pub components: Vec<ComponentProgress>,
+    /// Total number of rows processed across all components.
+    pub total_processed: i64,
+    /// Total number of rows currently in-process across all components.
+    pub total_in_process: i64,
 }

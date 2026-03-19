@@ -565,6 +565,47 @@ impl FlowLiveUpdater {
         }
     }
 
+    /// Get a progress snapshot for all components in this flow.
+    ///
+    /// Returns detailed progress information including per-component statistics
+    /// and in-process counts. Useful for displaying progress in UIs or logging.
+    pub fn get_progress_snapshot(&self) -> stats::FlowProgress {
+        let components: Vec<stats::ComponentProgress> = std::iter::zip(
+            self.flow_ctx.flow.flow_instance.import_ops.iter(),
+            self.stats_per_task.iter(),
+        )
+        .map(|(import_op, stats)| {
+            let in_process_count = self
+                .operation_in_process_stats
+                .get_operation_in_process_count(&import_op.name);
+            stats::ComponentProgress {
+                component_name: import_op.name.clone(),
+                stats: stats.as_ref().clone(),
+                in_process_count,
+            }
+        })
+        .collect();
+
+        let total_processed: i64 = components
+            .iter()
+            .map(|c| {
+                c.stats.num_insertions.get()
+                    + c.stats.num_updates.get()
+                    + c.stats.num_deletions.get()
+                    + c.stats.num_reprocesses.get()
+                    + c.stats.num_no_change.get()
+            })
+            .sum();
+
+        let total_in_process: i64 = components.iter().map(|c| c.in_process_count).sum();
+
+        stats::FlowProgress {
+            components,
+            total_processed,
+            total_in_process,
+        }
+    }
+
     pub async fn next_status_updates(&self) -> Result<FlowLiveUpdaterUpdates> {
         let mut recv_state = self.recv_state.lock().await;
         let recv_state = &mut *recv_state;

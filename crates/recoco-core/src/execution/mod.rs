@@ -22,7 +22,7 @@ pub(crate) mod memoization;
 pub(crate) mod row_indexer;
 #[cfg(feature = "persistence")]
 pub(crate) mod source_indexer;
-pub(crate) mod stats;
+pub mod stats;
 
 #[cfg(feature = "persistence")]
 mod live_updater;
