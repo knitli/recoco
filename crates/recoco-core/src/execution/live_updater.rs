@@ -611,4 +611,22 @@ impl FlowLiveUpdater {
         }
         Ok(updates)
     }
+
+    /// Get per-component (operation) in-process statistics.
+    /// Returns a map of operation names to their current in-process row counts.
+    pub fn get_operation_in_process_stats(&self) -> HashMap<String, i64> {
+        self.operation_in_process_stats
+            .get_all_operations_in_process()
+    }
+
+    /// Get the total number of rows currently being processed across all operations.
+    pub fn get_total_in_process_count(&self) -> i64 {
+        self.operation_in_process_stats.get_total_in_process_count()
+    }
+
+    /// Get per-source update statistics.
+    /// Returns a vector of UpdateStats for each source in the flow.
+    pub fn get_source_stats(&self) -> Vec<Arc<stats::UpdateStats>> {
+        self.stats_per_task.clone()
+    }
 }
