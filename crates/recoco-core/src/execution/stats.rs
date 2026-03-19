@@ -254,126 +254,6 @@ impl UpdateStats {
             .or_default()
             .clone()
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use serde_json::Value;
-
-    #[test]
-    fn component_counters_update_correctly() {
-        let stats = UpdateStats::default();
-
-        // Populate per-component stats by writing into the by_component map.
-        {
-            let mut components = stats.by_component.write().unwrap();
-            let comp_stats = components.entry("comp_a".to_string()).or_default();
-            comp_stats.num_processed.inc(3);
-            comp_stats.num_errors.inc(1);
-            comp_stats.processing.inc(2);
-        }
-
-        let components = stats.by_component.read().unwrap();
-        let comp_stats = components.get("comp_a").expect("component stats should exist");
-        assert_eq!(comp_stats.num_processed.get(), 3);
-        assert_eq!(comp_stats.num_errors.get(), 1);
-        assert_eq!(comp_stats.processing.get(), 2);
-    }
-
-    #[test]
-    fn merge_combines_component_stats() {
-        let base = UpdateStats::default();
-        let delta = UpdateStats::default();
-
-        {
-            let mut base_components = base.by_component.write().unwrap();
-            let base_comp = base_components.entry("comp_a".to_string()).or_default();
-            base_comp.num_processed.inc(5);
-            base_comp.num_errors.inc(2);
-            base_comp.processing.inc(1);
-        }
-
-        {
-            let mut delta_components = delta.by_component.write().unwrap();
-            let delta_comp_a = delta_components.entry("comp_a".to_string()).or_default();
-            delta_comp_a.num_processed.inc(4);
-            delta_comp_a.num_errors.inc(3);
-            delta_comp_a.processing.inc(2);
-
-            let delta_comp_b = delta_components.entry("comp_b".to_string()).or_default();
-            delta_comp_b.num_processed.inc(7);
-            delta_comp_b.num_errors.inc(0);
-            delta_comp_b.processing.inc(5);
-        }
-
-        base.merge(&delta);
-
-        let components = base.by_component.read().unwrap();
-        let comp_a = components.get("comp_a").expect("comp_a should exist after merge");
-        assert_eq!(comp_a.num_processed.get(), 5 + 4);
-        assert_eq!(comp_a.num_errors.get(), 2 + 3);
-        assert_eq!(comp_a.processing.get(), 1 + 2);
-
-        let comp_b = components.get("comp_b").expect("comp_b should be added by merge");
-        assert_eq!(comp_b.num_processed.get(), 7);
-        assert_eq!(comp_b.num_errors.get(), 0);
-        assert_eq!(comp_b.processing.get(), 5);
-    }
-
-    #[test]
-    fn serialization_omits_empty_by_component() {
-        let stats = UpdateStats::default();
-
-        let value = serde_json::to_value(&stats).expect("serialization should succeed");
-        let obj = value.as_object().expect("stats should serialize to JSON object");
-
-        // When there are no per-component stats, by_component should be omitted if
-        // #[serde(skip_serializing_if = "HashMap::is_empty")] is used.
-        assert!(
-            !obj.contains_key("by_component"),
-            "by_component should be omitted when empty"
-        );
-    }
-
-    #[test]
-    fn serialization_includes_non_empty_by_component() {
-        let stats = UpdateStats::default();
-        {
-            let mut components = stats.by_component.write().unwrap();
-            let comp_stats = components.entry("comp_a".to_string()).or_default();
-            comp_stats.num_processed.inc(1);
-            comp_stats.num_errors.inc(0);
-            comp_stats.processing.inc(0);
-        }
-
-        let value = serde_json::to_value(&stats).expect("serialization should succeed");
-        let obj = value.as_object().expect("stats should serialize to JSON object");
-
-        let by_component_value = obj
-            .get("by_component")
-            .expect("by_component should be present when non-empty");
-
-        let by_component_obj = by_component_value
-            .as_object()
-            .expect("by_component should be a JSON object");
-
-        let comp_a_value = by_component_obj
-            .get("comp_a")
-            .expect("comp_a entry should be present");
-
-        let comp_a_obj = comp_a_value
-            .as_object()
-            .expect("component stats should serialize to JSON object");
-
-        // We don't assert exact field names beyond presence to keep this robust to
-        // unrelated serialization changes, but we ensure some counters are present.
-        assert!(
-            comp_a_obj.contains_key("num_processed"),
-            "component stats should include num_processed"
-        );
-    }
-}
 
     /// Record component processing start.
     pub fn component_start(&self, component_name: &str, count: i64) {
@@ -937,5 +817,124 @@ mod tests {
         // Delta would be: starts=5, ends=2, net_change=3
 
         assert_eq!(op_stats.get_operation_in_process_count("test_op"), 10); // 15-5
+    }
+
+    #[cfg(feature = "persistence")]
+    #[test]
+    fn component_counters_update_correctly() {
+        let stats = UpdateStats::default();
+
+        // Start 3 items, complete 2, error 1 → all accounted for, in_process = 0.
+        stats.component_start("comp_a", 3);
+        stats.component_complete("comp_a", 2);
+        stats.component_error("comp_a", 1);
+
+        let components = stats.by_component.read().unwrap();
+        let comp_stats = components
+            .get("comp_a")
+            .expect("component stats should exist");
+        assert_eq!(comp_stats.num_processed.get(), 2);
+        assert_eq!(comp_stats.num_errors.get(), 1);
+        // processing: 3 started, 3 ended (2 complete + 1 error)
+        assert_eq!(comp_stats.processing.get_in_process(), 0);
+    }
+
+    #[cfg(feature = "persistence")]
+    #[test]
+    fn merge_combines_component_stats() {
+        let base = UpdateStats::default();
+        let delta = UpdateStats::default();
+
+        {
+            let mut base_components = base.by_component.write().unwrap();
+            let base_comp = base_components.entry("comp_a".to_string()).or_default();
+            base_comp.num_processed.inc(5);
+            base_comp.num_errors.inc(2);
+            base_comp.processing.start(1);
+        }
+
+        {
+            let mut delta_components = delta.by_component.write().unwrap();
+            let delta_comp_a = delta_components.entry("comp_a".to_string()).or_default();
+            delta_comp_a.num_processed.inc(4);
+            delta_comp_a.num_errors.inc(3);
+            delta_comp_a.processing.start(2);
+
+            let delta_comp_b = delta_components.entry("comp_b".to_string()).or_default();
+            delta_comp_b.num_processed.inc(7);
+            delta_comp_b.num_errors.inc(0);
+            delta_comp_b.processing.start(5);
+        }
+
+        base.merge(&delta);
+
+        let components = base.by_component.read().unwrap();
+        let comp_a = components
+            .get("comp_a")
+            .expect("comp_a should exist after merge");
+        assert_eq!(comp_a.num_processed.get(), 5 + 4);
+        assert_eq!(comp_a.num_errors.get(), 2 + 3);
+        assert_eq!(comp_a.processing.num_starts.get(), 1 + 2);
+
+        let comp_b = components
+            .get("comp_b")
+            .expect("comp_b should be added by merge");
+        assert_eq!(comp_b.num_processed.get(), 7);
+        assert_eq!(comp_b.num_errors.get(), 0);
+        assert_eq!(comp_b.processing.num_starts.get(), 5);
+    }
+
+    #[cfg(feature = "persistence")]
+    #[test]
+    fn serialization_omits_empty_by_component() {
+        let stats = UpdateStats::default();
+
+        let value = serde_json::to_value(&stats).expect("serialization should succeed");
+        let obj = value
+            .as_object()
+            .expect("stats should serialize to JSON object");
+
+        // When there are no per-component stats, by_component should be omitted.
+        assert!(
+            !obj.contains_key("by_component"),
+            "by_component should be omitted when empty"
+        );
+    }
+
+    #[cfg(feature = "persistence")]
+    #[test]
+    fn serialization_includes_non_empty_by_component() {
+        let stats = UpdateStats::default();
+        {
+            let mut components = stats.by_component.write().unwrap();
+            let comp_stats = components.entry("comp_a".to_string()).or_default();
+            comp_stats.num_processed.inc(1);
+        }
+
+        let value = serde_json::to_value(&stats).expect("serialization should succeed");
+        let obj = value
+            .as_object()
+            .expect("stats should serialize to JSON object");
+
+        let by_component_value = obj
+            .get("by_component")
+            .expect("by_component should be present when non-empty");
+
+        let by_component_obj = by_component_value
+            .as_object()
+            .expect("by_component should be a JSON object");
+
+        let comp_a_value = by_component_obj
+            .get("comp_a")
+            .expect("comp_a entry should be present");
+
+        let comp_a_obj = comp_a_value
+            .as_object()
+            .expect("component stats should serialize to JSON object");
+
+        assert!(
+            comp_a_obj.contains_key("num_processed"),
+            "component stats should include num_processed"
+        );
     }
 }

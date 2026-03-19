@@ -549,25 +549,23 @@ impl FlowLiveUpdater {
     }
 
     /// Emit a progress update to all subscribers.
-    fn emit_progress_update(&self) {
+    async fn emit_progress_update(&self) {
         // Always wait for the recv_state lock so we don't silently drop updates,
         // especially the final completion snapshot.
-        let recv_state = match self.recv_state.lock() {
-            Ok(state) => state,
-            // If the mutex is poisoned, recover the inner state and still emit
-            // a best-effort progress update instead of silently skipping it.
-            Err(poisoned) => poisoned.into_inner(),
-        };
+        let recv_state = self.recv_state.lock().await;
 
         let status = recv_state.status_rx.borrow();
 
         let active_sources: Vec<String> = status
             .active_source_idx
             .iter()
-            .map(|&idx| {
-                self.flow_ctx.flow.flow_instance.import_ops[idx]
-                    .name
-                    .clone()
+            .filter_map(|&idx| {
+                self.flow_ctx
+                    .flow
+                    .flow_instance
+                    .import_ops
+                    .get(idx)
+                    .map(|op| op.name.clone())
             })
             .collect();
 
@@ -608,7 +606,7 @@ impl FlowLiveUpdater {
         let operation_in_process_stats = self.operation_in_process_stats.clone();
 
         // Clone the status receiver so we can derive active_sources for periodic updates.
-        let mut status_rx = self.status_rx.clone();
+        let status_rx = self.recv_state.lock().await.status_rx.clone();
 
         let progress_emitter = tokio::spawn(async move {
             let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
@@ -639,8 +637,20 @@ impl FlowLiveUpdater {
                 let operation_in_process =
                     operation_in_process_stats.get_all_operations_in_process();
 
-                // Derive active_sources from the latest FlowLiveUpdaterStatus.
-                let active_sources = status_rx.borrow().active_sources.clone();
+                // Derive active_sources names from the latest FlowLiveUpdaterStatus.
+                let active_sources: Vec<String> = status_rx
+                    .borrow()
+                    .active_source_idx
+                    .iter()
+                    .filter_map(|&idx| {
+                        flow_ctx
+                            .flow
+                            .flow_instance
+                            .import_ops
+                            .get(idx)
+                            .map(|op| op.name.clone())
+                    })
+                    .collect();
 
                 let update = ProgressUpdate {
                     active_sources,
@@ -678,7 +688,7 @@ impl FlowLiveUpdater {
         }
 
         // Emit final progress update
-        self.emit_progress_update();
+        self.emit_progress_update().await;
 
         progress_emitter.abort();
         Ok(())
