@@ -20,6 +20,9 @@ use tokio::sync::watch;
 const BAR_WIDTH: u64 = 40;
 const PROGRESS_REPORT_INTERVAL: Duration = Duration::from_secs(1);
 
+/// Sentinel version indicating the processing task has terminated.
+pub const TERMINATED_VERSION: u64 = u64::MAX;
+
 #[derive(Debug, Default, Clone)]
 pub struct ProcessingStatsGroup {
     pub num_execution_starts: u64,
@@ -114,10 +117,14 @@ impl std::fmt::Display for ProcessingStatsGroup {
 pub struct UpdateStats {
     /// Per-component statistics, keyed by component name.
     pub by_component: IndexMap<String, ProcessingStatsGroup>,
+    /// Monotonically increasing version counter. Incremented on every stats update.
+    /// A value of [`TERMINATED_VERSION`] indicates the processing task has terminated.
+    pub version: u64,
 }
 
 struct ProcessingStatsInner {
     stats: Mutex<IndexMap<String, ProcessingStatsGroup>>,
+    version: Mutex<u64>,
     stats_tx: watch::Sender<UpdateStats>,
 }
 
@@ -136,6 +143,7 @@ impl Default for ProcessingStats {
         Self {
             inner: Arc::new(ProcessingStatsInner {
                 stats: Mutex::new(IndexMap::new()),
+                version: Mutex::new(0),
                 stats_tx,
             }),
         }
@@ -153,8 +161,11 @@ impl ProcessingStats {
                 mutator(&mut group);
                 stats.insert(operation_name.to_string(), group);
             }
+            let mut version = self.inner.version.lock().unwrap();
+            *version += 1;
             UpdateStats {
                 by_component: stats.clone(),
+                version: *version,
             }
         };
         // Notify watchers; ignore error if all receivers dropped.
@@ -167,8 +178,10 @@ impl ProcessingStats {
 
     /// Return a snapshot of the current stats as an [`UpdateStats`].
     pub fn snapshot_stats(&self) -> UpdateStats {
+        let version = *self.inner.version.lock().unwrap();
         UpdateStats {
             by_component: self.snapshot(),
+            version,
         }
     }
 
@@ -176,6 +189,20 @@ impl ProcessingStats {
     /// component's stats change, and always holds the latest snapshot.
     pub fn subscribe(&self) -> watch::Receiver<UpdateStats> {
         self.inner.stats_tx.subscribe()
+    }
+
+    /// Signal that the processing task has terminated.
+    ///
+    /// Sends a final [`UpdateStats`] snapshot with [`TERMINATED_VERSION`] to all watchers.
+    pub fn notify_terminated(&self) {
+        let snapshot = {
+            let stats = self.inner.stats.lock().unwrap();
+            UpdateStats {
+                by_component: stats.clone(),
+                version: TERMINATED_VERSION,
+            }
+        };
+        let _ = self.inner.stats_tx.send(snapshot);
     }
 
     pub fn format_stats(&self, start_time: Option<std::time::Instant>) -> String {
@@ -328,5 +355,107 @@ impl ProgressReporter {
             }
             println!("{}", self.format_elapsed_message());
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_version_increments_on_update() {
+        let stats = ProcessingStats::default();
+        assert_eq!(stats.snapshot_stats().version, 0);
+
+        stats.update("comp_a", |g| g.num_adds += 1);
+        assert_eq!(stats.snapshot_stats().version, 1);
+
+        stats.update("comp_a", |g| g.num_adds += 1);
+        stats.update("comp_b", |g| g.num_unchanged += 1);
+        let snap = stats.snapshot_stats();
+        assert_eq!(snap.version, 3);
+        assert_eq!(snap.by_component["comp_a"].num_adds, 2);
+        assert_eq!(snap.by_component["comp_b"].num_unchanged, 1);
+    }
+
+    #[test]
+    fn test_snapshot_version_and_stats_consistent() {
+        let stats = ProcessingStats::default();
+        stats.update("a", |g| g.num_adds += 1);
+        let snap1 = stats.snapshot_stats();
+        assert_eq!(snap1.version, 1);
+        assert_eq!(snap1.by_component.len(), 1);
+
+        stats.update("b", |g| g.num_deletes += 1);
+        let snap2 = stats.snapshot_stats();
+        assert_eq!(snap2.version, 2);
+        assert_eq!(snap2.by_component.len(), 2);
+
+        // snap1 is still the old snapshot
+        assert_eq!(snap1.version, 1);
+        assert_eq!(snap1.by_component.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_watch_receives_update_notifications() {
+        let stats = ProcessingStats::default();
+        let mut rx = stats.subscribe();
+
+        stats.update("comp", |g| g.num_adds += 1);
+        rx.changed().await.unwrap();
+        assert_eq!(rx.borrow().version, 1);
+
+        stats.update("comp", |g| g.num_adds += 1);
+        rx.changed().await.unwrap();
+        assert_eq!(rx.borrow().version, 2);
+    }
+
+    #[tokio::test]
+    async fn test_notify_terminated_sends_sentinel_version() {
+        let stats = ProcessingStats::default();
+        let mut rx = stats.subscribe();
+
+        stats.update("comp", |g| g.num_adds += 1);
+        rx.changed().await.unwrap();
+
+        stats.notify_terminated();
+        rx.changed().await.unwrap();
+        assert_eq!(rx.borrow().version, TERMINATED_VERSION);
+    }
+
+    #[tokio::test]
+    async fn test_subscribe_multiple_receivers() {
+        let stats = ProcessingStats::default();
+        let mut rx1 = stats.subscribe();
+        let mut rx2 = stats.subscribe();
+
+        stats.update("comp", |g| g.num_adds += 1);
+
+        rx1.changed().await.unwrap();
+        rx2.changed().await.unwrap();
+        assert_eq!(rx1.borrow().version, 1);
+        assert_eq!(rx2.borrow().version, 1);
+    }
+
+    #[test]
+    fn test_processing_stats_group_display_no_activity() {
+        let group = ProcessingStatsGroup::default();
+        assert_eq!(format!("{group}"), "No activity");
+    }
+
+    #[test]
+    fn test_processing_stats_group_display_with_activity() {
+        let group = ProcessingStatsGroup {
+            num_execution_starts: 10,
+            num_adds: 5,
+            num_unchanged: 3,
+            num_errors: 2,
+            ..Default::default()
+        };
+        let display = format!("{group}");
+        assert!(display.contains("8/10"));
+        assert!(display.contains("5 added"));
+        assert!(display.contains("3 unchanged"));
+        assert!(display.contains("2 errors"));
     }
 }

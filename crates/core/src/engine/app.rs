@@ -156,12 +156,14 @@ impl<Prof: EngineProfile> App<Prof> {
                     .await
             };
 
-            if options.report_to_stdout {
-                let reporter = ProgressReporter::new(processing_stats);
+            let result = if options.report_to_stdout {
+                let reporter = ProgressReporter::new(processing_stats.clone());
                 reporter.run_with_progress(run_fut).await
             } else {
                 run_fut.await
-            }
+            };
+            processing_stats.notify_terminated();
+            result
         });
 
         Ok(UpdateHandle {
