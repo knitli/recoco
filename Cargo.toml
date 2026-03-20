@@ -34,7 +34,7 @@ async-openai = { version = "0.30.1", default-features = true }
 async-stream = "0.3.6"
 async-trait = "0.1.89"
 aws-config = "1.8.12"
-aws-sdk-s3 = "1.120.0"
+aws-sdk-s3 = "1.121.0"
 aws-sdk-sqs = "1.92.0"
 axum = "0.8.8"
 axum-extra = { version = "0.12.5", features = ["query"] }
