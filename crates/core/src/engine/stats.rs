@@ -122,9 +122,15 @@ pub struct UpdateStats {
     pub version: u64,
 }
 
+/// Combined stats + version state protected by a single mutex to avoid
+/// lock-order inversion between `update()` and `snapshot_stats()`.
+struct ProcessingStatsState {
+    stats: IndexMap<String, ProcessingStatsGroup>,
+    version: u64,
+}
+
 struct ProcessingStatsInner {
-    stats: Mutex<IndexMap<String, ProcessingStatsGroup>>,
-    version: Mutex<u64>,
+    state: Mutex<ProcessingStatsState>,
     stats_tx: watch::Sender<UpdateStats>,
 }
 
@@ -142,8 +148,10 @@ impl Default for ProcessingStats {
         let (stats_tx, _) = watch::channel(UpdateStats::default());
         Self {
             inner: Arc::new(ProcessingStatsInner {
-                stats: Mutex::new(IndexMap::new()),
-                version: Mutex::new(0),
+                state: Mutex::new(ProcessingStatsState {
+                    stats: IndexMap::new(),
+                    version: 0,
+                }),
                 stats_tx,
             }),
         }
@@ -153,19 +161,22 @@ impl Default for ProcessingStats {
 impl ProcessingStats {
     pub fn update(&self, operation_name: &str, mutator: impl FnOnce(&mut ProcessingStatsGroup)) {
         let snapshot = {
-            let mut stats = self.inner.stats.lock().unwrap();
-            if let Some(group) = stats.get_mut(operation_name) {
+            let mut state = self.inner.state.lock().unwrap();
+            // After termination, updates are no-ops to preserve the sentinel semantics.
+            if state.version == TERMINATED_VERSION {
+                return;
+            }
+            if let Some(group) = state.stats.get_mut(operation_name) {
                 mutator(group);
             } else {
                 let mut group = ProcessingStatsGroup::default();
                 mutator(&mut group);
-                stats.insert(operation_name.to_string(), group);
+                state.stats.insert(operation_name.to_string(), group);
             }
-            let mut version = self.inner.version.lock().unwrap();
-            *version += 1;
+            state.version += 1;
             UpdateStats {
-                by_component: stats.clone(),
-                version: *version,
+                by_component: state.stats.clone(),
+                version: state.version,
             }
         };
         // Notify watchers; ignore error if all receivers dropped.
@@ -173,15 +184,15 @@ impl ProcessingStats {
     }
 
     pub fn snapshot(&self) -> IndexMap<String, ProcessingStatsGroup> {
-        self.inner.stats.lock().unwrap().clone()
+        self.inner.state.lock().unwrap().stats.clone()
     }
 
     /// Return a snapshot of the current stats as an [`UpdateStats`].
     pub fn snapshot_stats(&self) -> UpdateStats {
-        let version = *self.inner.version.lock().unwrap();
+        let state = self.inner.state.lock().unwrap();
         UpdateStats {
-            by_component: self.snapshot(),
-            version,
+            by_component: state.stats.clone(),
+            version: state.version,
         }
     }
 
@@ -193,12 +204,16 @@ impl ProcessingStats {
 
     /// Signal that the processing task has terminated.
     ///
-    /// Sends a final [`UpdateStats`] snapshot with [`TERMINATED_VERSION`] to all watchers.
+    /// Persists [`TERMINATED_VERSION`] into the internal state so that both
+    /// [`subscribe`](ProcessingStats::subscribe) watchers and
+    /// [`snapshot_stats`](ProcessingStats::snapshot_stats) callers observe termination.
+    /// Subsequent [`update`](ProcessingStats::update) calls become no-ops.
     pub fn notify_terminated(&self) {
         let snapshot = {
-            let stats = self.inner.stats.lock().unwrap();
+            let mut state = self.inner.state.lock().unwrap();
+            state.version = TERMINATED_VERSION;
             UpdateStats {
-                by_component: stats.clone(),
+                by_component: state.stats.clone(),
                 version: TERMINATED_VERSION,
             }
         };
@@ -206,9 +221,9 @@ impl ProcessingStats {
     }
 
     pub fn format_stats(&self, start_time: Option<std::time::Instant>) -> String {
-        let stats = self.inner.stats.lock().unwrap();
+        let state = self.inner.state.lock().unwrap();
         let mut result = String::new();
-        for (name, group) in stats.iter() {
+        for (name, group) in state.stats.iter() {
             if !result.is_empty() {
                 result.push('\n');
             }
@@ -457,5 +472,29 @@ mod tests {
         assert!(display.contains("5 added"));
         assert!(display.contains("3 unchanged"));
         assert!(display.contains("2 errors"));
+    }
+
+    #[test]
+    fn test_snapshot_stats_observes_termination() {
+        let stats = ProcessingStats::default();
+        stats.update("comp", |g| g.num_adds += 1);
+        assert_eq!(stats.snapshot_stats().version, 1);
+
+        stats.notify_terminated();
+        assert_eq!(stats.snapshot_stats().version, TERMINATED_VERSION);
+    }
+
+    #[test]
+    fn test_update_is_noop_after_termination() {
+        let stats = ProcessingStats::default();
+        stats.update("comp", |g| g.num_adds += 1);
+        stats.notify_terminated();
+
+        // Late update should be silently ignored.
+        stats.update("comp", |g| g.num_adds += 100);
+
+        let snap = stats.snapshot_stats();
+        assert_eq!(snap.version, TERMINATED_VERSION);
+        assert_eq!(snap.by_component["comp"].num_adds, 1);
     }
 }
