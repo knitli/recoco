@@ -41,7 +41,7 @@ jobs:
           OUTPUT: CHANGELOG.md
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2.5.0
+        uses: softprops/action-gh-release@v2.6.1
         with:
           body: ${{ steps.changelog.outputs.content }}
           files: |
