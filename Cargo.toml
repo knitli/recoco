@@ -98,7 +98,7 @@ reqwest = { version = "0.12.24", default-features = false, features = [
   "rustls-tls",
 ] }
 rustls = { version = "0.23.36" }
-schemars = "1.2.0"
+schemars = "1.2.1"
 serde = { version = "1.0.228", features = ["derive", "rc"] }
 serde_json = "1.0.149"
 serde_path_to_error = "0.1.20"
