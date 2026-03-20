@@ -4301,7 +4301,7 @@ dependencies = [
 
 [[package]]
 name = "recoco"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "recoco-core",
@@ -4314,7 +4314,7 @@ dependencies = [
 
 [[package]]
 name = "recoco-core"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -4381,7 +4381,7 @@ dependencies = [
 
 [[package]]
 name = "recoco-splitters"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -4421,7 +4421,7 @@ dependencies = [
 
 [[package]]
 name = "recoco-utils"
-version = "0.2.1"
+version = "0.2.2"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -6180,9 +6180,9 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter-scala"
-version = "0.24.0"
+version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7516aeb3d1f40ede8e3045b163e86993b3434514dd06c34c0b75e782d9a0b251"
+checksum = "83079f50ea7d03e0faf6be6260ed97538e6df7349ec3cbcbf5771f7b38e3c8b7"
 dependencies = [
  "cc",
  "tree-sitter-language",
