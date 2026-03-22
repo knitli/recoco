@@ -24,4 +24,4 @@ pub mod target_state;
 pub mod txn_batcher;
 
 pub use app::UpdateHandle;
-pub use stats::UpdateStats;
+pub use stats::{TERMINATED_VERSION, UpdateStats};

@@ -20,6 +20,9 @@ use tokio::sync::watch;
 const BAR_WIDTH: u64 = 40;
 const PROGRESS_REPORT_INTERVAL: Duration = Duration::from_secs(1);
 
+/// Sentinel version indicating the processing task has terminated.
+pub const TERMINATED_VERSION: u64 = u64::MAX;
+
 #[derive(Debug, Default, Clone)]
 pub struct ProcessingStatsGroup {
     pub num_execution_starts: u64,
@@ -114,10 +117,20 @@ impl std::fmt::Display for ProcessingStatsGroup {
 pub struct UpdateStats {
     /// Per-component statistics, keyed by component name.
     pub by_component: IndexMap<String, ProcessingStatsGroup>,
+    /// Monotonically increasing version counter. Incremented on every stats update.
+    /// A value of [`TERMINATED_VERSION`] indicates the processing task has terminated.
+    pub version: u64,
+}
+
+/// Combined stats + version state protected by a single mutex to avoid
+/// lock-order inversion between `update()` and `snapshot_stats()`.
+struct ProcessingStatsState {
+    stats: IndexMap<String, ProcessingStatsGroup>,
+    version: u64,
 }
 
 struct ProcessingStatsInner {
-    stats: Mutex<IndexMap<String, ProcessingStatsGroup>>,
+    state: Mutex<ProcessingStatsState>,
     stats_tx: watch::Sender<UpdateStats>,
 }
 
@@ -135,7 +148,10 @@ impl Default for ProcessingStats {
         let (stats_tx, _) = watch::channel(UpdateStats::default());
         Self {
             inner: Arc::new(ProcessingStatsInner {
-                stats: Mutex::new(IndexMap::new()),
+                state: Mutex::new(ProcessingStatsState {
+                    stats: IndexMap::new(),
+                    version: 0,
+                }),
                 stats_tx,
             }),
         }
@@ -145,16 +161,22 @@ impl Default for ProcessingStats {
 impl ProcessingStats {
     pub fn update(&self, operation_name: &str, mutator: impl FnOnce(&mut ProcessingStatsGroup)) {
         let snapshot = {
-            let mut stats = self.inner.stats.lock().unwrap();
-            if let Some(group) = stats.get_mut(operation_name) {
+            let mut state = self.inner.state.lock().unwrap();
+            // After termination, updates are no-ops to preserve the sentinel semantics.
+            if state.version == TERMINATED_VERSION {
+                return;
+            }
+            if let Some(group) = state.stats.get_mut(operation_name) {
                 mutator(group);
             } else {
                 let mut group = ProcessingStatsGroup::default();
                 mutator(&mut group);
-                stats.insert(operation_name.to_string(), group);
+                state.stats.insert(operation_name.to_string(), group);
             }
+            state.version += 1;
             UpdateStats {
-                by_component: stats.clone(),
+                by_component: state.stats.clone(),
+                version: state.version,
             }
         };
         // Notify watchers; ignore error if all receivers dropped.
@@ -162,13 +184,15 @@ impl ProcessingStats {
     }
 
     pub fn snapshot(&self) -> IndexMap<String, ProcessingStatsGroup> {
-        self.inner.stats.lock().unwrap().clone()
+        self.inner.state.lock().unwrap().stats.clone()
     }
 
     /// Return a snapshot of the current stats as an [`UpdateStats`].
     pub fn snapshot_stats(&self) -> UpdateStats {
+        let state = self.inner.state.lock().unwrap();
         UpdateStats {
-            by_component: self.snapshot(),
+            by_component: state.stats.clone(),
+            version: state.version,
         }
     }
 
@@ -178,10 +202,28 @@ impl ProcessingStats {
         self.inner.stats_tx.subscribe()
     }
 
+    /// Signal that the processing task has terminated.
+    ///
+    /// Persists [`TERMINATED_VERSION`] into the internal state so that both
+    /// [`subscribe`](ProcessingStats::subscribe) watchers and
+    /// [`snapshot_stats`](ProcessingStats::snapshot_stats) callers observe termination.
+    /// Subsequent [`update`](ProcessingStats::update) calls become no-ops.
+    pub fn notify_terminated(&self) {
+        let snapshot = {
+            let mut state = self.inner.state.lock().unwrap();
+            state.version = TERMINATED_VERSION;
+            UpdateStats {
+                by_component: state.stats.clone(),
+                version: TERMINATED_VERSION,
+            }
+        };
+        let _ = self.inner.stats_tx.send(snapshot);
+    }
+
     pub fn format_stats(&self, start_time: Option<std::time::Instant>) -> String {
-        let stats = self.inner.stats.lock().unwrap();
+        let state = self.inner.state.lock().unwrap();
         let mut result = String::new();
-        for (name, group) in stats.iter() {
+        for (name, group) in state.stats.iter() {
             if !result.is_empty() {
                 result.push('\n');
             }
@@ -328,5 +370,131 @@ impl ProgressReporter {
             }
             println!("{}", self.format_elapsed_message());
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_version_increments_on_update() {
+        let stats = ProcessingStats::default();
+        assert_eq!(stats.snapshot_stats().version, 0);
+
+        stats.update("comp_a", |g| g.num_adds += 1);
+        assert_eq!(stats.snapshot_stats().version, 1);
+
+        stats.update("comp_a", |g| g.num_adds += 1);
+        stats.update("comp_b", |g| g.num_unchanged += 1);
+        let snap = stats.snapshot_stats();
+        assert_eq!(snap.version, 3);
+        assert_eq!(snap.by_component["comp_a"].num_adds, 2);
+        assert_eq!(snap.by_component["comp_b"].num_unchanged, 1);
+    }
+
+    #[test]
+    fn test_snapshot_version_and_stats_consistent() {
+        let stats = ProcessingStats::default();
+        stats.update("a", |g| g.num_adds += 1);
+        let snap1 = stats.snapshot_stats();
+        assert_eq!(snap1.version, 1);
+        assert_eq!(snap1.by_component.len(), 1);
+
+        stats.update("b", |g| g.num_deletes += 1);
+        let snap2 = stats.snapshot_stats();
+        assert_eq!(snap2.version, 2);
+        assert_eq!(snap2.by_component.len(), 2);
+
+        // snap1 is still the old snapshot
+        assert_eq!(snap1.version, 1);
+        assert_eq!(snap1.by_component.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_watch_receives_update_notifications() {
+        let stats = ProcessingStats::default();
+        let mut rx = stats.subscribe();
+
+        stats.update("comp", |g| g.num_adds += 1);
+        rx.changed().await.unwrap();
+        assert_eq!(rx.borrow().version, 1);
+
+        stats.update("comp", |g| g.num_adds += 1);
+        rx.changed().await.unwrap();
+        assert_eq!(rx.borrow().version, 2);
+    }
+
+    #[tokio::test]
+    async fn test_notify_terminated_sends_sentinel_version() {
+        let stats = ProcessingStats::default();
+        let mut rx = stats.subscribe();
+
+        stats.update("comp", |g| g.num_adds += 1);
+        rx.changed().await.unwrap();
+
+        stats.notify_terminated();
+        rx.changed().await.unwrap();
+        assert_eq!(rx.borrow().version, TERMINATED_VERSION);
+    }
+
+    #[tokio::test]
+    async fn test_subscribe_multiple_receivers() {
+        let stats = ProcessingStats::default();
+        let mut rx1 = stats.subscribe();
+        let mut rx2 = stats.subscribe();
+
+        stats.update("comp", |g| g.num_adds += 1);
+
+        rx1.changed().await.unwrap();
+        rx2.changed().await.unwrap();
+        assert_eq!(rx1.borrow().version, 1);
+        assert_eq!(rx2.borrow().version, 1);
+    }
+
+    #[test]
+    fn test_processing_stats_group_display_no_activity() {
+        let group = ProcessingStatsGroup::default();
+        assert_eq!(format!("{group}"), "No activity");
+    }
+
+    #[test]
+    fn test_processing_stats_group_display_with_activity() {
+        let group = ProcessingStatsGroup {
+            num_execution_starts: 10,
+            num_adds: 5,
+            num_unchanged: 3,
+            num_errors: 2,
+            ..Default::default()
+        };
+        let display = format!("{group}");
+        assert!(display.contains("8/10"));
+        assert!(display.contains("5 added"));
+        assert!(display.contains("3 unchanged"));
+        assert!(display.contains("2 errors"));
+    }
+
+    #[test]
+    fn test_snapshot_stats_observes_termination() {
+        let stats = ProcessingStats::default();
+        stats.update("comp", |g| g.num_adds += 1);
+        assert_eq!(stats.snapshot_stats().version, 1);
+
+        stats.notify_terminated();
+        assert_eq!(stats.snapshot_stats().version, TERMINATED_VERSION);
+    }
+
+    #[test]
+    fn test_update_is_noop_after_termination() {
+        let stats = ProcessingStats::default();
+        stats.update("comp", |g| g.num_adds += 1);
+        stats.notify_terminated();
+
+        // Late update should be silently ignored.
+        stats.update("comp", |g| g.num_adds += 100);
+
+        let snap = stats.snapshot_stats();
+        assert_eq!(snap.version, TERMINATED_VERSION);
+        assert_eq!(snap.by_component["comp"].num_adds, 1);
     }
 }
