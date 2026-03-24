@@ -47,3 +47,5 @@ examples/**/uv.lock
 .gemini/
 gha-creds-*.json
 cocoindex/
+.claude/*.local.*
+benchmarks/data/
