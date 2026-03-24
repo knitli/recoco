@@ -49,7 +49,7 @@ fn load_fixture(tier: &str, name: &str) -> String {
 }
 
 struct Fixtures {
-    prose: Vec<(String, String)>,   // (tier, content)
+    prose: Vec<(String, String)>, // (tier, content)
     rust: Vec<(String, String)>,
     python: Vec<(String, String)>,
     mixed: Vec<(String, String)>,
@@ -69,7 +69,12 @@ fn load_all_fixtures() -> Fixtures {
         mixed.push((tier.to_string(), load_fixture(tier, "mixed.txt")));
     }
 
-    Fixtures { prose, rust, python, mixed }
+    Fixtures {
+        prose,
+        rust,
+        python,
+        mixed,
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -186,23 +191,19 @@ fn bench_recursive_chunk(c: &mut Criterion) {
         for &chunk_size in chunk_sizes {
             let param = format!("{tier}/cs={chunk_size}");
             group.throughput(Throughput::Bytes(content.len() as u64));
-            group.bench_with_input(
-                BenchmarkId::new("lang=rust", &param),
-                content,
-                |b, text| {
-                    b.iter(|| {
-                        chunker.split(
-                            text,
-                            RecursiveChunkConfig {
-                                chunk_size,
-                                min_chunk_size: None,
-                                chunk_overlap: Some(chunk_size / 10),
-                                language: Some("rust".to_string()),
-                            },
-                        )
-                    });
-                },
-            );
+            group.bench_with_input(BenchmarkId::new("lang=rust", &param), content, |b, text| {
+                b.iter(|| {
+                    chunker.split(
+                        text,
+                        RecursiveChunkConfig {
+                            chunk_size,
+                            min_chunk_size: None,
+                            chunk_overlap: Some(chunk_size / 10),
+                            language: Some("rust".to_string()),
+                        },
+                    )
+                });
+            });
         }
     }
     group.finish();
