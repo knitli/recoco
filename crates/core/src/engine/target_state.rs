@@ -125,7 +125,7 @@ pub trait TargetHandler<Prof: EngineProfile>: Send + Sync + Sized + 'static {
         &self,
         key: StableKey,
         desired_target_state: Option<Prof::TargetStateValue>,
-        prev_possible_states: &[Prof::TargetStateTrackingRecord],
+        prev_possible_records: &[Prof::TargetStateTrackingRecord],
         prev_may_be_missing: bool,
     ) -> Result<Option<TargetReconcileOutput<Prof>>>;
 
@@ -443,7 +443,7 @@ mod tests {
             &self,
             _key: StableKey,
             _desired_target_state: Option<()>,
-            _prev_possible_states: &[MockTrackingRecord],
+            _prev_possible_records: &[MockTrackingRecord],
             _prev_may_be_missing: bool,
         ) -> Result<Option<TargetReconcileOutput<MockProfile>>> {
             Ok(None)
