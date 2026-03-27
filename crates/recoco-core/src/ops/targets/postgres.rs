@@ -565,10 +565,7 @@ fn qualified_table_name(table_id: &TableId) -> String {
         None => {
             let table_name = &table_id.table_name;
             if table_name.contains('.') {
-                table_name
-                    .split('.')
-                    .map(quote_identifier)
-                    .join(".")
+                table_name.split('.').map(quote_identifier).join(".")
             } else {
                 quote_identifier(table_name)
             }
@@ -820,16 +817,19 @@ impl SetupChange {
                 TableUpsertionAction::Create { keys, values } => {
                     // Create schema if specified
                     if let Some(schema) = &table_id.schema {
-                        let sql = format!("CREATE SCHEMA IF NOT EXISTS {}", quote_identifier(schema));
+                        let sql =
+                            format!("CREATE SCHEMA IF NOT EXISTS {}", quote_identifier(schema));
                         sqlx::query(&sql).execute(db_pool).await?;
                     }
 
-                    let mut fields = (keys.iter().map(|(name, typ)| {
-                        format!("{} {typ} NOT NULL", quote_identifier(name))
-                    }))
-                    .chain(values.iter().map(|(name, typ)| {
-                        format!("{} {typ}", quote_identifier(name))
-                    }));
+                    let mut fields = (keys
+                        .iter()
+                        .map(|(name, typ)| format!("{} {typ} NOT NULL", quote_identifier(name))))
+                    .chain(
+                        values
+                            .iter()
+                            .map(|(name, typ)| format!("{} {typ}", quote_identifier(name))),
+                    );
                     let sql = format!(
                         "CREATE TABLE IF NOT EXISTS {table_name} ({}, PRIMARY KEY ({}))",
                         fields.join(", "),

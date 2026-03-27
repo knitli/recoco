@@ -1138,7 +1138,11 @@ mod tests {
         let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
 
         let result = collect_mutation_results([
-            counted_fut(calls.clone(), "export/target-a", Err(internal_error!("target-a failed"))),
+            counted_fut(
+                calls.clone(),
+                "export/target-a",
+                Err(internal_error!("target-a failed")),
+            ),
             counted_fut(calls.clone(), "export/target-b", Ok(())),
         ])
         .await;
@@ -1148,7 +1152,10 @@ mod tests {
             2,
             "both mutations must be attempted even when the first fails"
         );
-        assert!(result.is_err(), "overall result should be Err when a target fails");
+        assert!(
+            result.is_err(),
+            "overall result should be Err when a target fails"
+        );
     }
 
     #[tokio::test]
@@ -1158,7 +1165,11 @@ mod tests {
 
         let result = collect_mutation_results([
             counted_fut(calls.clone(), "export/target-a", Ok(())),
-            counted_fut(calls.clone(), "export/target-b", Err(internal_error!("target-b failed"))),
+            counted_fut(
+                calls.clone(),
+                "export/target-b",
+                Err(internal_error!("target-b failed")),
+            ),
         ])
         .await;
 
@@ -1176,8 +1187,16 @@ mod tests {
         let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
 
         let result = collect_mutation_results([
-            counted_fut(calls.clone(), "export/target-a", Err(internal_error!("first error"))),
-            counted_fut(calls.clone(), "export/target-b", Err(internal_error!("second error"))),
+            counted_fut(
+                calls.clone(),
+                "export/target-a",
+                Err(internal_error!("first error")),
+            ),
+            counted_fut(
+                calls.clone(),
+                "export/target-b",
+                Err(internal_error!("second error")),
+            ),
             counted_fut(calls.clone(), "export/target-c", Ok(())),
         ])
         .await;
@@ -1211,7 +1230,9 @@ mod tests {
     #[tokio::test]
     async fn test_empty_target_list_succeeds() {
         // Edge-case: no targets → should return Ok without panicking.
-        let result = collect_mutation_results(Vec::<futures::future::Ready<(String, Result<()>)>>::new()).await;
+        let result =
+            collect_mutation_results(Vec::<futures::future::Ready<(String, Result<()>)>>::new())
+                .await;
         assert!(result.is_ok());
     }
 }
