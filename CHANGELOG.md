@@ -8,6 +8,27 @@ SPDX-License-Identifier: Apache-2.0
 
 We document all important changes to Recoco here.
 
+## [0.2.3] - 2026-03-29
+
+### Features
+
+- Add comprehensive benchmarking
+- Add way-ahead planning doc for v1.0.0 Rust API
+
+### Fixed
+
+- Apply rustfmt to resolve CI lint failures (#129)
+
+### Miscellaneous Tasks
+
+- Update changelog
+- Remove outdated docs
+- *(release)* Bump to v0.2.3
+
+### Fix
+
+- Add authentication token step for package publishing
+
 ## [0.2.2] - 2026-03-18
 
 ### Features
@@ -83,15 +104,6 @@ We document all important changes to Recoco here.
 - Maintain assets and config for recoco
 - Bump to v0.2.2
 
-<!--
-SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
-
-SPDX-License-Identifier: Apache-2.0
--->
-# Changelog
-
-
-We document all important changes to Recoco here.
 
 ## [0.2.1] - 2026-01-25
 
