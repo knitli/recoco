@@ -16,7 +16,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.2.2"
+version = "0.2.3"
 edition = "2024"
 rust-version = "1.89"
 description = "A Rust-only fork of CocoIndex, a modular, high-performance ETL and data transformation library."
