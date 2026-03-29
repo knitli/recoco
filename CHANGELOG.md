@@ -8,6 +8,91 @@ SPDX-License-Identifier: Apache-2.0
 
 We document all important changes to Recoco here.
 
+## [0.2.2] - 2026-03-18
+
+### Features
+
+- Add docs site and content
+- *(site)* Updated theming to align with knitli styling
+- Launched docs site
+- Scheduled Claude workflow to monitor upstream cocoindex-io/cocoindex changes (#22)
+- *(CI)* Add claude action for managing upstream change syncs.
+- Workflow to create v1 upstream parity tracking issue + sub-issues (#28)
+- Adopt dedicated PostgreSQL schema for Recoco internal tracking tables (#94)
+- *(targets)* Add target-ladybug (Kuzu successor) (#95)
+- Add filesystem watch support to local_file source (#97)
+- Add cross-language benchmark suite (Recoco vs CocoIndex/Python)
+
+### Fixed
+
+- Added needed bindings to wrangler.jsonc
+- Site deployment
+- *(ci)* Switch to PAT for upstream sync agent
+- *(ci)* Add mcp config to upstream agent params
+- *(ci)* Add log outputs to upstream agent action
+- Resolve `time` crate compile error under `source-azure` feature (#23)
+- *(ci)* Added instructions for first run of upstream assistant after it repeatedly timed out, likely because of too broad a scope.
+- *(upstream-agent)* Adding debugging to upstream agent
+- *(upstream-agent)* Adding debugging to upstream agent
+- *(upstream-sync)* Multi-line prompt env var and MCP config token expansion (#24)
+- Resolve upstream-sync.yml workflow failures (#25)
+- *(ci)* Resolve upstream-sync.yml Claude Code startup failure and log step fragility (#26)
+- *(upstream-sync)* Streamline upstream data gathering and environment setup
+- *(upstream-sync)* Improve output handling for session execution results
+- *(upstream)* More debugging of upstream agent
+- *(upstream)* Moving to github-scripts to handle weird auth issues with gh cli
+- Fix upstream
+- *(templates)* Move SPDX headers outside front matter in feature-request template
+- *(docs)* Missing slash redirect failures
+- Ensure execution plan initialized after target setup (#49) (#92)
+- Tracking table setup must occur after all target setups (#93)
+- Resilient LocalFile list() + notify feature gate + closure lifetime HRTB fix (#103)
+
+### Refactor
+
+- Complete documentation site overhaul: Fix critical issues and implement all recommended improvements (#18)
+- Reorganize recoco-splitters module structure to match upstream (#107)
+
+### Documentation
+
+- Slim README, add configuration reference, eliminate passive voice (#55)
+- *(site)* Update logo and wrangler settings
+- *(readme)* Fix broken links
+- Comprehensive v1.0.0 Rust API design plan
+- Add query handlers and graph mappings to v1 API migration phases
+- Incorporate approved upstream #1667 design into v1 API plan
+
+### Performance
+
+- Bounded concurrency for component setup I/O operations (#84)
+
+### Testing
+
+- Harden `RangeValue::extract_str` test with derived indices and UTF-8 coverage (#85)
+
+### Miscellaneous Tasks
+
+- Update dependencies
+- Standardized name as Recoco vice ReCoco across codebase
+- Return to reuse compliance
+- Optimize github actions workflow to reduce redundant test runs (#45)
+- *(cleaning)* Clean and update files
+- *(docs)* Update image
+- Sync tree-sitter dependency bumps from upstream (#61)
+- *(deps)* Bump dorny/paths-filter from 3 to 4 (#86)
+- Maintain assets and config for recoco
+- Bump to v0.2.2
+
+<!--
+SPDX-FileCopyrightText: 2026 Knitli Inc. (Recoco)
+
+SPDX-License-Identifier: Apache-2.0
+-->
+# Changelog
+
+
+We document all important changes to Recoco here.
+
 ## [0.2.1] - 2026-01-25
 
 ### Features
