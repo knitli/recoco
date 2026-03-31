@@ -40,6 +40,8 @@ pub enum LlmApiType {
     Voyage,
     #[cfg(feature = "provider-openai")]
     Vllm,
+    #[cfg(feature = "provider-openai")]
+    Novita,
     #[cfg(feature = "provider-gemini")]
     VertexAi,
     #[cfg(feature = "provider-bedrock")]
@@ -163,6 +165,8 @@ mod bedrock;
 mod gemini;
 #[cfg(feature = "provider-openai")]
 mod litellm;
+#[cfg(feature = "provider-openai")]
+mod novita;
 #[cfg(feature = "provider-ollama")]
 mod ollama;
 #[cfg(any(feature = "provider-openai", feature = "provider-azure"))]
@@ -224,6 +228,9 @@ pub async fn new_llm_generation_client(
         #[cfg(feature = "provider-openai")]
         LlmApiType::Vllm => Box::new(vllm::Client::new_vllm(address, api_key).await?)
             as Box<dyn LlmGenerationClient>,
+        #[cfg(feature = "provider-openai")]
+        LlmApiType::Novita => Box::new(novita::Client::new_novita(address, api_key).await?)
+            as Box<dyn LlmGenerationClient>,
     };
     Ok(client)
 }
@@ -265,6 +272,9 @@ pub async fn new_llm_embedding_client(
             Box::new(openai::Client::new_azure(address, api_key, api_config).await?)
                 as Box<dyn LlmEmbeddingClient>
         }
+        #[cfg(feature = "provider-openai")]
+        LlmApiType::Novita => Box::new(novita::Client::new_novita(address, api_key).await?)
+            as Box<dyn LlmEmbeddingClient>,
         #[cfg(any(
             feature = "provider-openai",
             feature = "provider-anthropic",
