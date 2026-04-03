@@ -2549,7 +2549,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "http 0.2.12",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "slab",
  "tokio",
  "tokio-util",
@@ -2568,7 +2568,7 @@ dependencies = [
  "futures-core",
  "futures-sink",
  "http 1.4.0",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "slab",
  "tokio",
  "tokio-util",
@@ -3055,9 +3055,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.13.0"
+version = "2.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7714e70437a7dc3ac8eb7e6f8df75fd8eb422675fc7678aff7364301092b1017"
+checksum = "45a8a2b9cb3e0b0c1803dbb0758ffac5de2f425b23c28f518faabd9d805342ff"
 dependencies = [
  "equivalent",
  "hashbrown 0.16.1",
@@ -4301,7 +4301,7 @@ dependencies = [
 
 [[package]]
 name = "recoco"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "recoco-core",
@@ -4314,7 +4314,7 @@ dependencies = [
 
 [[package]]
 name = "recoco-core"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -4345,7 +4345,7 @@ dependencies = [
  "hyper-rustls 0.27.7",
  "hyper-util",
  "indenter",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "indoc",
  "infer 0.19.0",
  "itertools 0.14.0",
@@ -4381,7 +4381,7 @@ dependencies = [
 
 [[package]]
 name = "recoco-splitters"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "cfg-if",
@@ -4421,7 +4421,7 @@ dependencies = [
 
 [[package]]
 name = "recoco-utils"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "async-openai",
@@ -5031,7 +5031,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b2f2d7ff8a2140333718bb329f5c40fc5f0865b84c426183ce14c97d2ab8154f"
 dependencies = [
  "form_urlencoded",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "itoa",
  "ryu",
  "serde_core",
@@ -5043,7 +5043,7 @@ version = "1.0.149"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "83fc039473c5595ace860d8c4fafa220ff474b3fc6bfdb4293327f1a37e94d86"
 dependencies = [
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "itoa",
  "memchr",
  "serde",
@@ -5104,7 +5104,7 @@ dependencies = [
  "chrono",
  "hex",
  "indexmap 1.9.3",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "schemars 0.9.0",
  "schemars 1.2.0",
  "serde_core",
@@ -5312,7 +5312,7 @@ dependencies = [
  "futures-util",
  "hashbrown 0.15.5",
  "hashlink 0.10.0",
- "indexmap 2.13.0",
+ "indexmap 2.13.1",
  "log",
  "memchr",
  "once_cell",
