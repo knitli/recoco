@@ -5,8 +5,18 @@ SPDX-FileContributor: Adam Poulemanos <adam@knit.li>
 SPDX-License-Identifier: Apache-2.0
 -->
 
+> [!WARNING]
+> 
+> ## Recoco is no longer maintained
+>
+> We still think a pure Rust CocoIndex is a great idea, but we can't be the ones to maintain it.
+>
+> We're focused on [something else](https://marque.tools).
+> 
+> We forked Recoco for Thread, which will also no longer maintain. Like the upstream CocoIndex,
+> Recoco is licensed under Apache-2.0.
+
 <div align="center">
-  <img src="assets/recocov2.webp" alt="Recoco Logo" width="200"/>
 
   # Recoco
 
